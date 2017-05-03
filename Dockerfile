@@ -56,7 +56,6 @@ RUN pip3 install https://github.com/celery/celery/archive/master.tar.gz
 RUN pip3 install https://github.com/geodesign/django/archive/geodesign_v6.4.tar.gz
 RUN pip3 install https://github.com/geodesign/django-raster/archive/master.tar.gz
 
-EXPOSE 8000
 
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
@@ -72,6 +71,8 @@ RUN sed -i 's/\/var\/lib\/postgresql\/9.5\/main/\/pgdata/g' /etc/postgresql/9.5/
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
 WORKDIR /code
+EXPOSE 8000
+ENV PASS_MIN_DAYS=1
 
 # Set the startup script as default command.
 CMD /code/run.sh
@@ -91,6 +92,7 @@ RUN useradd -g celery celery
 # Build and install django raster api fork.
 #RUN python3 /code/setup.py sdist
 #RUN pip install /code/dist/django-raster*.tar.gz
+RUN pip3 install django-storage-swift
 
 ADD . /code/
 

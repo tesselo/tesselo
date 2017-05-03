@@ -132,3 +132,41 @@ CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
+
+DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
+STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
+
+SWIFT_CONTAINER_NAME='raster-api-media'
+SWIFT_STATIC_CONTAINER_NAME='raster-api-static'
+
+SWIFT_AUTH_URL="https://identity.open.softlayer.com/v3"
+SWIFT_AUTH_VERSION='3'
+SWIFT_USERNAME="admin_d25a27b832517e8876e43c348baa7d7e7a3a132e"
+SWIFT_KEY="X/S]w_Ow]d(335Ko"
+SWIFT_TENANT_NAME="object_storage_ad105e6c_9b10_4fd1_b00d_ba7ce36a88c6"
+SWIFT_USER_DOMAIN_NAME='1100611'
+SWIFT_PROJECT_DOMAIN_NAME='1100611'
+
+#SWIFT_AUTH_VERSION="3"
+#SWIFT_USERNAME="admin_d25a27b832517e8876e43c348baa7d7e7a3a132e",
+#SWIFT_USERNAME="7f5e62716c64422a9d857fafa2a88d0b"
+#SWIFT_USER_ID="7f5e62716c64422a9d857fafa2a88d0b"
+#SWIFT_PASSWORD="X/S]w_Ow]d(335Ko"
+#SWIFT_PROJECT_ID="5aefa817e5074528a22b16636238720a"
+#SWIFT_USER_DOMAIN_ID="7f5e62716c64422a9d857fafa2a88d0b"
+#SWIFT_USER_DOMAIN_NAME='1100611'
+#SWIFT_PROJECT_DOMAIN_NAME='1100611'
+
+#SWIFT_REGION_NAME="dallas"
+#export OS_AUTH_VERSION=3
+
+
+# Working command to make bucket public.
+#export OS_USER_ID=7f5e62716c64422a9d857fafa2a88d0b
+#export OS_PASSWORD=X/S]w_Ow]d(335Ko
+#export OS_PROJECT_ID=5aefa817e5074528a22b16636238720a
+#export OS_AUTH_URL=https://identity.open.softlayer.com/v3
+#export OS_REGION_NAME=dallas
+#export OS_IDENTITY_API_VERSION=3
+#export OS_AUTH_VERSION=3
+#swift post raster-api-static --read-acl ".r:*"
