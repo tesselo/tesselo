@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     'compressor',
     'rest_framework',
+    'rest_framework.authtoken',
     'crispy_forms',
 
     'raster',
@@ -163,7 +164,7 @@ CELERY_TASK_ACKS_LATE = True
 
 # Storage settings
 DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
-#STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
+STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
 
 SWIFT_CONTAINER_NAME='raster-api-media'
 SWIFT_STATIC_CONTAINER_NAME='raster-api-static'
@@ -199,3 +200,10 @@ SWIFT_PROJECT_DOMAIN_NAME='1100611'
 #export OS_IDENTITY_API_VERSION=3
 #export OS_AUTH_VERSION=3
 #swift post raster-api-static --read-acl ".r:*"
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    )
+}
