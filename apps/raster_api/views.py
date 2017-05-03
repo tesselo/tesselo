@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet, ReadOnlyModelViewSet, GenericViewSet
 from rest_framework.decorators import detail_route
 from rest_framework.mixins import ListModelMixin
+from rest_framework.filters import SearchFilter
 
 from django.conf import settings
 from django.contrib.gis.gdal import GDALRaster
@@ -308,6 +309,8 @@ class LegendSemanticsViewSet(ModelViewSet):
 
     queryset = LegendSemantics.objects.all()
     serializer_class = LegendSemanticsSerializer
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', 'description', 'keyword', )
 
 
 class RasterLayerViewSet(ModelViewSet):

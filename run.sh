@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-#pg_createcluster 9.5 tesselo --D /pgdata
+pg_createcluster 9.5 tesselo --D /pgdata
 
-#psql -U postgres -d postgres -h localhost -c 'CREATE DATABASE IF NOT EXISTS tesselo;'
+psql -U postgres -d postgres -h localhost -c 'CREATE DATABASE IF NOT EXISTS tesselo;'
 
 if [ "$1" = "test" ]; then
     PYTHONPATH=$PYTHONPATH:/code python3 /code/manage.py test $2

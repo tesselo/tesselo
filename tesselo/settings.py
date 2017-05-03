@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',
 
     'rest_framework',
+    'crispy_forms',
 
     'raster',
     'raster_aggregation',

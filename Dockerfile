@@ -71,8 +71,8 @@ RUN sed -i 's/\/var\/lib\/postgresql\/9.5\/main/\/pgdata/g' /etc/postgresql/9.5/
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
 WORKDIR /code
+
 EXPOSE 8000
-ENV PASS_MIN_DAYS=1
 
 # Set the startup script as default command.
 CMD /code/run.sh
