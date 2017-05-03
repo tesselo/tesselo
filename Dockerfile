@@ -18,7 +18,8 @@ RUN apt-get install -y\
     python3-pip\
     python3-software-properties\
     libxml2-dev\
-    libxslt1-dev
+    libxslt1-dev\
+    npm
 
 # Update pip and add ipython.
 RUN pip3 install --upgrade pip ipython ipdb
@@ -49,13 +50,14 @@ RUN pip3 install ipython\
     boto3==1.4.4\
     coreapi==2.3.0\
     Pillow==4.1.0\
-    numpy==1.12.1
+    numpy==1.12.1\
+    django-storage-swift==1.2.16
 
 # Install python dependencies.
 RUN pip3 install https://github.com/celery/celery/archive/master.tar.gz
 RUN pip3 install https://github.com/geodesign/django/archive/geodesign_v6.4.tar.gz
-RUN pip3 install https://github.com/geodesign/django-raster/archive/master.tar.gz
-
+RUN pip3 install https://github.com/geodesign/django-raster/archive/raster_file_field.tar.gz
+RUN pip3 install --no-deps https://github.com/geodesign/django-raster-aggregation/archive/0.1.1.tar.gz
 
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
@@ -89,15 +91,21 @@ RUN chmod 640 '/etc/default/celeryd'
 RUN groupadd celery
 RUN useradd -g celery celery
 
-# Build and install django raster api fork.
-#RUN python3 /code/setup.py sdist
-#RUN pip install /code/dist/django-raster*.tar.gz
-RUN pip3 install django-storage-swift
+# Create an unprivileged user for running Django.
+RUN adduser --disabled-password --gecos '' mrdjango
+
+# Create local staticfiles dir, allow django to access it.
+RUN chown -R mrdjango /staticfiles
 
 ADD . /code/
 
-# Install django raster aggregation.
-RUN PYTHONPATH=$PYTHONPATH:/code/ pip3 install --no-deps https://github.com/geodesign/django-raster-aggregation/archive/0.1.1.tar.gz
+# Install frontend dependencies.
+RUN npm install -g requirejs less
+RUN ln -s /usr/bin/nodejs /usr/bin/node
+RUN npm install --prefix frontend frontend
+
+# Build frontend.
+RUN r.js -o frontend/js/build.js
 
 # Make startup script executable.
 RUN chmod +x /code/run.sh
