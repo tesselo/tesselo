@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'crispy_forms',
+    'guardian',
 
     'raster',
     'raster_aggregation',
@@ -113,7 +114,10 @@ DATABASES = {
     #},
 #]
 
-
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
+)
 # Internationalization
 # https://docs.djangoproject.com/en/dev/topics/i18n/
 
@@ -132,6 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
 STATIC_URL = '/static/'
+#COMPRESS_URL='https://dal.objectstorage.open.softlayer.com/v1/AUTH_5aefa817e5074528a22b16636238720a/raster-api-static/'
 STATIC_ROOT = '/staticfiles'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
@@ -168,6 +173,7 @@ CELERY_TASK_ACKS_LATE = True
 # Storage settings
 DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
 STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
+#STATICFILES_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
 
 SWIFT_CONTAINER_NAME='raster-api-media'
 SWIFT_STATIC_CONTAINER_NAME='raster-api-static'

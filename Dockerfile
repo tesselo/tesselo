@@ -21,37 +21,38 @@ RUN apt-get install -y\
     libxslt1-dev\
     npm
 
-# Update pip and add ipython.
-RUN pip3 install --upgrade pip ipython ipdb
-
 # DB & GIS
 RUN apt-get install -y postgresql-server-dev-9.5 postgis gdal-bin libgeos-3.5.0 redis-server rabbitmq-server
 
-# Create local staticfiles dir.
-RUN mkdir /staticfiles
+# Create npm symlink to be able to call from command line directly.
+RUN ln -s /usr/bin/nodejs /usr/bin/node
 
-RUN pip3 install ipython\
+# Install r.js and less compilers.
+RUN npm install -g requirejs less
+
+RUN pip3 install ipython ipdb\
     psycopg2==2.6.1\
     boto==2.45.0\
     redis==2.10.5\
     gunicorn==19.6.0\
-    django-storages==1.5.2\
-    django-compressor==2.1\
     python-memcached==1.58\
-    django-extensions==1.7.4\
-    django-cleanup==0.4.2\
-    djangorestframework==3.6.2\
-    djangorestframework-gis==0.11\
-    drf-extensions==0.3.1\
-    django-filter==1.0.1\
-    django-crispy-forms==1.6.1\
     coreapi==2.3.0\
     requests==2.13.0\
     boto3==1.4.4\
     coreapi==2.3.0\
     Pillow==4.1.0\
     numpy==1.12.1\
-    django-storage-swift==1.2.16
+    djangorestframework==3.6.2\
+    djangorestframework-gis==0.11\
+    drf-extensions==0.3.1\
+    django-storages==1.5.2\
+    django-compressor==2.1\
+    django-extensions==1.7.4\
+    django-cleanup==0.4.2\
+    django-filter==1.0.1\
+    django-crispy-forms==1.6.1\
+    django-storage-swift==1.2.16\
+    django-guardian==1.4.8
 
 # Install python dependencies.
 RUN pip3 install https://github.com/celery/celery/archive/master.tar.gz
@@ -72,8 +73,19 @@ RUN sed -i 's/\/var\/lib\/postgresql\/9.5\/main/\/pgdata/g' /etc/postgresql/9.5/
 # Add VOLUMEs to allow backup of config, logs and databases
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
+# Create local staticfiles dir.
+RUN mkdir /staticfiles
+
+# Create an unprivileged user for running Django.
+RUN adduser --disabled-password --gecos '' mrdjango
+
+# Create local staticfiles dir, allow django to access it.
+RUN chown -R mrdjango /staticfiles
+
+# Set workdir
 WORKDIR /code
 
+# Set port
 EXPOSE 8000
 
 # Set the startup script as default command.
@@ -91,17 +103,9 @@ RUN chmod 640 '/etc/default/celeryd'
 RUN groupadd celery
 RUN useradd -g celery celery
 
-# Create an unprivileged user for running Django.
-RUN adduser --disabled-password --gecos '' mrdjango
-
-# Create local staticfiles dir, allow django to access it.
-RUN chown -R mrdjango /staticfiles
-
 ADD . /code/
 
 # Install frontend dependencies.
-RUN npm install -g requirejs less
-RUN ln -s /usr/bin/nodejs /usr/bin/node
 RUN npm install --prefix frontend frontend
 
 # Build frontend.

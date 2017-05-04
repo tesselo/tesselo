@@ -21,7 +21,9 @@ class LegendEntrySerializer(ModelSerializer):
         fields = ('id', 'semantics', 'expression', 'color', 'code', )
 
     def get_code(self, obj):
-        return obj.legendentryorder_set.first().code
+        entry_order = obj.legendentryorder_set.first()
+        if entry_order:
+            return entry_order.code
 
 
 class LegendSerializer(ModelSerializer):
