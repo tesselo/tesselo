@@ -143,21 +143,25 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'compressor.finders.CompressorFinder',
 )
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'frontend'),
+)
+
 STATIC_ROOT = '/staticfiles'
-STATIC_URL = '/static/'
 if DEBUG:
-    STATICFILES_DIRS = (
-        os.path.join(BASE_DIR, 'frontend'),
-    )
+    STATIC_URL = '/static/'
+else:
+    STATIC_URL = 'https://dal.objectstorage.open.softlayer.com/v1/AUTH_5aefa817e5074528a22b16636238720a/raster-api-static/'
 
 # Compressor settings
 COMPRESS_JS_FILTERS = [
-    'compressor.filters.jsmin.JSMinFilter'
+    'compressor.filters.jsmin.JSMinFilter',
 ]
 
 COMPRESS_CSS_FILTERS = [
     'compressor.filters.css_default.CssAbsoluteFilter',
-    'compressor.filters.cssmin.CSSMinFilter'
+    'compressor.filters.cssmin.CSSMinFilter',
 ]
 
 COMPRESS_PRECOMPILERS = (
@@ -175,9 +179,10 @@ CELERY_TASK_ACKS_LATE = True
 
 # Storage settings
 DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
+
 if not DEBUG:
-    STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
-#STATICFILES_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
+    STATICFILES_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
+    COMPRESS_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
 
 SWIFT_CONTAINER_NAME='raster-api-media'
 SWIFT_STATIC_CONTAINER_NAME='raster-api-static'
@@ -195,7 +200,7 @@ SWIFT_PROJECT_DOMAIN_NAME='1100611'
 #SWIFT_USERNAME="7f5e62716c64422a9d857fafa2a88d0b"
 #SWIFT_USER_ID="7f5e62716c64422a9d857fafa2a88d0b"
 #SWIFT_PASSWORD="X/S]w_Ow]d(335Ko"
-#SWIFT_PROJECT_ID="5aefa817e5074528a22b16636238720a"
+#swift_project_id="5aefa817e5074528a22b16636238720a"
 #SWIFT_USER_DOMAIN_ID="7f5e62716c64422a9d857fafa2a88d0b"
 #SWIFT_USER_DOMAIN_NAME='1100611'
 #SWIFT_PROJECT_DOMAIN_NAME='1100611'

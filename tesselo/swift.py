@@ -11,7 +11,6 @@ class CachedStaticSwiftStorage(StaticSwiftStorage):
     """
     def __init__(self, *args, **kwargs):
         super(CachedStaticSwiftStorage, self).__init__(*args, **kwargs)
-
         self.local_storage = get_storage_class(
             "compressor.storage.CompressorFileStorage"
         )()

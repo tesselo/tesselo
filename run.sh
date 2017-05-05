@@ -18,5 +18,5 @@ elif [ "$DEBUG" = "True" ]; then
     #su -m mrdjango -c "DEBUG=True python3 manage.py compress --force"
     su -m mrdjango -c "DEBUG=True python3 manage.py runserver 0.0.0.0:8000"
 else
-    su -m mrdjango -c "gunicorn -w 3 -b 0.0.0.0 tesselo.wsgi"
+    gunicorn -w 3 -b 0.0.0.0 -u mrdjango tesselo.wsgi
 fi

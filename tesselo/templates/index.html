@@ -10,15 +10,16 @@
 
 <body>
     <div class="main"></div>
-    {% compress js %}
-        <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
-        {% if debug %}
+        {% if STATIC_URL == '/static/' %}
+            <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
             <script data-main="{{ STATIC_URL }}js/tesselo/main" src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
         {% else %}
-            <script src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
-            <script src="{{ STATIC_URL }}js/dist.js"></script>
+            {% compress js %}
+                <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
+                <script src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
+                <script src="{{ STATIC_URL }}js/dist.js"></script>
+            {% endcompress %}
         {% endif %}
-    {% endcompress %}
 </body>
 </html>
 
