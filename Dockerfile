@@ -111,17 +111,5 @@ RUN npm install --prefix frontend frontend
 # Build frontend.
 RUN r.js -o frontend/js/build.js
 
-# Collect staticfiles.
-#RUN DEBUG=True python3 manage.py collectstatic --no-input
-
-# Offline js and css compression.
-#RUN DEBUG=True python3 manage.py compress --force
-
-# Remove original js files and node modules from staticfiles after compression.
-# This is to speed up the collectstatic command, and to obscure the
-# original js requirejs app structure.
-RUN rm -r /staticfiles/node_modules
-RUN rm -r /staticfiles/js
-
 # Make startup script executable.
 RUN chmod +x /code/run.sh
