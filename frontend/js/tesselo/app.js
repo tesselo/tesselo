@@ -1,6 +1,7 @@
 define([
         'marionette',
-        'views/root'
+        'views/root',
+        'utils/csrf'
     ], function(
         Marionette,
         RootView

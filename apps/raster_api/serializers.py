@@ -91,10 +91,10 @@ class RasterLayerBandMetadataSerializer(ModelSerializer):
 
 class RasterLayerSerializer(ModelSerializer):
 
-    metadata = RasterLayerMetadataSerializer()
-    bandmetadatas = RasterLayerBandMetadataSerializer(many=True, source='rasterlayerbandmetadata_set')
-    parsestatus = RasterLayerParseStatusSerializer()
-    reprojected = SerializerMethodField()
+    metadata = RasterLayerMetadataSerializer(read_only=True)
+    bandmetadatas = RasterLayerBandMetadataSerializer(many=True, source='rasterlayerbandmetadata_set', read_only=True)
+    parsestatus = RasterLayerParseStatusSerializer(read_only=True)
+    reprojected = SerializerMethodField(read_only=True)
 
     class Meta:
         model = RasterLayer
@@ -102,8 +102,7 @@ class RasterLayerSerializer(ModelSerializer):
             'id', 'name', 'description', 'datatype', 'rasterfile', 'source_url', 'nodata', 'srid',
             'max_zoom', 'build_pyramid', 'next_higher', 'store_reprojected', 'legend', 'reprojected', 'metadata', 'parsestatus', 'bandmetadatas'
         )
-        read_only_fields = ('reprojected', 'metadata',)
 
     def get_reprojected(self, obj):
-        if obj.reprojected:
+        if obj.reprojected and obj.reprojected.rasterfile:
             return obj.reprojected.rasterfile.url

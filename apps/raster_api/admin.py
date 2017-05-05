@@ -1,0 +1,6 @@
+from django.contrib import admin
+from raster_api.models import RasterLayerUserObjectPermission
+from raster_api.models import RasterLayerGroupObjectPermission
+
+admin.site.register(RasterLayerUserObjectPermission)
+admin.site.register(RasterLayerGroupObjectPermission)

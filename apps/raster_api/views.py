@@ -37,6 +37,7 @@ from raster.utils import band_data_to_image, colormap_to_rgba
 from raster.views import RasterView, AlgebraView, TmsView, ExportView
 
 from raster_api.serializers import LegendSerializer, LegendSemanticsSerializer, LegendEntrySerializer, RasterLayerSerializer
+from raster_api.permissions import RasterTilePermission
 
 
 class RasterTileSerializer(serializers.ModelSerializer):
@@ -56,6 +57,7 @@ class BinaryRenderer(renderers.BaseRenderer):
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
 
+    permission_classes = (RasterTilePermission, )
     renderer_classes = (BinaryRenderer, )
     queryset = RasterTile.objects.all()
 
@@ -108,3 +110,5 @@ class RasterLayerViewSet(ModelViewSet):
 
     queryset = RasterLayer.objects.all()
     serializer_class = RasterLayerSerializer
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', 'description', )

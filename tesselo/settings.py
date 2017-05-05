@@ -26,6 +26,8 @@ DEBUG = os.environ.get('DEBUG', False) == 'True'
 
 ALLOWED_HOSTS = ['*']
 
+LOGIN_REDIRECT_URL = '/'
+
 # Forward to ssl if not ssl recieved.
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -49,6 +51,7 @@ INSTALLED_APPS = [
 
     'raster',
     'raster_aggregation',
+    'raster_api',
 ]
 
 MIDDLEWARE = [
@@ -66,7 +69,7 @@ ROOT_URLCONF = 'tesselo.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['frontend/templates', ],
+        'DIRS': ['tesselo/templates', ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,14 +138,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
-STATIC_URL = '/static/'
-#COMPRESS_URL='https://dal.objectstorage.open.softlayer.com/v1/AUTH_5aefa817e5074528a22b16636238720a/raster-api-static/'
-STATIC_ROOT = '/staticfiles'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'compressor.finders.CompressorFinder',
 )
+COMPRESS_ROOT = '/staticfiles'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'frontend'),
 )
@@ -172,7 +174,8 @@ CELERY_TASK_ACKS_LATE = True
 
 # Storage settings
 DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
-STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
+if not DEBUG:
+    STATICFILES_STORAGE ='swift.storage.StaticSwiftStorage'
 #STATICFILES_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
 
 SWIFT_CONTAINER_NAME='raster-api-media'
