@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+chown -R mrdjango /tesselo_media
+
 service rabbitmq-server start
 service redis-server start
 

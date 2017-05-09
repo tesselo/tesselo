@@ -30,6 +30,8 @@ RUN ln -s /usr/bin/nodejs /usr/bin/node
 # Install r.js and less compilers.
 RUN npm install -g requirejs less
 
+RUN pip3 install https://github.com/geodesign/django/archive/geodesign_v7.tar.gz
+
 RUN pip3 install ipython ipdb\
     psycopg2==2.6.1\
     boto==2.45.0\
@@ -55,9 +57,8 @@ RUN pip3 install ipython ipdb\
     django-guardian==1.4.8
 
 # Install python dependencies.
-RUN pip3 install https://github.com/celery/celery/archive/master.tar.gz
-RUN pip3 install https://github.com/geodesign/django/archive/geodesign_v6.4.tar.gz
 RUN pip3 install https://github.com/geodesign/django-raster/archive/raster_file_field.tar.gz
+RUN pip3 install https://github.com/celery/celery/archive/master.tar.gz
 RUN pip3 install --no-deps https://github.com/geodesign/django-raster-aggregation/archive/0.1.1.tar.gz
 
 # Adjust PostgreSQL configuration so that remote connections to the

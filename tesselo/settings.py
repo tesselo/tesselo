@@ -178,9 +178,10 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
 
 # Storage settings
-DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
-
-if not DEBUG:
+if DEBUG:
+    MEDIA_ROOT = '/tesselo_media'
+else:
+    DEFAULT_FILE_STORAGE='swift.storage.SwiftStorage'
     STATICFILES_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
     COMPRESS_STORAGE ='tesselo.swift.CachedStaticSwiftStorage'
 
@@ -220,8 +221,13 @@ SWIFT_PROJECT_DOMAIN_NAME='1100611'
 #swift post raster-api-static --read-acl ".r:*"
 
 REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5
 }

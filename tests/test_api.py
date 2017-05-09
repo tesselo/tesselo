@@ -36,7 +36,7 @@ class RasterLegendViewTests(RasterTestCase):
         }
         response = self.client.post(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        result = json.loads(response.content.decode())
+        result = json.loads(response.content.decode()).results
         expected = {
             'title': 'Landcover',
             'description': 'A simple landcover classification.',
@@ -69,5 +69,5 @@ class RasterLegendViewTests(RasterTestCase):
         }
         response = self.client.post(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        result = json.loads(response.content.decode())
+        result = json.loads(response.content.decode()).results
         self.assertEqual(result['entries']['semantics']['id'], sem.id)

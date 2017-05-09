@@ -1,16 +1,16 @@
 from rest_framework import routers
-from raster_api.views import LegendViewSet, TmsAPIView, AlgebraAPIView, ExportAPIView, LegendSemanticsViewSet, LegendEntryViewSet, RasterLayerViewSet
+from raster_api.views import LegendViewSet, AlgebraAPIView, ExportAPIView, LegendSemanticsViewSet, LegendEntryViewSet, RasterLayerViewSet
 
 router = routers.DefaultRouter(trailing_slash=False)
 
-router.register(r'rasterlayer', RasterLayerViewSet)
+router.register(r'rasterlayer', RasterLayerViewSet, base_name='rasterlayer')
 router.register(r'legend', LegendViewSet)
 router.register(r'legendsemantics', LegendSemanticsViewSet)
 router.register(r'legendentry', LegendEntryViewSet)
 
 router.register(
     r'tile/(?P<layer>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg)',
-    TmsAPIView,
+    AlgebraAPIView,
     base_name='tile'
 )
 router.register(

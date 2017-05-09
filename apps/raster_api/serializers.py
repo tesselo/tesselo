@@ -1,7 +1,7 @@
 import json
 from django.shortcuts import get_object_or_404
-from rest_framework.serializers import ModelSerializer, SerializerMethodField, CharField
-from raster.models import Legend, LegendEntry, LegendSemantics, LegendEntryOrder, RasterLayer, RasterLayerMetadata, RasterLayerParseStatus, RasterLayerBandMetadata
+from rest_framework.serializers import ModelSerializer, SerializerMethodField, CharField, BooleanField
+from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerMetadata, RasterLayerParseStatus, RasterLayerBandMetadata
 
 
 class LegendSemanticsSerializer(ModelSerializer):
@@ -50,15 +50,13 @@ class LegendSerializer(ModelSerializer):
 
             code = entry.pop('code', '')
             semantics = entry.pop('semantics')
-            print(semantics)
+
             if 'id' in semantics:
                 semantic = get_object_or_404(LegendSemantics, pk=semantics['id'])
             else:
                 semantic = LegendSemantics.objects.create(**semantics)
 
-            entry = LegendEntry.objects.create(**entry, semantics=semantic)
-
-            LegendEntryOrder.objects.create(legendentry=entry, legend=legend, code=code)
+            LegendEntry.objects.create(**entry, semantics=semantic)
 
         return legend
 
@@ -95,14 +93,21 @@ class RasterLayerSerializer(ModelSerializer):
     bandmetadatas = RasterLayerBandMetadataSerializer(many=True, source='rasterlayerbandmetadata_set', read_only=True)
     parsestatus = RasterLayerParseStatusSerializer(read_only=True)
     reprojected = SerializerMethodField(read_only=True)
+    public = SerializerMethodField(read_only=True)
 
     class Meta:
         model = RasterLayer
         fields = (
             'id', 'name', 'description', 'datatype', 'rasterfile', 'source_url', 'nodata', 'srid',
-            'max_zoom', 'build_pyramid', 'next_higher', 'store_reprojected', 'legend', 'reprojected', 'metadata', 'parsestatus', 'bandmetadatas'
+            'max_zoom', 'build_pyramid', 'next_higher', 'store_reprojected', 'legend', 'reprojected', 'metadata', 'parsestatus', 'bandmetadatas', 'public',
         )
 
     def get_reprojected(self, obj):
-        if obj.reprojected and obj.reprojected.rasterfile:
+        if hasattr(obj ,'reprojected') and obj.reprojected.rasterfile:
             return obj.reprojected.rasterfile.url
+
+    def get_public(self, obj):
+        if hasattr(obj, 'publicrasterlayer') and obj.publicrasterlayer.public:
+            return True
+        else:
+            return False
