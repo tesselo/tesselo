@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-chown -R mrdjango /tesselo_media
-
 service rabbitmq-server start
 service redis-server start
 
@@ -15,6 +13,7 @@ fi
 if [ "$1" = "test" ]; then
     PYTHONPATH=$PYTHONPATH:/code python3 /code/manage.py test $2
 elif [ "$DEBUG" = "True" ]; then
+    chown -R mrdjango /tesselo_media
     su -m mrdjango -c "DEBUG=True python3 manage.py migrate"
     #su -m mrdjango -c "DEBUG=True python3 manage.py collectstatic -i node_modules --noinput"
     #su -m mrdjango -c "DEBUG=True python3 manage.py compress --force"
