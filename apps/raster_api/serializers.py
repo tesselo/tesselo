@@ -1,10 +1,12 @@
 import json
 from django.shortcuts import get_object_or_404
-from rest_framework.serializers import ModelSerializer, SerializerMethodField, CharField, BooleanField
+from rest_framework.serializers import ModelSerializer, SerializerMethodField, CharField, BooleanField, ModelField
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerMetadata, RasterLayerParseStatus, RasterLayerBandMetadata
 
 
 class LegendSemanticsSerializer(ModelSerializer):
+
+    id = ModelField(model_field=LegendSemantics._meta.get_field('id'), required=False)
 
     class Meta:
         model = LegendSemantics
@@ -14,21 +16,15 @@ class LegendSemanticsSerializer(ModelSerializer):
 class LegendEntrySerializer(ModelSerializer):
 
     semantics = LegendSemanticsSerializer()
-    code = SerializerMethodField()
 
     class Meta:
         model = LegendEntry
         fields = ('id', 'semantics', 'expression', 'color', 'code', )
 
-    def get_code(self, obj):
-        entry_order = obj.legendentryorder_set.first()
-        if entry_order:
-            return entry_order.code
-
 
 class LegendSerializer(ModelSerializer):
 
-    entries = LegendEntrySerializer(many=True)
+    entries = LegendEntrySerializer(many=True, source='legendentry_set')
 
     json = SerializerMethodField()
 
@@ -44,11 +40,10 @@ class LegendSerializer(ModelSerializer):
 
 
     def create(self, validated_data):
-        entries = validated_data.pop('entries')
+        entries = validated_data.pop('legendentry_set')
         legend = Legend.objects.create(**validated_data)
         for entry in entries:
 
-            code = entry.pop('code', '')
             semantics = entry.pop('semantics')
 
             if 'id' in semantics:
@@ -56,7 +51,7 @@ class LegendSerializer(ModelSerializer):
             else:
                 semantic = LegendSemantics.objects.create(**semantics)
 
-            LegendEntry.objects.create(**entry, semantics=semantic)
+            LegendEntry.objects.create(**entry, legend=legend, semantics=semantic)
 
         return legend
 
