@@ -4,16 +4,15 @@ import json
 from django.contrib.auth.models import User
 from rest_framework import status
 
+from django.test import TransactionTestCase, TestCase
 from django.core.urlresolvers import reverse
 
-from raster.models import LegendSemantics
-from .raster_testcase import RasterTestCase
+from raster.models import LegendSemantics, Legend, LegendEntry
 
 
-class RasterLegendViewTests(RasterTestCase):
+class RasterLegendViewTests(TestCase):
 
     def setUp(self):
-        super(RasterLegendViewTests, self).setUp()
 
         self.usr = User.objects.create_superuser(
             username='michael',
@@ -36,7 +35,7 @@ class RasterLegendViewTests(RasterTestCase):
         }
         response = self.client.post(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        result = json.loads(response.content.decode()).results
+        result = json.loads(response.content.decode())
         expected = {
             'title': 'Landcover',
             'description': 'A simple landcover classification.',
@@ -56,7 +55,7 @@ class RasterLegendViewTests(RasterTestCase):
 
     def test_create_legend_with_semantics_id(self):
 
-        sem = LegendSemantics.objects.first()
+        sem = LegendSemantics.objects.create(name="Urban")
 
         url = reverse('legend-list')
 
@@ -64,10 +63,10 @@ class RasterLegendViewTests(RasterTestCase):
             'title': 'Landcover',
             'description': 'A simple landcover classification.',
             'entries': [
-                {'expression':'2', 'color': '#222222', 'semantics': [{'id': sem.id}], 'code': 'a'}
+                {'expression':'2', 'color': '#222222', 'semantics': {'id': sem.id, 'name': sem.name}, 'code': 'a'}
             ]
         }
         response = self.client.post(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        result = json.loads(response.content.decode()).results
-        self.assertEqual(result['entries']['semantics']['id'], sem.id)
+        result = json.loads(response.content.decode())
+        self.assertEqual(result['entries'][0]['semantics']['id'], sem.id)
