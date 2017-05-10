@@ -80,7 +80,7 @@ class AlgebraAPIView(AlgebraView, RasterAPIView):
     """
 
     def list(self, *args, **kwargs):
-        return super(AlebraAPIView, self).get(*args, **kwargs)
+        return super(AlgebraAPIView, self).get(*args, **kwargs)
 
 
 class ExportAPIView(AlgebraView, RasterAPIView):
