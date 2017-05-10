@@ -4,8 +4,21 @@ set -e
 service rabbitmq-server start
 service redis-server start
 
+if [ ! -f /pgdata/PG_VERSION ]; then
+    echo "\nNo database cluster detected, creating a new one in /pgdata."
+    pg_createcluster 9.5 tesselo --D /pgdata
+fi
+
 if [ "$DEBUG" = "True" ]; then
     service postgresql start
+fi
+
+if ! psql -U postgres -d postgres -h localhost -lqt | cut -d \| -f 1 | grep -qw tesselo; then
+    echo "\nTesselo DB not detected, creating new database."
+    psql -U postgres -d postgres -h localhost -c "CREATE DATABASE tesselo;"
+    su -m mrdjango -c "DEBUG=True python3 manage.py migrate"
+    echo "\nCreating superuser."
+    python3 manage.py shell -c "from django.contrib.auth.models import User; User.objects.create_superuser('tesselo', 'admin@tesselo.com', 'pass');"
 fi
 
 /etc/init.d/celeryd start
