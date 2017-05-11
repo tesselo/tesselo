@@ -6,7 +6,7 @@ from raster_api.views import (
 
 router = routers.DefaultRouter(trailing_slash=False)
 
-router.register(r'rasterlayer', RasterLayerViewSet, base_name='rasterlayer')
+router.register(r'rasterlayer', RasterLayerViewSet)
 router.register(r'legend', LegendViewSet)
 router.register(r'legendsemantics', LegendSemanticsViewSet)
 router.register(r'legendentry', LegendEntryViewSet)

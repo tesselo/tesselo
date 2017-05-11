@@ -61,6 +61,7 @@ class LegendSerializer(ModelSerializer):
 
 
 class RasterLayerParseStatusSerializer(ModelSerializer):
+
     status_display = SerializerMethodField()
 
     class Meta:

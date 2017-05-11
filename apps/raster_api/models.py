@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from raster.models import Legend, RasterLayer
+from raster.models import Legend, LegendSemantics, RasterLayer
 
 from django.db import models
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
@@ -20,6 +20,15 @@ class RasterLayerGroupObjectPermission(GroupObjectPermissionBase):
         return '{0} | {1}'.format(self.permission, self.content_object)
 
 
+class PublicRasterLayer(models.Model):
+
+    rasterlayer = models.OneToOneField(RasterLayer)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.rasterlayer, 'public' if self.public else 'private')
+
+
 class LegendUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
@@ -34,10 +43,33 @@ class LegendGroupObjectPermission(GroupObjectPermissionBase):
         return '{0} | {1}'.format(self.permission, self.content_object)
 
 
-class PublicRasterLayer(models.Model):
+class PublicLegend(models.Model):
 
-    rasterlayer = models.OneToOneField(RasterLayer)
+    legend = models.OneToOneField(Legend)
     public = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.rasterlayer, 'public' if self.public else 'private')
+        return '{0} | {1}'.format(self.legend, 'public' if self.public else 'private')
+
+
+class LegendSemanticsUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.permission, self.content_object)
+
+
+class LegendSemanticsGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.permission, self.content_object)
+
+
+class PublicLegendSemantics(models.Model):
+
+    legendsemantics = models.OneToOneField(LegendSemantics)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.legendsemantics, 'public' if self.public else 'private')

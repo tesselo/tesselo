@@ -37,10 +37,50 @@ class ExportAPIView(ExportView, RasterAPIView):
         return super(ExportAPIView, self).get(*args, **kwargs)
 
 
-class LegendViewSet(ModelViewSet):
+class PermissionsModelViewSet(ModelViewSet):
+
+    def get_queryset(self):
+        """
+        A queryset with public layers or rasterlayers for which the user has
+        direct view permissions.
+        """
+        qs = self.queryset
+
+        if not self.request.user.is_superuser:
+            # Construct query object to check for user permissions.
+            query_obj_codename = {'{0}userobjectpermission__permission__codename'.format(self._model): 'view_{0}'.format(self._model)}
+            query_user_match = {'{0}userobjectpermission__user'.format(self._model): self.request.user}
+            has_user_permission = Q(**query_obj_codename) & Q(**query_user_match)
+
+            # Construct query object to check for group permissions.
+            query_obj_codename = {'{0}groupobjectpermission__permission__codename'.format(self._model): 'view_{0}'.format(self._model)}
+            query_group_match = {'{0}groupobjectpermission__group__in'.format(self._model): self.request.user.groups.all()}
+            has_group_permission = Q(**query_obj_codename) & Q(**query_group_match)
+
+            # Query object for public layers.
+            query_public = {'public{0}__public'.format(self._model): True}
+            is_public_obj = Q(**query_public)
+
+            # Filter queryset.
+            qs = qs.filter(has_user_permission | has_group_permission | is_public_obj)
+
+        return qs.order_by('id')
+
+    def perform_create(self, serializer):
+        # Create object with default create function.
+        obj = serializer.save()
+        # Assign permissions for newly created object.
+        assign_perm('view_{0}'.format(self._model), self.request.user, obj)
+        assign_perm('change_{0}'.format(self._model), self.request.user, obj)
+        assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
+
+
+class LegendViewSet(PermissionsModelViewSet):
 
     queryset = Legend.objects.all()
     serializer_class = LegendSerializer
+
+    _model = 'legend'
 
 
 class LegendEntryViewSet(ModelViewSet):
@@ -49,7 +89,7 @@ class LegendEntryViewSet(ModelViewSet):
     serializer_class = LegendEntrySerializer
 
 
-class LegendSemanticsViewSet(ModelViewSet):
+class LegendSemanticsViewSet(PermissionsModelViewSet):
 
     queryset = LegendSemantics.objects.all()
     serializer_class = LegendSemanticsSerializer
@@ -57,7 +97,7 @@ class LegendSemanticsViewSet(ModelViewSet):
     search_fields = ('name', 'description', 'keyword', )
 
 
-class RasterLayerViewSet(ModelViewSet):
+class RasterLayerViewSet(PermissionsModelViewSet):
 
     queryset = RasterLayer.objects.all()
     serializer_class = RasterLayerSerializer
@@ -65,26 +105,4 @@ class RasterLayerViewSet(ModelViewSet):
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', )
 
-    def get_queryset(self):
-        """
-        A queryset with public layers or rasterlayers for which the user has
-        direct view permissions.
-        """
-        qs = RasterLayer.objects.all()
-
-        if not self.request.user.is_superuser:
-            qs = qs.filter(
-                (Q(rasterlayeruserobjectpermission__permission__codename='view_rasterlayer') & Q(rasterlayeruserobjectpermission__user=self.request.user)) |
-                (Q(rasterlayergroupobjectpermission__permission__codename='view_rasterlayer') & Q(rasterlayergroupobjectpermission__group__in=self.request.user.groups.all())) |
-                Q(publicrasterlayer__public=True)
-            )
-
-        return qs.order_by('id')
-
-    def perform_create(self, serializer):
-        # Create layer with default create function.
-        layer = serializer.save()
-        # Assign permissions for newly created layer.
-        assign_perm('view_rasterlayer', self.request.user, layer)
-        assign_perm('change_rasterlayer', self.request.user, layer)
-        assign_perm('delete_rasterlayer', self.request.user, layer)
+    _model = 'rasterlayer'
