@@ -28,8 +28,6 @@ if [ "$1" = "test" ]; then
 elif [ "$DEBUG" = "True" ]; then
     chown -R mrdjango /tesselo_media
     su -m mrdjango -c "DEBUG=True python3 manage.py migrate"
-    #su -m mrdjango -c "DEBUG=True python3 manage.py collectstatic -i node_modules --noinput"
-    #su -m mrdjango -c "DEBUG=True python3 manage.py compress --force"
     su -m mrdjango -c "DEBUG=True python3 manage.py runserver 0.0.0.0:8000"
 else
     gunicorn -w 3 -b 0.0.0.0 -u mrdjango tesselo.wsgi
