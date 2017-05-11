@@ -11,7 +11,6 @@ import numpy
 from PIL import Image
 from rest_framework import renderers, serializers
 from rest_framework.generics import GenericAPIView
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet, ReadOnlyModelViewSet, GenericViewSet
 from rest_framework.decorators import detail_route
@@ -57,14 +56,7 @@ from guardian.ctypes import get_content_type
 from guardian.exceptions import MixedContentTypeError, WrongAppError
 from guardian.models import GroupObjectPermission
 from guardian.utils import get_anonymous_user, get_group_obj_perms_model, get_identity, get_user_obj_perms_model
-
-class BinaryRenderer(renderers.BaseRenderer):
-    media_type = '*/*'
-    charset = None
-    render_style = 'binary'
-
-    def render(self, data, media_type=None, renderer_context=None):
-        return data
+from raster_api.renderers import BinaryRenderer
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
