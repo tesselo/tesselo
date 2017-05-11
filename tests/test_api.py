@@ -1,13 +1,13 @@
 from __future__ import unicode_literals
 
 import json
-from django.contrib.auth.models import User
+
+from raster.models import Legend, LegendEntry, LegendSemantics
 from rest_framework import status
 
-from django.test import TransactionTestCase, TestCase
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-
-from raster.models import LegendSemantics, Legend, LegendEntry
+from django.test import TestCase, TransactionTestCase
 
 
 class RasterLegendViewTests(TestCase):

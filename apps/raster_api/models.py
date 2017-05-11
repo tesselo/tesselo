@@ -1,8 +1,7 @@
-from guardian.models import UserObjectPermissionBase
-from guardian.models import GroupObjectPermissionBase
+from raster.models import Legend, RasterLayer
 
-from raster.models import RasterLayer, Legend
 from django.db import models
+from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):

@@ -1,7 +1,12 @@
 import json
+
+from raster.models import (
+    Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerBandMetadata, RasterLayerMetadata,
+    RasterLayerParseStatus
+)
+from rest_framework.serializers import BooleanField, CharField, ModelField, ModelSerializer, SerializerMethodField
+
 from django.shortcuts import get_object_or_404
-from rest_framework.serializers import ModelSerializer, SerializerMethodField, CharField, BooleanField, ModelField
-from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerMetadata, RasterLayerParseStatus, RasterLayerBandMetadata
 
 
 class LegendSemanticsSerializer(ModelSerializer):

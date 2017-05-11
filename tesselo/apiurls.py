@@ -1,5 +1,8 @@
 from rest_framework import routers
-from raster_api.views import LegendViewSet, AlgebraAPIView, ExportAPIView, LegendSemanticsViewSet, LegendEntryViewSet, RasterLayerViewSet
+
+from raster_api.views import (
+    AlgebraAPIView, ExportAPIView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet
+)
 
 router = routers.DefaultRouter(trailing_slash=False)
 

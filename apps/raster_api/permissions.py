@@ -1,5 +1,6 @@
-from rest_framework import permissions
 from raster.models import RasterLayer
+from rest_framework import permissions
+
 
 class RasterTilePermission(permissions.BasePermission):
     """
