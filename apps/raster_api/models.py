@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from raster.models import Legend, RasterLayer
 
 from django.db import models

@@ -4,7 +4,7 @@ from raster.models import (
     Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerBandMetadata, RasterLayerMetadata,
     RasterLayerParseStatus
 )
-from rest_framework.serializers import BooleanField, CharField, ModelField, ModelSerializer, SerializerMethodField
+from rest_framework.serializers import ModelField, ModelSerializer, SerializerMethodField
 
 from django.shortcuts import get_object_or_404
 
@@ -43,7 +43,6 @@ class LegendSerializer(ModelSerializer):
             return {}
         return json.loads(obj.json)
 
-
     def create(self, validated_data):
         entries = validated_data.pop('legendentry_set')
         legend = Legend.objects.create(**validated_data)
@@ -67,7 +66,6 @@ class RasterLayerParseStatusSerializer(ModelSerializer):
     class Meta:
         model = RasterLayerParseStatus
         exclude = ('id', 'rasterlayer', )
-
 
     def get_status_display(self, obj):
         return obj.get_status_display()
@@ -103,7 +101,7 @@ class RasterLayerSerializer(ModelSerializer):
         )
 
     def get_reprojected(self, obj):
-        if hasattr(obj ,'reprojected') and obj.reprojected.rasterfile:
+        if hasattr(obj, 'reprojected') and obj.reprojected.rasterfile:
             return obj.reprojected.rasterfile.url
 
     def get_public(self, obj):
