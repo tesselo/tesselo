@@ -26,3 +26,11 @@ username "tesselo" and password "pass".
 
 The image contains the postgres, redis and rabbitmq servers. Django is
 configured to use these local servers when running in dev mode.
+
+Docker container ip
+-------------------
+Do access the runserver, you need to find the local IP of the container its running on. To get the ip,
+run `docker ps` and then use the container ID to run `docker inspect containerid`, then the IP is prompted
+as part of the metadata. You can then access the container on port 8000. For example http://172.17.0.2:8000/.
+
+Also you can drop into the container running `docker exec -it CONTAINERID python3 manage.py shell`.
