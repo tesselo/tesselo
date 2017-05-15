@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'crispy_forms',
     'guardian',
+    'django_extensions',
 
     'raster',
     'raster_aggregation',

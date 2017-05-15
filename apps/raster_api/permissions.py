@@ -16,7 +16,7 @@ class RasterTilePermission(permissions.BasePermission):
         return all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
 
 
-class RasterLayerObjectPermission(permissions.DjangoObjectPermissions):
+class RasterObjectPermission(permissions.DjangoObjectPermissions):
     """
     Check if a user can see a raster layer.
     """
@@ -32,17 +32,42 @@ class RasterLayerObjectPermission(permissions.DjangoObjectPermissions):
 
     _public = False
 
+    def has_permission(self, request, view):
+        """
+        Pass on global table level permissions, this permission class checks on
+        the object level only.
+        """
+        return True
+
     def get_required_object_permissions(self, method, model_cls):
         # For public rasters, dont require object permissions.
         if self._public and method in permissions.SAFE_METHODS:
             return []
-        return super(RasterLayerObjectPermission, self).get_required_object_permissions(method, model_cls)
+        return super(RasterObjectPermission, self).get_required_object_permissions(method, model_cls)
 
     def has_object_permission(self, request, view, obj):
         """
         Allow view for public rasters, otherwise handle with regular object permissions.
         """
         # Set public raster flag for object permission checking.
-        self._public = hasattr(obj, 'publicrasterlayer') and obj.publicrasterlayer.public
+        self._public = hasattr(obj, 'public{0}'.format(view._model)) and getattr(obj, 'public{0}'.format(view._model)).public
+        return super(RasterObjectPermission, self).has_object_permission(request, view, obj)
 
-        return super(RasterLayerObjectPermission, self).has_object_permission(request, view, obj)
+
+class ChangePermissionObjectPermission(permissions.DjangoObjectPermissions):
+    """
+    Check if a user can change permissions on an object. This assumes that only
+    object managers can delete an object, so inviting additional people is
+    limited to users that can
+    """
+    perms_map = {
+        'GET': ['%(app_label)s.delete_%(model_name)s'],
+        'POST': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+    def has_permission(self, request, view):
+        """
+        Pass on global table level permissions, this permission class checks on
+        the object level only.
+        """
+        return True

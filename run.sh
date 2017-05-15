@@ -13,6 +13,8 @@ if [ "$DEBUG" = "True" ]; then
     service postgresql start
 fi
 
+sleep 1
+
 if [ "$DEBUG" = "True" ] && [ ! $(psql -U postgres -d postgres -h localhost -lqt | cut -d \| -f 1 | grep tesselo) ]; then
     echo "\nTesselo DB not detected, creating new database."
     psql -U postgres -d postgres -h localhost -c "CREATE DATABASE tesselo;"

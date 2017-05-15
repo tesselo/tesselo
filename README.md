@@ -34,3 +34,9 @@ run `docker ps` and then use the container ID to run `docker inspect containerid
 as part of the metadata. You can then access the container on port 8000. For example http://172.17.0.2:8000/.
 
 Also you can drop into the container running `docker exec -it CONTAINERID python3 manage.py shell`.
+
+Run the test suite
+------------------
+To run the test suite, simply specify an argument for the run script like so
+
+    docker run --rm --env DEBUG=True -v /path/to/local/tesselo/clone:/code -v /path/to/local/pgdata/dir:/pgdata tesselo /code/run.sh test

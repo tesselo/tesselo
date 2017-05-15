@@ -10,14 +10,14 @@ class RasterLayerUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(RasterLayer, on_delete=models.CASCADE)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.permission, self.content_object)
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
 
 
 class RasterLayerGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(RasterLayer, on_delete=models.CASCADE)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.permission, self.content_object)
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
 
 
 class PublicRasterLayer(models.Model):
@@ -33,14 +33,14 @@ class LegendUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.permission, self.content_object)
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
 
 
 class LegendGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.permission, self.content_object)
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
 
 
 class PublicLegend(models.Model):
@@ -56,14 +56,14 @@ class LegendSemanticsUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.permission, self.content_object)
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
 
 
 class LegendSemanticsGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.permission, self.content_object)
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
 
 
 class PublicLegendSemantics(models.Model):
