@@ -58,7 +58,7 @@ class ChangePermissionObjectPermission(permissions.DjangoObjectPermissions):
     """
     Check if a user can change permissions on an object. This assumes that only
     object managers can delete an object, so inviting additional people is
-    limited to users that can
+    limited to users that can manage the main object.
     """
     perms_map = {
         'GET': ['%(app_label)s.delete_%(model_name)s'],

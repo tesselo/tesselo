@@ -7,6 +7,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from django.contrib.auth.models import Group, User
@@ -82,27 +83,20 @@ class PermissionsModelViewSet(ModelViewSet):
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
 
-    @detail_route(methods=['get', 'post'], url_path='invite/(?P<model>user|group)/(?P<invitee_id>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
-    def invite(self, request, pk, model, invitee_id, exclude=False):
-        if model == 'user':
-            invitee = get_object_or_404(User, id=invitee_id)
+    @detail_route(methods=['get', 'post'], url_path='(?P<act>invite|exclude)/(?P<mod>user|group)/(?P<per>view|change|delete)/(?P<inv>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def invite(self, request, pk, act, mod, per, inv):
+        if mod == 'user':
+            invitee = get_object_or_404(User, id=inv)
         else:
-            invitee = get_object_or_404(Group, id=invitee_id)
+            invitee = get_object_or_404(Group, id=inv)
 
         obj = self.get_object()
 
-        if exclude:
-            remove_perm('view_{0}'.format(self._model), invitee, obj)
-            remove_perm('change_{0}'.format(self._model), invitee, obj)
-        else:
-            assign_perm('view_{0}'.format(self._model), invitee, obj)
-            assign_perm('change_{0}'.format(self._model), invitee, obj)
+        funk = assign_perm if act == 'invite' else remove_perm
 
-        return Response()
+        funk('{perm}_{model}'.format(perm=per, model=self._model), invitee, obj)
 
-    @detail_route(methods=['get', 'post'], url_path='exclude/(?P<model>user|group)/(?P<invitee_id>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
-    def exclude(self, request, pk, model, invitee_id):
-        return self.invite(request, pk, model, invitee_id, exclude=True)
+        return Response(status=HTTP_204_NO_CONTENT)
 
     @detail_route(methods=['get'])
     def groups(self, request, pk=None):

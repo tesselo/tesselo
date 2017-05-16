@@ -120,7 +120,7 @@ class LegendEntrySerializer(ModelSerializer):
 
 class LegendSerializer(PermissionsModelSerializer):
 
-    entries = LegendEntrySerializer(many=True, source='legendentry_set')
+    entries = LegendEntrySerializer(many=True, read_only=True, source='legendentry_set')
     json = SerializerMethodField()
 
     class Meta:
