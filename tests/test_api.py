@@ -5,7 +5,7 @@ import json
 from raster.models import LegendSemantics
 from rest_framework import status
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
@@ -63,6 +63,7 @@ class RasterLegendViewTests(TestCase):
 
     def test_invite_user(self):
         gob = User.objects.create(username='Gob', email='gob@bluth.com')
+        bluths = Group.objects.create(name='The bluths')
 
         url = reverse('legend-list')
 
@@ -77,10 +78,14 @@ class RasterLegendViewTests(TestCase):
         response = self.client.post(url, json.dumps(data), format='json', content_type='application/json')
         result = json.loads(response.content.decode())
 
-        url = reverse('legend-invite/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'invitee_id': gob.id})
+        url = reverse('legend-invite/(?P<model>user|group)/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'model': 'user', 'invitee_id': gob.id})
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        url = reverse('legend-exclude/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'invitee_id': gob.id})
+        url = reverse('legend-exclude/(?P<model>user|group)/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'model': 'user', 'invitee_id': gob.id})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        url = reverse('legend-invite/(?P<model>user|group)/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'model': 'group', 'invitee_id': bluths.id})
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

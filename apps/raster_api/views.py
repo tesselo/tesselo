@@ -11,7 +11,7 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from django.contrib.auth.models import Group, User
 from django.db.models import Q
-from django.http import Http404
+from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 from raster_api.permissions import ChangePermissionObjectPermission, RasterObjectPermission, RasterTilePermission
 from raster_api.renderers import BinaryRenderer
@@ -82,16 +82,12 @@ class PermissionsModelViewSet(ModelViewSet):
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
 
-    @detail_route(methods=['get', 'post'], url_path='invite/(?P<invitee_id>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
-    def invite(self, request, pk, invitee_id, exclude=False):
-        # Try to get either user or group.
-        try:
-            invitee = User.objects.get(id=invitee_id)
-        except User.DoesNotExist:
-            try:
-                invitee = Group.objects.get(id=invitee_id)
-            except Group.DoesNotExist:
-                raise Http404
+    @detail_route(methods=['get', 'post'], url_path='invite/(?P<model>user|group)/(?P<invitee_id>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def invite(self, request, pk, model, invitee_id, exclude=False):
+        if model == 'user':
+            invitee = get_object_or_404(User, id=invitee_id)
+        else:
+            invitee = get_object_or_404(Group, id=invitee_id)
 
         obj = self.get_object()
 
@@ -104,9 +100,9 @@ class PermissionsModelViewSet(ModelViewSet):
 
         return Response()
 
-    @detail_route(methods=['get', 'post'], url_path='exclude/(?P<invitee_id>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
-    def exclude(self, request, pk, invitee_id):
-        return self.invite(request, pk, invitee_id, exclude=True)
+    @detail_route(methods=['get', 'post'], url_path='exclude/(?P<model>user|group)/(?P<invitee_id>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def exclude(self, request, pk, model, invitee_id):
+        return self.invite(request, pk, model, invitee_id, exclude=True)
 
     @detail_route(methods=['get'])
     def groups(self, request, pk=None):
