@@ -29,14 +29,6 @@ class GroupSerializer(ModelSerializer):
         read_only_fields = ('id', 'name', )
 
 
-class PermissionSerializer(ModelSerializer):
-
-    class Meta:
-        model = Group
-        fields = ('id', 'codename', )
-        read_only_fields = ('id', 'name', )
-
-
 class UserObjectPermissionSerializer(Serializer):
 
     id = IntegerField(source='user.id')
