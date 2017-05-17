@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
 from raster.views import AlgebraView, ExportView, RasterView
+from rest_framework import mixins
 from rest_framework.decorators import detail_route
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import ListModelMixin
@@ -14,7 +15,9 @@ from django.contrib.auth.models import Group, User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
-from raster_api.permissions import ChangePermissionObjectPermission, RasterObjectPermission, RasterTilePermission
+from raster_api.permissions import (
+    ChangePermissionObjectPermission, LegendEntryObjectPermission, RasterObjectPermission, RasterTilePermission
+)
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer, RasterLayerSerializer,
@@ -73,7 +76,7 @@ class PermissionsModelViewSet(ModelViewSet):
             # Filter queryset.
             qs = qs.filter(has_user_permission | has_group_permission | is_public_obj)
 
-        return qs.order_by('id')
+        return qs.distinct().order_by('id')
 
     def perform_create(self, serializer):
         # Create object with default create function.
@@ -119,8 +122,11 @@ class LegendViewSet(PermissionsModelViewSet):
     _model = 'legend'
 
 
-class LegendEntryViewSet(ModelViewSet):
-
+class LegendEntryViewSet(mixins.RetrieveModelMixin,
+                         mixins.UpdateModelMixin,
+                         mixins.DestroyModelMixin,
+                         GenericViewSet):
+    permission_classes = (IsAuthenticated, LegendEntryObjectPermission)
     queryset = LegendEntry.objects.all()
     serializer_class = LegendEntrySerializer
 

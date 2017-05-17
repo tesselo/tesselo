@@ -1,6 +1,8 @@
 from raster.models import RasterLayer
 from rest_framework import permissions
 
+from django.http import Http404
+
 
 class RasterTilePermission(permissions.BasePermission):
     """
@@ -71,3 +73,32 @@ class ChangePermissionObjectPermission(permissions.DjangoObjectPermissions):
         the object level only.
         """
         return True
+
+
+class LegendEntryObjectPermission(permissions.BasePermission):
+    """
+    Check if a user can change or delete a legend entry.
+    """
+
+    def has_permission(self, request, view):
+        """
+        Pass on global table level permissions, this permission class checks on
+        the object level only.
+        """
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Allow change or delete for entries that belong to legends that the user
+        can change.
+        """
+        # Raise 404 if user can not see parent legend.
+        if not request.user.has_perm('view_legend', obj.legend):
+            raise Http404
+
+        # Since user can see parent legend, allow safe methods.
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        else:
+            # Allow all other methods only if user can change legend.
+            return request.user.has_perm('change_legend', obj.legend)

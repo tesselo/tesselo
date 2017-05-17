@@ -213,28 +213,58 @@ class PermissionsTests(TestCase):
         self.assertFalse(Legend.objects.filter(id=self.legend_group.id).exists())
 
     def test_legend_change_permissions_permissions(self):
+        # Use the client for this call, the factory ignores the method level
+        # permissions.
         self.client.login(username='michael', password='bananastand')
+        assign_perm('change_legend', self.michael, self.legend_michael)
         url = reverse(
             'legend-invite',
             kwargs={'pk': self.legend_michael.id, 'action': 'invite', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
         )
         response = self.client.post(url)
 
+        # Michael can invite and exclude users or groups to his legend after
+        # getting the delete permission. To invite people, one needs to have the
+        # delete permission.
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        # Michael can invite to his legend after getting permission.
-        # To invite people, one needs to have the delete permission.
-        self.assertFalse(self.lucille.has_perm('view_legend', self.legend_michael))
         assign_perm('delete_legend', self.michael, self.legend_michael)
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertTrue(self.lucille.has_perm('view_legend', self.legend_michael))
 
-        # Michael can exclude access to his legend after getting permission.
-        url = reverse(
-            'legend-invite',
-            kwargs={'pk': self.legend_michael.id, 'action': 'exclude', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
-        )
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(self.lucille.has_perm('view_legend', self.legend_michael))
+        # Test endpoint for
+        for perm in ('view', 'change', 'delete'):
+            self.assertFalse(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
+            # Check permissions manage endpoint for users.
+            url = reverse(
+                'legend-invite',
+                kwargs={'pk': self.legend_michael.id, 'action': 'invite', 'model': 'user', 'permission': perm, 'invitee': self.lucille.id},
+            )
+            response = self.client.post(url)
+            # Invite User
+            response = self.client.post(url)
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertTrue(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
+            # Exclude User
+            url = reverse(
+                'legend-invite',
+                kwargs={'pk': self.legend_michael.id, 'action': 'exclude', 'model': 'user', 'permission': perm, 'invitee': self.lucille.id},
+            )
+            response = self.client.post(url)
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertFalse(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
+
+            # Check permissions manage endpoint for groups.
+            # Invite group
+            url = reverse(
+                'legend-invite',
+                kwargs={'pk': self.legend_michael.id, 'action': 'invite', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
+            )
+            response = self.client.post(url)
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertTrue(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
+            # Exclude group
+            url = reverse(
+                'legend-invite',
+                kwargs={'pk': self.legend_michael.id, 'action': 'exclude', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
+            )
+            response = self.client.post(url)
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertFalse(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))

@@ -111,6 +111,7 @@ class LegendSemanticsSerializer(PermissionsModelSerializer):
 
 class LegendEntrySerializer(ModelSerializer):
 
+    id = ModelField(model_field=Legend._meta.get_field('id'), required=False)
     semantics = LegendSemanticsSerializer()
 
     class Meta:
@@ -120,7 +121,7 @@ class LegendEntrySerializer(ModelSerializer):
 
 class LegendSerializer(PermissionsModelSerializer):
 
-    entries = LegendEntrySerializer(many=True, read_only=True, source='legendentry_set')
+    entries = LegendEntrySerializer(many=True, source='legendentry_set')
     json = SerializerMethodField()
 
     class Meta:
@@ -133,21 +134,43 @@ class LegendSerializer(PermissionsModelSerializer):
             return {}
         return json.loads(obj.json)
 
-    def create(self, validated_data):
-        entries = validated_data.pop('legendentry_set')
-        legend = Legend.objects.create(**validated_data)
-        for entry in entries:
+    def create_or_update_entries(self, legend, entries):
 
-            semantics = entry.pop('semantics')
+        for entry_data in entries:
+
+            semantics = entry_data.pop('semantics')
 
             if 'id' in semantics:
                 semantic = get_object_or_404(LegendSemantics, pk=semantics['id'])
             else:
                 semantic = LegendSemantics.objects.create(**semantics)
 
-            LegendEntry.objects.create(**entry, legend=legend, semantics=semantic)
+            if 'id' in entry_data:
+                entry_id = entry_data.pop('id')
+                legend.legendentry_set.filter(id=entry_id).update(**entry_data, semantics_id=semantics['id'])
+            else:
+                LegendEntry.objects.create(**entry_data, legend=legend, semantics=semantic)
+
+    def create(self, validated_data):
+        entries = validated_data.pop('legendentry_set')
+        legend = Legend.objects.create(**validated_data)
+
+        self.create_or_update_entries(legend, entries)
 
         return legend
+
+    def update(self, instance, validated_data):
+        if 'title' in validated_data:
+            instance.title = validated_data['title']
+        if 'description' in validated_data:
+            instance.description = validated_data['description']
+
+        entries = validated_data.pop('legendentry_set')
+        self.create_or_update_entries(instance, entries)
+
+        instance.save()
+
+        return instance
 
 
 class RasterLayerParseStatusSerializer(ModelSerializer):

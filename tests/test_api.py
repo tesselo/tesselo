@@ -2,12 +2,13 @@ from __future__ import unicode_literals
 
 import json
 
-from raster.models import LegendSemantics
+from raster.models import Legend, LegendSemantics
 from rest_framework import status
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from guardian.shortcuts import assign_perm
 
 
 class RasterLegendViewTests(TestCase):
@@ -61,31 +62,55 @@ class RasterLegendViewTests(TestCase):
         result = json.loads(response.content.decode())
         self.assertEqual(result['entries'][0]['semantics']['id'], sem.id)
 
-    def test_invite_user(self):
-        gob = User.objects.create(username='Gob', email='gob@bluth.com')
-        bluths = Group.objects.create(name='The bluths')
+    def test_update_legend(self):
+        leg = Legend.objects.create(title="Landcover")
+        assign_perm('view_legend', self.usr, leg)
+        assign_perm('change_legend', self.usr, leg)
 
-        url = reverse('legend-list')
+        url = reverse('legend-detail', kwargs={'pk': leg.id})
 
+        # Create new expressions.
         data = {
-            'title': 'Landcover',
+            'title': 'Landcover Updated',
             'description': 'A simple landcover classification.',
             'entries': [
                 {'expression': '1', 'color': '#111111', 'semantics': {'name': 'Urban', "description": "Human habitat.", "keyword": "impervious"}, 'code': 'b'},
                 {'expression': '2', 'color': '#222222', 'semantics': {'name': 'Forest'}, 'code': 'a'}
             ]
         }
-        response = self.client.post(url, json.dumps(data), format='json', content_type='application/json')
+        response = self.client.put(url, json.dumps(data), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         result = json.loads(response.content.decode())
+        self.assertEqual(result['title'], 'Landcover Updated')
+        self.assertEqual(result['description'], 'A simple landcover classification.')
+        self.assertEqual(result['json'], [
+            {'code': 'a', 'expression': '2', 'color': '#222222', 'name': 'Forest'},
+            {'code': 'b', 'expression': '1', 'color': '#111111', 'name': 'Urban'},
+        ])
 
-        url = reverse('legend-invite/(?P<model>user|group)/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'model': 'user', 'invitee_id': gob.id})
-        response = self.client.post(url)
+        # Update expressions.
+        data = {'entries': result['entries']}
+        data['entries'][0]['color'] = '#333333'
+        data['entries'][0]['expression'] = '3'
+        data['entries'][1]['color'] = '#444444'
+        data['entries'][1]['expression'] = '4'
+        response = self.client.patch(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = json.loads(response.content.decode())
+        self.assertEqual(result['title'], 'Landcover Updated')
+        self.assertEqual(result['description'], 'A simple landcover classification.')
+        self.assertEqual(result['json'], [
+            {'code': 'a', 'expression': '3', 'color': '#333333', 'name': 'Forest'},
+            {'code': 'b', 'expression': '4', 'color': '#444444', 'name': 'Urban'},
+        ])
 
-        url = reverse('legend-exclude/(?P<model>user|group)/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'model': 'user', 'invitee_id': gob.id})
-        response = self.client.post(url)
+        # Add expressions.
+        data = {'entries': [{'expression': '5', 'color': '#555555', 'semantics': {'name': 'Water'}, 'code': '0'}]}
+        response = self.client.patch(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        url = reverse('legend-invite/(?P<model>user|group)/(?P<invitee-id>[0-9]+)', kwargs={'pk': result['id'], 'model': 'group', 'invitee_id': bluths.id})
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = json.loads(response.content.decode())
+        self.assertEqual(result['json'], [
+            {'code': '0', 'expression': '5', 'color': '#555555', 'name': 'Water'},
+            {'code': 'a', 'expression': '3', 'color': '#333333', 'name': 'Forest'},
+            {'code': 'b', 'expression': '4', 'color': '#444444', 'name': 'Urban'},
+        ])
