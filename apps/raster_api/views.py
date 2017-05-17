@@ -83,18 +83,18 @@ class PermissionsModelViewSet(ModelViewSet):
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
 
-    @detail_route(methods=['get', 'post'], url_path='(?P<act>invite|exclude)/(?P<mod>user|group)/(?P<per>view|change|delete)/(?P<inv>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
-    def invite(self, request, pk, act, mod, per, inv):
-        if mod == 'user':
-            invitee = get_object_or_404(User, id=inv)
+    @detail_route(methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def invite(self, request, pk, action, model, permission, invitee):
+        if model == 'user':
+            invitee = get_object_or_404(User, id=invitee)
         else:
-            invitee = get_object_or_404(Group, id=inv)
+            invitee = get_object_or_404(Group, id=invitee)
 
         obj = self.get_object()
 
-        funk = assign_perm if act == 'invite' else remove_perm
+        funk = assign_perm if action == 'invite' else remove_perm
 
-        funk('{perm}_{model}'.format(perm=per, model=self._model), invitee, obj)
+        funk('{perm}_{model}'.format(perm=permission, model=self._model), invitee, obj)
 
         return Response(status=HTTP_204_NO_CONTENT)
 

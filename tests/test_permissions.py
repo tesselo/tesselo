@@ -215,8 +215,8 @@ class PermissionsTests(TestCase):
     def test_legend_change_permissions_permissions(self):
         self.client.login(username='michael', password='bananastand')
         url = reverse(
-            'legend-(?P<act>invite|exclude)/(?P<mod>user|group)/(?P<per>view|change|delete)/(?P<inv>[0-9]+)',
-            kwargs={'pk': self.legend_michael.id, 'act': 'invite', 'mod': 'user', 'per': 'view', 'inv': self.lucille.id},
+            'legend-invite',
+            kwargs={'pk': self.legend_michael.id, 'action': 'invite', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
         )
         response = self.client.post(url)
 
@@ -232,8 +232,8 @@ class PermissionsTests(TestCase):
 
         # Michael can exclude access to his legend after getting permission.
         url = reverse(
-            'legend-(?P<act>invite|exclude)/(?P<mod>user|group)/(?P<per>view|change|delete)/(?P<inv>[0-9]+)',
-            kwargs={'pk': self.legend_michael.id, 'act': 'exclude', 'mod': 'user', 'per': 'view', 'inv': self.lucille.id},
+            'legend-invite',
+            kwargs={'pk': self.legend_michael.id, 'action': 'exclude', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
         )
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
