@@ -43,6 +43,9 @@ RUN sed -i 's/\/var\/lib\/postgresql\/9.5\/main/\/pgdata/g' /etc/postgresql/9.5/
 # Add VOLUMEs to allow backup of config, logs and databases
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
+# Create an unprivileged user for running Django.
+RUN adduser --disabled-password --gecos '' mrdjango
+
 # Create local staticfiles dir, allow django to access it (used by compressor).
 RUN mkdir /staticfiles
 RUN chown -R mrdjango /staticfiles
@@ -50,9 +53,6 @@ RUN chown -R mrdjango /staticfiles
 # Create local mediafiles dir, allow django to access it (used for testing).
 RUN mkdir /tesselo_media
 RUN chown -R mrdjango /tesselo_media
-
-# Create an unprivileged user for running Django.
-RUN adduser --disabled-password --gecos '' mrdjango
 
 # Set workdir
 WORKDIR /code
