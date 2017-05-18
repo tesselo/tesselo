@@ -88,6 +88,10 @@ class PermissionsModelViewSet(ModelViewSet):
 
     @detail_route(methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def invite(self, request, pk, action, model, permission, invitee):
+        """
+        Invite or exclude users and groups from having view, change, or delete
+        permissions on this object.
+        """
         if model == 'user':
             invitee = get_object_or_404(User, id=invitee)
         else:
@@ -101,14 +105,31 @@ class PermissionsModelViewSet(ModelViewSet):
 
         return Response(status=HTTP_204_NO_CONTENT)
 
+    @detail_route(methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def public(self, request, pk=None):
+        """
+        Toggle public status of this object.
+        """
+        obj = self.get_object()
+        child = getattr(obj, 'public{0}'.format(self._model.lower()))
+        child.public = not child.public
+        child.save()
+        return Response(status=HTTP_204_NO_CONTENT)
+
     @detail_route(methods=['get'])
     def groups(self, request, pk=None):
+        """
+        List groups with permissions on this object.
+        """
         obj = self.get_object()
         serializer = GroupSerializer(get_groups_with_perms(obj), many=True)
         return Response(serializer.data)
 
     @detail_route(methods=['get'])
     def users(self, request, pk=None):
+        """
+        List users with permissions on this object.
+        """
         obj = self.get_object()
         serializer = UserSerializer(get_users_with_perms(obj), many=True)
         return Response(serializer.data)

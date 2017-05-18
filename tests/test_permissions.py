@@ -268,3 +268,24 @@ class PermissionsTests(TestCase):
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
             self.assertFalse(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
+
+    def test_legend_toggle_public(self):
+        self.client.login(username='michael', password='bananastand')
+        url = reverse('legend-public', kwargs={'pk': self.legend_michael.id})
+
+        # Michael tries to publish his legend without having permission.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Michael can publish his legend after getting permission.
+        assign_perm('delete_legend', self.michael, self.legend_michael)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.legend_michael.publiclegend.refresh_from_db()
+        self.assertTrue(self.legend_michael.publiclegend.public)
+
+        # Michael can unpublish his legend after getting permission.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.legend_michael.publiclegend.refresh_from_db()
+        self.assertFalse(self.legend_michael.publiclegend.public)
