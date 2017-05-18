@@ -54,7 +54,7 @@ class PermissionsModelSerializer(ModelSerializer):
     permissions = SerializerMethodField()
     users = SerializerMethodField()
     groups = SerializerMethodField()
-    public = SerializerMethodField(read_only=True)
+    public = SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         if hasattr(self.Meta, 'fields'):
@@ -84,12 +84,18 @@ class PermissionsModelSerializer(ModelSerializer):
             return GroupObjectPermissionSerializer(qs.all(), many=True).data
         return []
 
+    _public = None
+
     def get_public(self, obj):
-        publicmodel = 'public{0}'.format(self.Meta.model.__name__.lower())
-        if hasattr(obj, publicmodel) and getattr(obj, publicmodel).public:
-            return True
-        else:
-            return False
+
+        if self._public is None:
+            publicmodel = 'public{0}'.format(self.Meta.model.__name__.lower())
+            if hasattr(obj, publicmodel) and getattr(obj, publicmodel).public:
+                self._public = True
+            else:
+                self._public = False
+
+        return self._public
 
 
 class LegendSemanticsSerializer(PermissionsModelSerializer):
@@ -134,8 +140,15 @@ class LegendSerializer(PermissionsModelSerializer):
 
             if 'id' in semantics:
                 semantic = get_object_or_404(LegendSemantics, pk=semantics['id'])
+                # Ensure that the semantic is not private for puplic legends.
+                if hasattr(semantic, 'publiclegendsemantics') and not semantic.publiclegendsemantics.public and self.get_public(legend):
+                    continue
             else:
                 semantic = LegendSemantics.objects.create(**semantics)
+                # Make new semantics public if legend is public.
+                if legend.publiclegend.public:
+                    semantic.pucliclegendsemantics.public = True
+                    semantic.pucliclegendsemantics.save()
 
             if 'id' in entry_data:
                 entry_id = entry_data.pop('id')

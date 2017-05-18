@@ -50,9 +50,9 @@ INSTALLED_APPS = [
     'guardian',
     'django_extensions',
 
+    'raster_api',
     'raster',
     'raster_aggregation',
-    'raster_api',
 ]
 
 MIDDLEWARE = [

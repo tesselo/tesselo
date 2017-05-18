@@ -75,7 +75,7 @@ class RasterLegendViewTests(TestCase):
             'description': 'A simple landcover classification.',
             'entries': [
                 {'expression': '1', 'color': '#111111', 'semantics': {'name': 'Urban', "description": "Human habitat.", "keyword": "impervious"}, 'code': 'b'},
-                {'expression': '2', 'color': '#222222', 'semantics': {'name': 'Forest'}, 'code': 'a'}
+                {'expression': '2', 'color': '#222222', 'semantics': {'name': 'Forest'}, 'code': 'a'},
             ]
         }
         response = self.client.put(url, json.dumps(data), format='json', content_type='application/json')
@@ -114,3 +114,25 @@ class RasterLegendViewTests(TestCase):
             {'code': 'a', 'expression': '3', 'color': '#333333', 'name': 'Forest'},
             {'code': 'b', 'expression': '4', 'color': '#444444', 'name': 'Urban'},
         ])
+
+    def test_private_public_semantics_conflict(self):
+        leg = Legend.objects.create(title="Landcover")
+        assign_perm('view_legend', self.usr, leg)
+        assign_perm('change_legend', self.usr, leg)
+        leg.publiclegend.public = True
+        leg.publiclegend.save()
+
+        url = reverse('legend-detail', kwargs={'pk': leg.id})
+
+        sem = LegendSemantics.objects.create(name='Private semantics')
+
+        entires_count = leg.legendentry_set.count()
+
+        data = {'entries': [{'name': 'Entry with private semantics', 'color': '#123456', 'expression': '5', 'semantics': {'id': sem.id, 'name': sem.name}}]}
+        response = self.client.patch(url, json.dumps(data), format='json', content_type='application/json')
+
+        # Request is successful but no new entry has been created.
+        # The serializer fails silently to not loose other data while
+        # creating objects. This needs to be well documented.
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(entires_count, leg.legendentry_set.count())
