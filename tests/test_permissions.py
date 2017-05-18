@@ -8,7 +8,6 @@ from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from guardian.shortcuts import assign_perm
-from raster_api.models import PublicLegend
 from raster_api.views import LegendViewSet
 
 
@@ -48,7 +47,8 @@ class PermissionsTests(TestCase):
         self.legend_no_one = Legend.objects.create(title="Private")
 
         self.legend_public = Legend.objects.create(title='Public')
-        PublicLegend.objects.create(public=True, legend=self.legend_public)
+        self.legend_public.publiclegend.public = True
+        self.legend_public.publiclegend.save()
 
         self.legend_michael = Legend.objects.create(title='Michaels Legend')
         assign_perm('view_legend', self.michael, self.legend_michael)

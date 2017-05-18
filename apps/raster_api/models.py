@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from raster.models import Legend, LegendSemantics, RasterLayer
 
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 
@@ -29,6 +31,15 @@ class PublicRasterLayer(models.Model):
         return '{0} | {1}'.format(self.rasterlayer, 'public' if self.public else 'private')
 
 
+@receiver(post_save, sender=RasterLayer, weak=False, dispatch_uid="create_rasterlayer_public_object")
+def create_rasterlayer_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public rasterlayer object.
+    """
+    if created:
+        PublicRasterLayer.objects.create(rasterlayer=instance)
+
+
 class LegendUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
@@ -52,6 +63,15 @@ class PublicLegend(models.Model):
         return '{0} | {1}'.format(self.legend, 'public' if self.public else 'private')
 
 
+@receiver(post_save, sender=Legend, weak=False, dispatch_uid="create_legend_public_object")
+def create_legend_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public legend object.
+    """
+    if created:
+        PublicLegend.objects.create(legend=instance)
+
+
 class LegendSemanticsUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
 
@@ -73,3 +93,12 @@ class PublicLegendSemantics(models.Model):
 
     def __str__(self):
         return '{0} | {1}'.format(self.legendsemantics, 'public' if self.public else 'private')
+
+
+@receiver(post_save, sender=LegendSemantics, weak=False, dispatch_uid="create_legendsemantics_public_object")
+def create_legendsemantics_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public legend semantics object.
+    """
+    if created:
+        PublicLegendSemantics.objects.create(legendsemantics=instance)
