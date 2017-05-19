@@ -152,9 +152,9 @@ class LegendSerializer(PermissionsModelSerializer):
 
             if 'id' in entry_data:
                 entry_id = entry_data.pop('id')
-                legend.legendentry_set.filter(id=entry_id).update(**entry_data, semantics_id=semantics['id'])
+                legend.legendentry_set.filter(pk=entry_id).update(semantics_id=semantics['id'], **entry_data)
             else:
-                LegendEntry.objects.create(**entry_data, legend=legend, semantics=semantic)
+                LegendEntry.objects.create(legend=legend, semantics=semantic, **entry_data)
 
     def create(self, validated_data):
         entries = validated_data.pop('legendentry_set')
