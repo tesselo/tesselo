@@ -4,6 +4,7 @@ from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, Ras
 from raster.views import AlgebraView, ExportView, RasterView
 from rest_framework import mixins
 from rest_framework.decorators import detail_route
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import ListModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -86,6 +87,11 @@ class PermissionsModelViewSet(ModelViewSet):
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
 
+    def perform_destroy(self, instance):
+        if getattr(instance, 'public{0}'.format(self._model.lower())).public:
+            raise PermissionDenied('Public objects can not be deleted.')
+        super(PermissionsModelViewSet, self).perform_destroy(instance)
+
     @detail_route(methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def invite(self, request, pk, action, model, permission, invitee):
         """
@@ -106,9 +112,9 @@ class PermissionsModelViewSet(ModelViewSet):
         return Response(status=HTTP_204_NO_CONTENT)
 
     @detail_route(methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
-    def public(self, request, pk=None):
+    def publish(self, request, pk=None):
         """
-        Toggle public status of this object.
+        Publish this object.
         """
         obj = self.get_object()
         child = getattr(obj, 'public{0}'.format(self._model.lower()))
@@ -158,6 +164,8 @@ class LegendSemanticsViewSet(PermissionsModelViewSet):
     serializer_class = LegendSemanticsSerializer
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', 'keyword', )
+
+    _model = 'legendsemantics'
 
 
 class RasterLayerViewSet(PermissionsModelViewSet):

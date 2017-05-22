@@ -73,14 +73,14 @@ def create_legend_public_object(sender, instance, created, **kwargs):
 
 
 class LegendSemanticsUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
+    content_object = models.ForeignKey(LegendSemantics, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
 
 
 class LegendSemanticsGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Legend, on_delete=models.CASCADE)
+    content_object = models.ForeignKey(LegendSemantics, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)

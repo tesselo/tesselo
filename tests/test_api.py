@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import json
 
-from raster.models import Legend, LegendSemantics
+from raster.models import Legend, LegendSemantics, RasterLayer
 from rest_framework import status
 
 from django.contrib.auth.models import User
@@ -43,6 +43,12 @@ class RasterLegendViewTests(TestCase):
             {'code': 'a', 'expression': '2', 'color': '#222222', 'name': 'Forest'},
             {'code': 'b', 'expression': '1', 'color': '#111111', 'name': 'Urban'},
         ])
+        # The user can see the newly created legend semantics.
+        url = reverse('legendsemantics-list')
+        response = self.client.get(url)
+        result = json.loads(response.content.decode())
+        self.assertEqual(result['count'], 2)
+        self.assertEqual(result['results'][0]['name'], 'Urban')
 
     def test_create_legend_with_semantics_id(self):
 
@@ -115,7 +121,7 @@ class RasterLegendViewTests(TestCase):
             {'code': 'b', 'expression': '4', 'color': '#444444', 'name': 'Urban'},
         ])
 
-    def test_private_public_semantics_conflict(self):
+    def test_public_legend_with_private_semantics_conflict(self):
         leg = Legend.objects.create(title="Landcover")
         assign_perm('view_legend', self.usr, leg)
         assign_perm('change_legend', self.usr, leg)
@@ -136,3 +142,22 @@ class RasterLegendViewTests(TestCase):
         # creating objects. This needs to be well documented.
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(entires_count, leg.legendentry_set.count())
+
+    def test_public_layer_with_private_legend_conflict(self):
+        layer = RasterLayer.objects.create(name="Landcover")
+        assign_perm('view_rasterlayer', self.usr, layer)
+        assign_perm('change_rasterlayer', self.usr, layer)
+        layer.publicrasterlayer.public = True
+        layer.publicrasterlayer.save()
+        leg = Legend.objects.create(title='Private legend')
+
+        url = reverse('rasterlayer-detail', kwargs={'pk': layer.id})
+        data = {'legend': leg.id}
+        response = self.client.patch(url, json.dumps(data), format='json', content_type='application/json')
+
+        # Request is successful but no new entry has been created.
+        # The serializer fails silently to not loose other data while
+        # creating objects. This needs to be well documented.
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        layer.refresh_from_db()
+        self.assertIsNone(layer.legend)

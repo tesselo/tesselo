@@ -271,7 +271,7 @@ class PermissionsTests(TestCase):
 
     def test_legend_toggle_public(self):
         self.client.login(username='michael', password='bananastand')
-        url = reverse('legend-public', kwargs={'pk': self.legend_michael.id})
+        url = reverse('legend-publish', kwargs={'pk': self.legend_michael.id})
 
         # Michael tries to publish his legend without having permission.
         response = self.client.get(url)

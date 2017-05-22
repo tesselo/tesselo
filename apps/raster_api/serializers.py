@@ -10,7 +10,7 @@ from rest_framework.serializers import (
 
 from django.contrib.auth.models import Group, User
 from django.shortcuts import get_object_or_404
-from guardian.shortcuts import get_perms
+from guardian.shortcuts import assign_perm, get_perms
 
 
 class UserSerializer(ModelSerializer):
@@ -149,7 +149,10 @@ class LegendSerializer(PermissionsModelSerializer):
                 if legend.publiclegend.public:
                     semantic.pucliclegendsemantics.public = True
                     semantic.pucliclegendsemantics.save()
-
+                # Assign permissions to new semantics.
+                assign_perm('view_legendsemantics', self.context['request'].user, semantic)
+                assign_perm('change_legendsemantics', self.context['request'].user, semantic)
+                assign_perm('delete_legendsemantics', self.context['request'].user, semantic)
             if 'id' in entry_data:
                 entry_id = entry_data.pop('id')
                 legend.legendentry_set.filter(pk=entry_id).update(semantics_id=semantics['id'], **entry_data)
@@ -221,3 +224,20 @@ class RasterLayerSerializer(PermissionsModelSerializer):
     def get_reprojected(self, obj):
         if hasattr(obj, 'reprojected') and obj.reprojected.rasterfile:
             return obj.reprojected.rasterfile.url
+
+    def check_legend_public_status(self, layer):
+        """
+        Unset legend if layer is public but legend is not.
+        """
+        if layer.publicrasterlayer.public and layer.legend and not layer.legend.publiclegend.public:
+            layer.legend = None
+            layer.save()
+        return layer
+
+    def create(self, validated_data):
+        layer = super(RasterLayerSerializer, self).create(validated_data)
+        return self.check_legend_public_status(layer)
+
+    def update(self, instance, validated_data):
+        instance = super(RasterLayerSerializer, self).update(instance, validated_data)
+        return self.check_legend_public_status(instance)
