@@ -91,10 +91,10 @@ class PermissionsModelViewSet(ModelViewSet):
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
 
-    #def perform_destroy(self, instance):
-        #if getattr(instance, 'public{0}'.format(self._model.lower())).public:
-            #raise PermissionDenied('Public objects can not be deleted.')
-        #super(PermissionsModelViewSet, self).perform_destroy(instance)
+    def perform_destroy(self, instance):
+        if getattr(instance, 'public{0}'.format(self._model.lower())).public:
+            raise PermissionDenied('Public objects can not be deleted.')
+        super(PermissionsModelViewSet, self).perform_destroy(instance)
 
     @detail_route(methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def invite(self, request, pk, action, model, permission, invitee):

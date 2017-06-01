@@ -1,19 +1,14 @@
 from __future__ import unicode_literals
 
-import json
 import tempfile
 from unittest import skip
 
-from raster.models import Legend, LegendSemantics, RasterLayer
-from rest_framework import status
-
 from django.contrib.auth.models import User
+from django.core.files import File
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from django.core.files import File
 from guardian.shortcuts import assign_perm
-from raster_aggregation.models import AggregationLayer, AggregationArea
-from raster_aggregation.exceptions import MissingQueryParameter
+from raster_aggregation.models import AggregationArea, AggregationLayer
 
 
 class AggregationViewTests(TestCase):

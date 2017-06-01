@@ -106,14 +106,6 @@ class LegendSemanticsSerializer(PermissionsModelSerializer):
         model = LegendSemantics
         fields = ('id', 'name', 'description', 'keyword', )
 
-class LegendEntrySerializer(ModelSerializer):
-
-    id = ModelField(model_field=Legend._meta.get_field('id'), required=False)
-    semantics = LegendSemanticsSerializer()
-
-    class Meta:
-        model = LegendEntry
-        fields = ('id', 'semantics', 'expression', 'color', 'code', )
 
 class LegendEntrySerializer(ModelSerializer):
 

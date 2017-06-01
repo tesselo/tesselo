@@ -1,9 +1,8 @@
 from rest_framework import routers
 
-#from raster_aggregation.views import AggregationAreaGeoViewSet, ValueCountResultViewSet, AggregationAreaValueViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView, LegendEntryViewSet,
-    LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, ValueCountResultViewSet,
+    LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, ValueCountResultViewSet
 )
 
 router = routers.DefaultRouter(trailing_slash=False)
@@ -29,7 +28,6 @@ router.register(
     base_name='export'
 )
 
-#router.register(r'aggregationareageo', AggregationAreaGeoViewSet, base_name='aggregationareageo')
 router.register(r'aggregationlayer', AggregationLayerViewSet)
 router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
