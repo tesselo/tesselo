@@ -198,7 +198,6 @@ class AggregationAreaViewSet(ModelViewSet):
 
     queryset = AggregationArea.objects.all()
     serializer_class = AggregationAreaSimplifiedSerializer
-    allowed_methods = ('GET', 'POST', )
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
 
     _parent_model = 'aggregationlayer'
@@ -208,6 +207,5 @@ class ValueCountResultViewSet(PermissionsModelViewSet):
 
     queryset = ValueCountResult.objects.all()
     serializer_class = ValueCountResultSerializer
-    allowed_methods = ('GET', 'POST', )
 
     _model = 'valuecountresult'

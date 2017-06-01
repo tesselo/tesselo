@@ -16,7 +16,6 @@ from raster_aggregation.models import AggregationLayer, AggregationArea
 from raster_aggregation.exceptions import MissingQueryParameter
 
 
-@skip('Tests are under construction.')
 class AggregationViewTests(TestCase):
 
     def setUp(self):
@@ -40,6 +39,7 @@ class AggregationViewTests(TestCase):
             geom='SRID=4326;MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),((15 5, 40 10, 10 20, 5 10, 15 5)))',
         )
 
+    @skip('Test under construction.')
     def test_list_aggregation_layers(self):
         url = reverse('aggregationlayer-list')
         response = self.client.get(url)
@@ -50,5 +50,18 @@ class AggregationViewTests(TestCase):
 
     def test_list_aggregation_areas(self):
         url = reverse('aggregationarea-list')
+        # Missing query paremeter.
         response = self.client.get(url)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, b'{"detail":"Missing query parameter: aggregationlayer"}')
+        # Without permissions.
+        response = self.client.get(url + '?aggregationlayer={0}'.format(self.agglayer.id))
+        self.assertEqual(response.status_code, 404)
+        # With permissions.
+        assign_perm('view_aggregationlayer', self.usr, self.agglayer)
+        response = self.client.get(url + '?aggregationlayer={0}'.format(self.agglayer.id))
         self.assertEqual(response.status_code, 200)
+        # Unknown layer id.
+        assign_perm('view_aggregationlayer', self.usr, self.agglayer)
+        response = self.client.get(url + '?aggregationlayer=1234')
+        self.assertEqual(response.status_code, 404)

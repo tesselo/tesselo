@@ -3,6 +3,7 @@ from rest_framework import permissions
 
 from django.http import Http404
 from raster_aggregation.exceptions import MissingQueryParameter
+from raster_aggregation.models import AggregationLayer
 
 
 class RasterTilePermission(permissions.BasePermission):
@@ -117,10 +118,8 @@ class AggregationAreaListPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         # For list requests (pk not provided), enforce filtering by one
         # aggregationlayer.
-        import ipdb; ipdb.set_trace()
         if 'pk' not in view.kwargs and request.method == 'GET':
             if 'aggregationlayer' not in request.GET:
-                print('raising')
                 raise MissingQueryParameter(detail='Missing query parameter: aggregationlayer')
             else:
                 # Make sure the listed aggregation areas are from a layer where
