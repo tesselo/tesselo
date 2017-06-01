@@ -2,11 +2,10 @@ from __future__ import unicode_literals
 
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
 from raster.views import AlgebraView, ExportView, RasterView
-from rest_framework import mixins
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
-from rest_framework.mixins import ListModelMixin
+from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
@@ -16,8 +15,13 @@ from django.contrib.auth.models import Group, User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
+from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
+from raster_aggregation.serializers import (
+    AggregationAreaSimplifiedSerializer, AggregationLayerSerializer, ValueCountResultSerializer
+)
 from raster_api.permissions import (
-    ChangePermissionObjectPermission, LegendEntryObjectPermission, RasterObjectPermission, RasterTilePermission
+    AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
+    RasterTilePermission
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
@@ -87,10 +91,10 @@ class PermissionsModelViewSet(ModelViewSet):
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
 
-    def perform_destroy(self, instance):
-        if getattr(instance, 'public{0}'.format(self._model.lower())).public:
-            raise PermissionDenied('Public objects can not be deleted.')
-        super(PermissionsModelViewSet, self).perform_destroy(instance)
+    #def perform_destroy(self, instance):
+        #if getattr(instance, 'public{0}'.format(self._model.lower())).public:
+            #raise PermissionDenied('Public objects can not be deleted.')
+        #super(PermissionsModelViewSet, self).perform_destroy(instance)
 
     @detail_route(methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def invite(self, request, pk, action, model, permission, invitee):
@@ -149,13 +153,15 @@ class LegendViewSet(PermissionsModelViewSet):
     _model = 'legend'
 
 
-class LegendEntryViewSet(mixins.RetrieveModelMixin,
-                         mixins.UpdateModelMixin,
-                         mixins.DestroyModelMixin,
+class LegendEntryViewSet(RetrieveModelMixin,
+                         UpdateModelMixin,
+                         DestroyModelMixin,
                          GenericViewSet):
-    permission_classes = (IsAuthenticated, LegendEntryObjectPermission)
+    permission_classes = (IsAuthenticated, DependentObjectPermission)
     queryset = LegendEntry.objects.all()
     serializer_class = LegendEntrySerializer
+
+    _parent_model = 'legend'
 
 
 class LegendSemanticsViewSet(PermissionsModelViewSet):
@@ -176,3 +182,32 @@ class RasterLayerViewSet(PermissionsModelViewSet):
     search_fields = ('name', 'description', )
 
     _model = 'rasterlayer'
+
+
+class AggregationLayerViewSet(PermissionsModelViewSet):
+
+    queryset = AggregationLayer.objects.all()
+    serializer_class = AggregationLayerSerializer
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', 'description', )
+
+    _model = 'aggregationlayer'
+
+
+class AggregationAreaViewSet(ModelViewSet):
+
+    queryset = AggregationArea.objects.all()
+    serializer_class = AggregationAreaSimplifiedSerializer
+    allowed_methods = ('GET', 'POST', )
+    permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
+
+    _parent_model = 'aggregationlayer'
+
+
+class ValueCountResultViewSet(PermissionsModelViewSet):
+
+    queryset = ValueCountResult.objects.all()
+    serializer_class = ValueCountResultSerializer
+    allowed_methods = ('GET', 'POST', )
+
+    _model = 'valuecountresult'

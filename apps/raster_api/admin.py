@@ -1,8 +1,9 @@
 from django.contrib import admin
 from raster_api.models import (
-    LegendGroupObjectPermission, LegendSemanticsGroupObjectPermission, LegendSemanticsUserObjectPermission,
-    LegendUserObjectPermission, PublicLegend, PublicLegendSemantics, PublicRasterLayer,
-    RasterLayerGroupObjectPermission, RasterLayerUserObjectPermission
+    AggregationLayerGroupObjectPermission, AggregationLayerUserObjectPermission, LegendGroupObjectPermission,
+    LegendSemanticsGroupObjectPermission, LegendSemanticsUserObjectPermission, LegendUserObjectPermission,
+    PublicAggregationLayer, PublicLegend, PublicLegendSemantics, PublicRasterLayer, RasterLayerGroupObjectPermission,
+    RasterLayerUserObjectPermission
 )
 
 admin.site.register(PublicRasterLayer)
@@ -14,3 +15,6 @@ admin.site.register(LegendGroupObjectPermission)
 admin.site.register(PublicLegendSemantics)
 admin.site.register(LegendSemanticsUserObjectPermission)
 admin.site.register(LegendSemanticsGroupObjectPermission)
+admin.site.register(AggregationLayerUserObjectPermission)
+admin.site.register(AggregationLayerGroupObjectPermission)
+admin.site.register(PublicAggregationLayer)

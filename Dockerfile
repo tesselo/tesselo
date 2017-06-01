@@ -63,12 +63,8 @@ EXPOSE 8000
 # Set the startup script as default command.
 CMD /code/run.sh
 
-# Add requirements.txt separately to be able to cache the pip install.
-ADD requirements.txt /code/requirements.txt
-RUN pip3 install -r /code/requirements.txt
-
 # Download generic celery daemon start script.
-ADD https://raw.githubusercontent.com/celery/celery/3.1/extra/generic-init.d/celeryd /etc/init.d/celeryd
+ADD https://raw.githubusercontent.com/celery/celery/4.0/extra/generic-init.d/celeryd /etc/init.d/celeryd
 RUN chmod +x /etc/init.d/celeryd
 
 # Add configuration for the celery daemon.
@@ -79,10 +75,14 @@ RUN chmod 640 '/etc/default/celeryd'
 RUN groupadd celery
 RUN useradd -g celery celery
 
-ADD . /code/
+# Add requirements files separately to be able to cache pip and npm installs.
+ADD requirements.txt /code/requirements.txt
+RUN pip3 install -r /code/requirements.txt
 
-# Install frontend dependencies.
+ADD frontend/package.json /code/frontend/package.json
 RUN npm install --prefix frontend frontend
+
+ADD . /code/
 
 # Build frontend.
 RUN r.js -o frontend/js/build.js

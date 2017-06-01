@@ -25,4 +25,4 @@ django-storage-swift==1.2.16
 django-guardian==1.4.8
 https://github.com/geodesign/django-raster/archive/raster_file_field.tar.gz
 https://github.com/celery/celery/archive/master.tar.gz
-https://github.com/geodesign/django-raster-aggregation/archive/0.1.1.tar.gz
+https://github.com/geodesign/django-raster-aggregation/archive/master.tar.gz

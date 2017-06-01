@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from raster.models import Legend
+from raster.models import Legend, LegendEntry, LegendSemantics
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from guardian.shortcuts import assign_perm
-from raster_api.views import LegendViewSet
+from raster_api.views import LegendEntryViewSet, LegendViewSet
 
 
 class PermissionsTests(TestCase):
@@ -44,19 +44,27 @@ class PermissionsTests(TestCase):
         self.group.user_set.add(self.michael, self.lucille)
 
         # Create legends.
+        self.sem = LegendSemantics.objects.create(name='Urban')
+        dat = {'color': '#123456', 'expression': '1', 'semantics': self.sem}
+
         self.legend_no_one = Legend.objects.create(title="Private")
+        LegendEntry.objects.create(legend=self.legend_no_one, **dat)
 
         self.legend_public = Legend.objects.create(title='Public')
         self.legend_public.publiclegend.public = True
         self.legend_public.publiclegend.save()
+        LegendEntry.objects.create(legend=self.legend_public, **dat)
 
         self.legend_michael = Legend.objects.create(title='Michaels Legend')
+        LegendEntry.objects.create(legend=self.legend_michael, **dat)
         assign_perm('view_legend', self.michael, self.legend_michael)
 
         self.legend_gene = Legend.objects.create(title='genes Legend')
+        LegendEntry.objects.create(legend=self.legend_gene, **dat)
         assign_perm('view_legend', self.gene, self.legend_gene)
 
         self.legend_group = Legend.objects.create(title='Bluth Family Legend')
+        LegendEntry.objects.create(legend=self.legend_group, **dat)
         assign_perm('view_legend', self.group, self.legend_group)
 
     def test_legend_list_permissions(self):
@@ -289,3 +297,21 @@ class PermissionsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.legend_michael.publiclegend.refresh_from_db()
         self.assertFalse(self.legend_michael.publiclegend.public)
+
+    def test_legend_entry_read_permissions(self):
+        view = LegendEntryViewSet.as_view(actions={'get': 'retrieve'})
+
+        # Michael tries to see a legend entry from a legend without permissions.
+        url = reverse('legendentry-detail', kwargs={'pk': self.legend_no_one.legendentry_set.first().id})
+        request = self.factory.get(url)
+        force_authenticate(request, user=self.michael)
+        response = view(request, pk=self.legend_no_one.legendentry_set.first().id)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Michael tries to see a legend entry from his own legend.
+        url = reverse('legendentry-detail', kwargs={'pk': self.legend_michael.legendentry_set.first().id})
+        request = self.factory.get(url)
+        force_authenticate(request, user=self.michael)
+        response = view(request, pk=self.legend_michael.legendentry_set.first().id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], self.legend_michael.legendentry_set.first().id)

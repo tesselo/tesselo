@@ -2,6 +2,7 @@ from raster.models import RasterLayer
 from rest_framework import permissions
 
 from django.http import Http404
+from raster_aggregation.exceptions import MissingQueryParameter
 
 
 class RasterTilePermission(permissions.BasePermission):
@@ -75,9 +76,10 @@ class ChangePermissionObjectPermission(permissions.DjangoObjectPermissions):
         return True
 
 
-class LegendEntryObjectPermission(permissions.BasePermission):
+class DependentObjectPermission(permissions.BasePermission):
     """
-    Check if a user can change or delete a legend entry.
+    Check if a user can change or delete a dependent object, based on the
+    parent class.
     """
 
     def has_permission(self, request, view):
@@ -92,13 +94,44 @@ class LegendEntryObjectPermission(permissions.BasePermission):
         Allow change or delete for entries that belong to legends that the user
         can change.
         """
-        # Raise 404 if user can not see parent legend.
-        if not request.user.has_perm('view_legend', obj.legend):
+        parent = getattr(obj, view._parent_model.lower())
+
+        # Raise 404 if user can not see parent object.
+        if not request.user.has_perm('view_{0}'.format(view._parent_model.lower()), parent):
             raise Http404
 
-        # Since user can see parent legend, allow safe methods.
+        # Since user can see parent object, allow safe methods.
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
-            # Allow all other methods only if user can change legend.
-            return request.user.has_perm('change_legend', obj.legend)
+            # Allow all other methods only if user can change the parent object.
+            return request.user.has_perm('change_{0}'.format(view._parent_model.lower()), parent)
+
+
+class AggregationAreaListPermission(permissions.BasePermission):
+    """
+    Checks if a user can request aggregation area list. For the individual
+    object retrieval, the dependent object permission is used.
+    """
+
+    def has_permission(self, request, view):
+        # For list requests (pk not provided), enforce filtering by one
+        # aggregationlayer.
+        import ipdb; ipdb.set_trace()
+        if 'pk' not in view.kwargs and request.method == 'GET':
+            if 'aggregationlayer' not in request.GET:
+                print('raising')
+                raise MissingQueryParameter(detail='Missing query parameter: aggregationlayer')
+            else:
+                # Make sure the listed aggregation areas are from a layer where
+                # the user has access permissions.
+                try:
+                    lyr = AggregationLayer.objects.get(id=request.query_params.get('aggregationlayer'))
+                except AggregationLayer.DoesNotExist:
+                    raise Http404
+
+                if not request.user.has_perm('view_aggregationlayer', lyr):
+                    raise Http404
+        # For all other request allow access at the global level. The detail
+        # permission is handled separately.
+        return True
