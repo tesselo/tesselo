@@ -196,7 +196,7 @@ class AggregationLayerViewSet(PermissionsModelViewSet):
 
 class AggregationAreaViewSet(ModelViewSet):
 
-    queryset = AggregationArea.objects.all()
+    queryset = AggregationArea.objects.all().order_by('id')
     serializer_class = AggregationAreaSimplifiedSerializer
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
 
@@ -205,7 +205,7 @@ class AggregationAreaViewSet(ModelViewSet):
 
 class ValueCountResultViewSet(PermissionsModelViewSet):
 
-    queryset = ValueCountResult.objects.all()
+    queryset = ValueCountResult.objects.all().order_by('id')
     serializer_class = ValueCountResultSerializer
 
     _model = 'valuecountresult'
