@@ -3,7 +3,8 @@ from raster_api.models import (
     AggregationLayerGroupObjectPermission, AggregationLayerUserObjectPermission, LegendGroupObjectPermission,
     LegendSemanticsGroupObjectPermission, LegendSemanticsUserObjectPermission, LegendUserObjectPermission,
     PublicAggregationLayer, PublicLegend, PublicLegendSemantics, PublicRasterLayer, RasterLayerGroupObjectPermission,
-    RasterLayerUserObjectPermission
+    RasterLayerUserObjectPermission, ValueCountResultUserObjectPermission, ValueCountResultGroupObjectPermission,
+    PublicValueCountResult,
 )
 
 admin.site.register(PublicRasterLayer)
@@ -18,3 +19,6 @@ admin.site.register(LegendSemanticsGroupObjectPermission)
 admin.site.register(AggregationLayerUserObjectPermission)
 admin.site.register(AggregationLayerGroupObjectPermission)
 admin.site.register(PublicAggregationLayer)
+admin.site.register(ValueCountResultUserObjectPermission)
+admin.site.register(ValueCountResultGroupObjectPermission)
+admin.site.register(PublicValueCountResult)
