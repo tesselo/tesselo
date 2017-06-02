@@ -166,4 +166,4 @@ def create_valuecountresult_public_object(sender, instance, created, **kwargs):
     Automatically create the public valuecountresult object.
     """
     if created:
-        PublicValueCountResult.objects.create(aggregationlayer=instance)
+        PublicValueCountResult.objects.create(valuecountresult=instance)
