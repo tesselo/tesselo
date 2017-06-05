@@ -19,6 +19,7 @@ from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCo
 from raster_aggregation.serializers import (
     AggregationAreaSimplifiedSerializer, AggregationLayerSerializer, ValueCountResultSerializer
 )
+from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
     RasterTilePermission
@@ -83,13 +84,16 @@ class PermissionsModelViewSet(ModelViewSet):
 
         return qs.distinct().order_by('id')
 
-    def perform_create(self, serializer):
-        # Create object with default create function.
-        obj = serializer.save()
+    def _assign_perms(self, obj):
         # Assign permissions for newly created object.
         assign_perm('view_{0}'.format(self._model), self.request.user, obj)
         assign_perm('change_{0}'.format(self._model), self.request.user, obj)
         assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
+
+    def perform_create(self, serializer):
+        # Create object with default create function.
+        obj = serializer.save()
+        self._assign_perms(obj)
 
     def perform_destroy(self, instance):
         if getattr(instance, 'public{0}'.format(self._model.lower())).public:
@@ -203,9 +207,15 @@ class AggregationAreaViewSet(ModelViewSet):
     _parent_model = 'aggregationlayer'
 
 
-class ValueCountResultViewSet(PermissionsModelViewSet):
+class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewSet):
 
     queryset = ValueCountResult.objects.all().order_by('id')
     serializer_class = ValueCountResultSerializer
 
     _model = 'valuecountresult'
+
+    def perform_create(self, serializer):
+        # Call perform create from the value count result view.
+        super(ValueCountResultViewSet, self).perform_create(serializer)
+        # Manually assign permissions after object was created.
+        self._assign_perms(serializer.instance)
