@@ -40,3 +40,15 @@ Run the test suite
 To run the test suite, simply specify an argument for the run script like so
 
     docker run --rm --env DEBUG=True -v /path/to/local/tesselo/clone:/code -v /path/to/local/pgdata/dir:/pgdata tesselo /code/run.sh test
+
+Setting up the ssh keys
+-----------------------
+The ssh keys are generated through letsencrypt using a utiltiy app (https://github.com/ibmjstart/bluemix-letsencrypt).
+Set the url domain name to ``tesselo.com``, and subdomain to ``www``, then run ``python setup-app.py``.
+The running of the script will fail when trying ``Making GET request to https://www.tesselo.com``, but
+the certificates are generated on the remote machine. To download the certs, use
+    
+    cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/cert.pem' > cert.pem
+    cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/privkey.pem' > privkey.pem
+
+Then manually upload them to bluemix.
