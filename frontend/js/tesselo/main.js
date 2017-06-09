@@ -2,6 +2,7 @@ requirejs.config({
     paths: {
         jquery: '../../node_modules/jquery/dist/jquery',
         'jquery.cookie': '../../node_modules/jquery.cookie/jquery.cookie',
+        bootstrap: '../../node_modules/bootstrap/dist/js/bootstrap',
         underscore: '../../node_modules/underscore/underscore',
         backbone: '../../node_modules/backbone/backbone',
         'backbone.babysitter': '../../node_modules/backbone.babysitter/lib/backbone.babysitter',
@@ -9,9 +10,17 @@ requirejs.config({
         'backbone.wreqr': '../../node_modules/backbone.wreqr/lib/backbone.wreqr',
         marionette: '../../node_modules/backbone.marionette/lib/backbone.marionette',
         text: '../../node_modules/requirejs-text/text',
-        leaflet: '../../node_modules/leaflet/dist/leaflet'
+        leaflet: '../../node_modules/leaflet/dist/leaflet',
+        'd3-color': '../../node_modules/d3-color/build/d3-color',
+        'd3-interpolate': '../../node_modules/d3-interpolate/build/d3-interpolate',
+        'd3-scale-chromatic': '../../node_modules/d3-scale-chromatic/build/d3-scale-chromatic',
+        'nouislider': '../../node_modules/nouislider/distribute/nouislider',
+        chartjs: '../../node_modules/chart.js/dist/Chart',
     },
     shim: {
+        'bootstrap': {
+            deps: ['jquery']
+        },
         'jqyery.cookie': {
             deps: 'jquery'
         },
@@ -42,10 +51,10 @@ requirejs.config({
 });
 
 require([
-        'app'
+        'app',
+        'bootstrap'
     ], function(
         App
     ){
     App.start();
 });
-

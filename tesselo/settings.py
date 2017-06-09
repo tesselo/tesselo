@@ -11,12 +11,10 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 """
 
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'j7$22brg^e@qpnnwtgw%1l@&=9=2yjbo-ky3ox-m_jgym*8iap'
@@ -45,15 +43,19 @@ INSTALLED_APPS = [
     'django.contrib.gis',
 
     'compressor',
+    'django_cleanup',
     'rest_framework',
     'rest_framework.authtoken',
     'crispy_forms',
+    'django_filters',
     'guardian',
     'django_extensions',
 
-    'raster_api',
     'raster',
     'raster_aggregation',
+
+    'raster_api',
+    'sentinel',
 ]
 
 MIDDLEWARE = [
@@ -173,12 +175,6 @@ COMPRESS_PRECOMPILERS = (
 
 COMPRESS_OFFLINE = True
 
-# Celery settings
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_ACKS_LATE = True
-
 # Storage settings
 if DEBUG:
     MEDIA_ROOT = '/tesselo_media'
@@ -224,6 +220,7 @@ SWIFT_TEMP_URL_KEY = '837364758201019283746462823948475454'
 # export OS_AUTH_VERSION=3
 # swift post raster-api-static --read-acl ".r:*"
 
+# Rest framework settings.
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -235,3 +232,32 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5
 }
+
+# Celery settings.
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_ACKS_LATE = True
+
+CELERY_BEAT_SCHEDULE = {
+    'monitor_queue': {
+        'task': 'sentinel.tasks.drive_sentinel_queue',
+        'schedule': timedelta(seconds=900),
+    },
+    # 'sync_bucket': {
+    # 'task': 'sentinel.tasks.drive_sentinel_bucket_parser',
+    # 'schedule': timedelta(hours=12),
+    # },
+    # 'build_world_layer': {
+    # 'task': 'sentinel.tasks.drive_world_layers',
+    # 'schedule': timedelta(hours=6),
+    # },
+    'repair_incomplete_scenes': {
+        'task': 'sentinel.tasks.repair_incomplete_scenes',
+        'schedule': timedelta(hours=24),
+    },
+}
+
+# Django-raster settings
+RASTER_USE_CELERY = True
+RASTER_PARSE_SINGLE_TASK = True

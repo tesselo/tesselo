@@ -4,6 +4,7 @@ from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView, LegendEntryViewSet,
     LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, ValueCountResultViewSet
 )
+from sentinel.views import WorldLayerGroupViewSet
 
 router = routers.DefaultRouter(trailing_slash=False)
 
@@ -31,3 +32,5 @@ router.register(
 router.register(r'aggregationlayer', AggregationLayerViewSet)
 router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
+
+router.register(r'worldlayergroup', WorldLayerGroupViewSet, base_name='worldlayergroup')

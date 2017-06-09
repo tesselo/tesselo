@@ -1,0 +1,33 @@
+<h5>Layers</h5>
+<textarea class="form-control layer-input" rows="3">
+{
+    "bear": 22,
+    "landcover": 375
+}
+</textarea>
+
+<h5>Formula</h5>
+<textarea class="form-control formula-input" rows="1">bear * landcover</textarea>
+
+<h5>Legend</h5>
+<textarea class="form-control legend-input" rows="3">
+[
+    {"color":"#FF0000", "expression":"x>=10", "name":"High"},
+    {"color":"#0000FF", "expression":"x<10", "name":"Low"}
+]
+</textarea>
+
+<h5>Aggregationlayer</h5>
+<input type="text" value="16" class="agglayer-input">
+
+<h5>Maxzoom</h5>
+<input type="text" value="8" class="maxzoom-input">
+
+<h5>Title</h5>
+<input type="text" value="Title" class="title-input">
+
+<h5>Description</h5>
+<input type="text" value="A good description." class="description-input">
+
+<h5>Submit</h5>
+<button class="btn btn-default report">Report</button>

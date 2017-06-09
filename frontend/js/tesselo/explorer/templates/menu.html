@@ -1,0 +1,43 @@
+<div class="rgb-wrap">
+    <div class=text-right>
+        <label>Selecionar Camada</label>
+    </div>
+    <div class="world-picker"></div>
+    <form>
+        <div class="form-group">
+        <div class=text-right>
+            <label>Trocar RGB ou Formula</label>
+        </div>
+            <div class="rgb btn-group btn-toggle">
+                <button type="button" class="btn-rgb btn btn-primary">RGB</button>
+                <button type="button" class="btn">FORMULA</button>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="formula-wrap">
+    <div class=text-right>
+        <label>Especificar Formula</label>
+    </div>
+    <textarea class="formula form-control" rows="3">(B8 - B4) / (B8 + B4)</textarea>
+
+    <div class=text-right>
+        <label>Valores Min/Max e Número de Intervalos</label>
+    </div>
+    <input type="text" class="form-control scale-breaks range-value" value="">
+    <input type="text" class="form-control scale-max range-value" value="1">
+    <input type="text" class="form-control scale-min range-value" value="-1">
+
+    <div class=text-right>
+        <label>Escala de Cores</label>
+    </div>
+    <div class="color-picker"></div>
+
+    <button type="button" class="report-toggle btn btn-default"><span class="glyphicon glyphicon-dashboard"></span></button>
+    <div class="report-wrap">
+        <div class="agglayer-picker"></div>
+        <button type="button" class="report btn btn-default ppull-right"><span class="glyphicon glyphicon-save"></span></button>
+    </div>
+
+    <button type="button" class="refresh btn btn-default pull-right"><span class="glyphicon glyphicon-refresh"></span></button>
+</div>
