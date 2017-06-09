@@ -57,7 +57,7 @@ class WorldLayerGroupAdmin(admin.ModelAdmin):
         """
         Admin action to build selected worldlayers.
         """
-        drive_world_layers.delay(queryset.values_list(id, flat=True))
+        drive_world_layers.delay([lyr.id for lyr in queryset])
         self.message_user(request, 'Started building worldlayers.')
 
 
