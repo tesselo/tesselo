@@ -1,6 +1,6 @@
 define([
         'marionette',
-        'views/map'
+        './views/map'
     ], function(
         Marionette,
         MapView
@@ -9,6 +9,7 @@ define([
     // Define Router
     var MapController = {
         actionMap: function(formula, scale_min, scale_max, scale_breaks, color, lat, lon, zoom){
+            console.log('actioning map')
             var map = new MapView({
                 lat: lat,
                 lon: lon,
@@ -19,7 +20,7 @@ define([
                 scale_breaks: scale_breaks,
                 color: color
             });
-            this.root.showChildView('mapRegion', map);
+            this.root.showChildView('contentRegion', map);
         }
     }
 

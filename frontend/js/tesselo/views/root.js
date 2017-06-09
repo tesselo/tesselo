@@ -1,9 +1,11 @@
 define([
         'marionette',
-        'auth/auth-router'
+        'auth/auth-router',
+        'explorer/router'
     ], function(
         Marionette,
-        AuthRouter
+        AuthRouter,
+        ExplorerRouter
     ){
     return Marionette.View.extend({
         template: _.template('<div class="content"><h1>Welcome to Tesselo</h1></div>'),
@@ -11,7 +13,8 @@ define([
             contentRegion: '.content'
         },
         onRender: function() {
-            var router = new AuthRouter(this);
+            new AuthRouter(this);
+            new ExplorerRouter(this);
         }
     });
 });

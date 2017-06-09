@@ -1,11 +1,11 @@
 define([
         'marionette',
-        'router',
         'genericreport/views/report',
+        './router',
     ], function(
         Marionette,
-        MapRouter,
-        ReportView
+        ReportView,
+        MapRouter
     ){
     return Marionette.View.extend({
         template: _.template('<div id="map"></div>'),

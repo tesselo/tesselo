@@ -1,12 +1,12 @@
 define([
         'marionette',
         'd3-scale-chromatic',
-        'collections/worldlayergroups',
-        'collections/aggregationlayers',
-        'views/picker',
-        'views/world',
-        'views/agglayer',
-        'text!templates/menu.html'
+        '../collections/worldlayergroups',
+        '../collections/aggregationlayers',
+        './picker',
+        './world',
+        './agglayer',
+        'text!../templates/menu.html'
     ], function(
         Marionette,
         d3,

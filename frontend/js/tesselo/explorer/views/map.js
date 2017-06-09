@@ -1,8 +1,8 @@
 define([
         'marionette',
         'leaflet',
-        'views/menu',
-        'views/slider',
+        './menu',
+        './slider',
     ],
     function(
         Marionette,

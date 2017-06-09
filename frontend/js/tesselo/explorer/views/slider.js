@@ -1,7 +1,7 @@
 define([
         'marionette',
         'nouislider',
-        'text!templates/picker.html'
+        'text!../templates/picker.html'
     ], function(
         Marionette,
         noUiSlider,

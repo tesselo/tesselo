@@ -1,6 +1,6 @@
 define([
         'marionette',
-        'text!templates/picker.html'
+        'text!../templates/picker.html'
     ], function(
         Marionette,
         template
