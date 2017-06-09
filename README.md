@@ -1,6 +1,8 @@
 Tesselo
 =======
 
+Copyright (c) 2017 Daniel Wiesmann
+
 Docker image
 ------------
 
