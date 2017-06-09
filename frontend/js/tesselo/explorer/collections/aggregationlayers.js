@@ -11,7 +11,10 @@ define([
 
     return Backbone.Collection.extend({
         model: Model,
-        url: '/api/aggregationlayer'
+        url: '/api/aggregationlayer',
+        parse : function(data) {
+          return data.results;
+        }
     });
 });
 

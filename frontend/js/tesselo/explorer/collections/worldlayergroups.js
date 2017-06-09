@@ -11,6 +11,9 @@ define([
 
     return Backbone.Collection.extend({
         model: WLGModel,
-        url: '/api/worldlayergroup'
+        url: '/api/worldlayergroup',
+        parse : function(data) {
+          return data.results;
+        }
     });
 });
