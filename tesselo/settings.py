@@ -86,6 +86,9 @@ TEMPLATES = [
         },
     },
 ]
+# In debug mode, add context processor with debug flag.
+if DEBUG:
+    TEMPLATES[0]['OPTIONS']['context_processors'].append('tesselo.utils.debug_tag')
 
 WSGI_APPLICATION = 'tesselo.wsgi.application'
 
@@ -180,8 +183,8 @@ if DEBUG:
     MEDIA_ROOT = '/tesselo_media'
 else:
     DEFAULT_FILE_STORAGE = 'swift.storage.SwiftStorage'
-    STATICFILES_STORAGE = 'tesselo.swift.CachedStaticSwiftStorage'
-    COMPRESS_STORAGE = 'tesselo.swift.CachedStaticSwiftStorage'
+    STATICFILES_STORAGE = 'tesselo.utils.CachedStaticSwiftStorage'
+    COMPRESS_STORAGE = 'tesselo.utils.CachedStaticSwiftStorage'
 
 SWIFT_CONTAINER_NAME = 'raster-api-media'
 SWIFT_STATIC_CONTAINER_NAME = 'raster-api-static'

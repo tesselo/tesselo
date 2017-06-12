@@ -17,3 +17,7 @@ class CachedStaticSwiftStorage(StaticSwiftStorage):
         self.local_storage._save(name, content)
         super(CachedStaticSwiftStorage, self).save(name, self.local_storage._open(name))
         return name
+
+
+def debug_tag(context):
+    return {'DEBUG': True}

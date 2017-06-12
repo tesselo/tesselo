@@ -46,7 +46,7 @@
         <div class="main"></div>
         {% compress js %}
             <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
-            {% if debug %}
+            {% if DEBUG %}
                 <script data-main="{{ STATIC_URL }}js/tesselo/main" src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
             {% else %}
                 <script src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
