@@ -19,7 +19,6 @@ define([
         },
 
         onChildviewDidReport: function(data){
-            console.log('at root', data);
             data.model = new Backbone.Model({title: data.title, description: data.description});
             var report = new ReportView(data);
             this.showChildView('mapRegion', report);

@@ -8,9 +8,9 @@ define([
 
     // Define Router
     var MapController = {
-        actionMap: function(formula, scale_min, scale_max, scale_breaks, color, lat, lon, zoom){
-            console.log('actioning map')
+        actionMap: function(worldlayergroup, formula, scale_min, scale_max, scale_breaks, color, lat, lon, zoom){
             var map = new MapView({
+                worldlayergroup: worldlayergroup,
                 lat: lat,
                 lon: lon,
                 zoom: zoom,
@@ -28,7 +28,7 @@ define([
         controller: MapController,
         appRoutes: {
             '(/)': 'actionMap',
-            '(/)(:formula)(/)(:scale_min)(/)(:scale_max)(/)(:scale_breaks)(/)(:color)(/)@:lat,:lon,:zoom': 'actionMap'
+            '(/)(:worldlayergroup)(/)(:formula)(/)(:scale_min)(/)(:scale_max)(/)(:scale_breaks)(/)(:color)(/)@:lat,:lon,:zoom': 'actionMap'
         },
         initialize: function(root){
             this.controller.root = root;

@@ -78,6 +78,7 @@ define([
 
         buildMenu: function(){
             var menu = new MenuView({
+                worldlayergroup: this.options.worldlayergroup,
                 formula: this.options.formula,
                 scale_min: this.options.scale_min,
                 scale_max: this.options.scale_max,
@@ -120,7 +121,7 @@ define([
                 var urlsplit = Backbone.history.fragment.split('@');
                 var base = urlsplit[0];
             } else {
-                var base = '';
+                var base = this.worldlayergroup_id + '/';
             }
 
             Backbone.history.navigate(base + '@' + lat + ',' + lng + ',' + zoom);
