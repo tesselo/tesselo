@@ -15,7 +15,7 @@ define([
     App.on('start', function(){
         var main = this.getRegion();
         main.show(new RootView());
-        Backbone.history.start({pushState: false});
+        Backbone.history.start({pushState: true});
     });
 
     return App;
