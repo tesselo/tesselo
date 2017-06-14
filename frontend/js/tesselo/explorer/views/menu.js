@@ -181,7 +181,7 @@ define([
                 var blue = _.filter(this.layer_dict, function(val, key){ return key == 'B02.jp2' })[0];
 
                 this.ui.formula_wrap.hide();
-                var url = '/raster/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=3e3';
+                var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=3e3';
                 var nav_base = this.worldlayergroup_id + '/';
             } else {
                 // Show formula container.
@@ -209,7 +209,7 @@ define([
                 legend = encodeURIComponent(JSON.stringify(legend));
 
                 // Construct url.
-                var url = '/raster/algebra/{z}/{x}/{y}.png?layers=' + ids +'&formula=' + formula + '&colormap=' + legend;
+                var url = '/api/algebra/{z}/{x}/{y}.png?layers=' + ids +'&formula=' + formula + '&colormap=' + legend;
 
                 // Navigation base
                 var min = parseFloat(this.ui.scale_min.val());

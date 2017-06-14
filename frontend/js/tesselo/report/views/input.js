@@ -1,6 +1,6 @@
 define([
         'marionette',
-        'text!genericreport/templates/input.html'
+        'text!../templates/input.html'
     ], function(
         Marionette,
         template
@@ -28,7 +28,7 @@ define([
         },
 
         report: function(){
-            this.trigger('report', {
+            var data = {
                 layers: JSON.parse(this.ui.layers.val()),
                 formula: this.ui.formula.val(),
                 legend: JSON.parse(this.ui.legend.val()),
@@ -36,7 +36,9 @@ define([
                 maxzoom: this.ui.maxzoom.val(),
                 title: this.ui.title.val(),
                 description: this.ui.description.val()
-            });
+            }
+            this.trigger('report', data);
+            Backbone.history.navigate('/report/' + encodeURIComponent(JSON.stringify(data)));
         }
     });
 });

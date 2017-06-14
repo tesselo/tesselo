@@ -1,11 +1,11 @@
 define([
         'marionette',
-        'genericreport/collections/aggregationAreas',
-        'genericreport/collections/aggregationAreaValues',
-        'genericreport/views/detail',
-        'genericreport/views/table',
-        'genericreport/views/filter',
-        'text!genericreport/templates/report.html'
+        '../collections/aggregationAreas',
+        '../collections/aggregationAreaValues',
+        './detail',
+        './table',
+        './filter',
+        'text!../templates/report.html'
     ], function(
         Marionette,
         AggregationAreas,
@@ -79,6 +79,13 @@ define([
                 aggregationlayer: this.options.aggregationlayer
             })};
             this.areas.fetch(areas_params).done(_this.processAvals);
+            //this.areas.fetch(areas_params).done(_this.processAvals);
+        },
+
+        requestAvals: function(areas){
+            this.areas.each(function(area){
+                console.log('area', area);
+            })
         },
 
         processAvals: function(values){

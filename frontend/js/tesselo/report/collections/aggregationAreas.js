@@ -1,6 +1,6 @@
 define([
         'backbone',
-        'genericreport/models/aggregationArea'
+        '../models/aggregationArea'
     ], function(
         Backbone,
         AggregationArea

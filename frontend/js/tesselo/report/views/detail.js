@@ -2,7 +2,7 @@ define([
         'marionette',
         'chartjs',
         'leaflet',
-        'text!genericreport/templates/detail.html'
+        'text!../templates/detail.html'
 ], function(
     Marionette,
     Chart,
@@ -75,7 +75,7 @@ define([
             });
 
             // Add raster algebra layer.
-            var url = '/raster/algebra/{z}/{x}/{y}.png?' + algebra_params;
+            var url = '/api/algebra/{z}/{x}/{y}.png?' + algebra_params;
             L.tileLayer(url).addTo(LMap);
         }
     });

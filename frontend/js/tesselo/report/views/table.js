@@ -1,6 +1,6 @@
 define([
         'marionette',
-        'text!genericreport/templates/table.html'
+        'text!../templates/table.html'
 ], function(
     marionette,
     tableTemplate

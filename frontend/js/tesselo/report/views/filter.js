@@ -1,6 +1,6 @@
 define([
         'marionette',
-        'text!genericreport/templates/filter.html'
+        'text!../templates/filter.html'
 ], function(
     Marionette,
     filterTemplate

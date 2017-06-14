@@ -24,7 +24,7 @@ define([
         }
     }
 
-    return MainRouter = Marionette.AppRouter.extend({
+    return Marionette.AppRouter.extend({
         controller: MapController,
         appRoutes: {
             '(/)': 'actionMap',

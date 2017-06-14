@@ -1,6 +1,6 @@
 define([
         'marionette',
-        'views/root',
+        'root',
         'utils/csrf'
     ], function(
         Marionette,
@@ -15,7 +15,7 @@ define([
     App.on('start', function(){
         var main = this.getRegion();
         main.show(new RootView());
-        Backbone.history.start({pushState: true});
+        Backbone.history.start({pushState: false});
     });
 
     return App;

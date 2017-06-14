@@ -1,0 +1,17 @@
+<div class="container">
+    <div class="row">
+        <h1><% if(title) { %><%= title %><% } else { %>Generic Report<% } %></h1>
+        <% if(description) { %><p><%= description %></p><% } %>
+
+        <h2>Sorting section</h2>
+        <div class="filters"></div>
+
+        <h2>Detailed Item List</h2>
+        <div class="aggdetail"></div>
+
+        <hr>
+
+        <h2>Global Data Table</h2>
+        <div class="aggtable"></div>
+    </div>
+</div>
