@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 import shutil
 import tempfile
 
+import mock
 from raster.models import RasterLayer, RasterTile
 
-import mock
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.urlresolvers import reverse

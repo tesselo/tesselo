@@ -1,13 +1,14 @@
 from unittest import skip
 
-from django.contrib.auth.models import User
-from django.contrib.staticfiles.testing import LiveServerTestCase
-from django.test.utils import override_settings
 from selenium.webdriver import Remote
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from django.contrib.auth.models import User
+from django.contrib.staticfiles.testing import LiveServerTestCase
+from django.test.utils import override_settings
 
 
 # os.environ['DJANGO_LIVE_TEST_SERVER_ADDRESS'] = 'web:8000'
