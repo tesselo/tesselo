@@ -1,13 +1,11 @@
 define([
         'marionette',
         'chartjs',
-        'leaflet',
-        'text!../templates/detail.html'
+        'leaflet'
 ], function(
     Marionette,
     Chart,
-    L,
-    detailTemplate
+    L
     ){
 
     const MapView = Marionette.View.extend({
@@ -121,7 +119,7 @@ define([
 
     const ListTableView = Marionette.View.extend({
         className: 'table table-hover',
-        template: _.template('<h4>Table</h4><table><thead><tr><th>Color</th><th>Class</th><th>Value</th></tr></thead><tbody></tbody></table>'),
+        template: _.template('<h4>Table</h4><table class="table"><thead><tr><th>Color</th><th>Class</th><th>Value</th></tr></thead><tbody></tbody></table>'),
 
         regions: {
             body: {
