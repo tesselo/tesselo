@@ -56,22 +56,21 @@ define([
             // Add aggregation area to map
             LMap.addLayer(agg);
 
-
             // Deconstruct layers dict into a query parameter.
-            var layers = _.map(this.options.layers, function(val, key){ return key + '=' + val; }).join();
+            var layers = _.map(this.options.layer_names, function(val, key){ return key + '=' + val; }).join();
 
-            // Stringify legend dict.
-            var legend = {};
-            _.each(this.options.legend, function(leg){
-                legend[leg.expression] = leg.color;
+            // Stringify grouping dict.
+            var colormap = {};
+            _.each(this.options.grouping, function(leg){
+                colormap[leg.expression] = leg.color;
             });
-            var legend = JSON.stringify(legend);
+            var colormap = JSON.stringify(colormap);
 
             // Setup query filter parameters for fetching agg data.
             var algebra_params = $.param({
                 layers: layers,
                 formula: this.options.formula,
-                colormap: legend
+                colormap: colormap
             });
 
             // Add raster algebra layer.
@@ -88,8 +87,7 @@ define([
         },
 
         onRender: function(){
-
-            var data = _.zip(this.options.legend, this.model.get('ordered_values'));
+            var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
             data = _.map(data, function(dat){ return {name: dat[0].name, color: dat[0].color, value: dat[1]}; })
             data = _.filter(data, function(dat){ return dat.value; });
             var data = {
@@ -148,12 +146,11 @@ define([
         },
         onRender: function(){
             // Construct list element data.
-            var data = _.zip(this.options.legend, this.model.get('ordered_values'));
+            var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
             data = _.map(data, function(dat){ dat[0].value = dat[1]; return dat[0]; });
             this.showChildView('list', new ListTableView({collection: new Backbone.Collection(data)}));
-
-            this.showChildView('chart', new ChartView({model: this.model, legend: this.options.legend}));
-            this.showChildView('map', new MapView({model: this.model, legend: this.options.legend, formula: this.options.formula, layers: this.options.layers}));
+            this.showChildView('chart', new ChartView({model: this.model, grouping: this.options.grouping}));
+            this.showChildView('map', new MapView({model: this.model, grouping: this.options.grouping, formula: this.options.formula, layer_names: this.options.layer_names}));
         }
     });
 
@@ -161,8 +158,8 @@ define([
         childView: DetailView,
         childViewOptions: function(){
             return {
-                legend: this.options.legend,
-                layers: this.options.layers,
+                grouping: this.options.grouping,
+                layer_names: this.options.layer_names,
                 formula: this.options.formula
             }
         }

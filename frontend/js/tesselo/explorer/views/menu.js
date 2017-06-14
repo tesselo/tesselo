@@ -258,8 +258,12 @@ define([
                     // Compute absolute break values based on range input.
                     var low = min + i * (max - min) / brk;
                     var high = min + (i + 1) * (max - min) / brk;
+
+                    low = Math.round(low * 100) / 100;
+                    high = Math.round(high * 100) / 100;
+
                     // Create algebra expression from values.
-                    var expression = "(x>=" + low + ')&(x<' + high + ')';
+                    var expression = "(x>=" + low + ') & (x<' + high + ')';
                     // Add an entry to the colormap.
                     map[expression] = color;
                 });
@@ -309,18 +313,16 @@ define([
                     ids[name] = val;
                 }
             });
-            // Encode formula.
-            var formula = this.ui.formula.val();
 
             var data = {
-                layers: ids,
-                formula: formula,
-                legend: legend,
+                layer_names: ids,
+                formula: this.ui.formula.val(),
+                grouping: legend,
                 aggregationlayer: this.agglayer_id,
-                maxzoom: 10,
+                zoom: 7,
+                acres: 'True',
                 title: 'Samba Report',
-                description: 'Auto generated.',
-                acres: 'True'
+                description: 'Auto generated.'
             }
 
             this.triggerMethod('did:report', data);
