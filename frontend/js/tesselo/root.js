@@ -9,7 +9,7 @@ define([
         AuthRouter,
         ExplorerRouter,
         ReportRouter,
-        ReportView,
+        ReportView
     ){
     return Marionette.View.extend({
         template: _.template('<div class="content"><h1>Welcome to Tesselo</h1></div>'),
