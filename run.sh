@@ -12,8 +12,10 @@ fi
 
 # Start database server using the above cluster.
 if [ "$DEBUG" = "True" ]; then
+    chown -R postgres /pgdata
+    chmod -R 700 /pgdata
     service postgresql start
-    sleep 1
+    sleep 2
 fi
 
 # Check if tesselo database exists, if not create it and a new superuser.
