@@ -7,6 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster_aggregation.models import AggregationLayer, ValueCountResult
+from sentinel.models import WorldLayerGroup, ZoneOfInterest
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):
@@ -167,3 +168,67 @@ def create_valuecountresult_public_object(sender, instance, created, **kwargs):
     """
     if created:
         PublicValueCountResult.objects.create(valuecountresult=instance)
+
+
+class WorldLayerGroupUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(WorldLayerGroup, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
+
+
+class WorldLayerGroupGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(WorldLayerGroup, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
+
+
+class PublicWorldLayerGroup(models.Model):
+
+    worldlayergroup = models.OneToOneField(WorldLayerGroup)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.worldlayergroup, 'public' if self.public else 'private')
+
+
+@receiver(post_save, sender=WorldLayerGroup, weak=False, dispatch_uid="create_worldlayergroup_public_object")
+def create_worldlayergroup_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public worldlayergroup object.
+    """
+    if created:
+        PublicWorldLayerGroup.objects.create(worldlayergroup=instance)
+
+
+class ZoneOfInterestUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(ZoneOfInterest, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
+
+
+class ZoneOfInterestGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(ZoneOfInterest, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
+
+
+class PublicZoneOfInterest(models.Model):
+
+    zoneofinterest = models.OneToOneField(ZoneOfInterest)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.worldlayergroup, 'public' if self.public else 'private')
+
+
+@receiver(post_save, sender=ZoneOfInterest, weak=False, dispatch_uid="create_zoneofinterest_public_object")
+def create_zoneofinterest_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public zoneofinterest object.
+    """
+    if created:
+        PublicZoneOfInterest.objects.create(zoneofinterest=instance)

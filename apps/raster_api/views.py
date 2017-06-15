@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django_filters.rest_framework import DjangoFilterBackend
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
 from raster.views import AlgebraView, ExportView, RasterView
 from rest_framework.decorators import detail_route
@@ -27,8 +28,9 @@ from raster_api.permissions import (
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer, RasterLayerSerializer,
-    UserSerializer
+    UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
 )
+from sentinel.models import WorldLayerGroup, ZoneOfInterest
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -84,11 +86,13 @@ class PermissionsModelViewSet(ModelViewSet):
 
         return qs.distinct().order_by('id')
 
-    def _assign_perms(self, obj):
+    def _assign_perms(self, obj, model=None):
+        if not model:
+            model = self._model
         # Assign permissions for newly created object.
-        assign_perm('view_{0}'.format(self._model), self.request.user, obj)
-        assign_perm('change_{0}'.format(self._model), self.request.user, obj)
-        assign_perm('delete_{0}'.format(self._model), self.request.user, obj)
+        assign_perm('view_{0}'.format(model), self.request.user, obj)
+        assign_perm('change_{0}'.format(model), self.request.user, obj)
+        assign_perm('delete_{0}'.format(model), self.request.user, obj)
 
     def perform_create(self, serializer):
         # Create object with default create function.
@@ -151,7 +155,7 @@ class PermissionsModelViewSet(ModelViewSet):
 
 class LegendViewSet(PermissionsModelViewSet):
 
-    queryset = Legend.objects.all()
+    queryset = Legend.objects.all().order_by('id')
     serializer_class = LegendSerializer
 
     _model = 'legend'
@@ -162,7 +166,7 @@ class LegendEntryViewSet(RetrieveModelMixin,
                          DestroyModelMixin,
                          GenericViewSet):
     permission_classes = (IsAuthenticated, DependentObjectPermission)
-    queryset = LegendEntry.objects.all()
+    queryset = LegendEntry.objects.all().order_by('id')
     serializer_class = LegendEntrySerializer
 
     _parent_model = 'legend'
@@ -170,7 +174,7 @@ class LegendEntryViewSet(RetrieveModelMixin,
 
 class LegendSemanticsViewSet(PermissionsModelViewSet):
 
-    queryset = LegendSemantics.objects.all()
+    queryset = LegendSemantics.objects.all().order_by('id')
     serializer_class = LegendSemanticsSerializer
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', 'keyword', )
@@ -180,7 +184,7 @@ class LegendSemanticsViewSet(PermissionsModelViewSet):
 
 class RasterLayerViewSet(PermissionsModelViewSet):
 
-    queryset = RasterLayer.objects.all()
+    queryset = RasterLayer.objects.all().order_by('id')
     serializer_class = RasterLayerSerializer
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', )
@@ -190,7 +194,7 @@ class RasterLayerViewSet(PermissionsModelViewSet):
 
 class AggregationLayerViewSet(PermissionsModelViewSet):
 
-    queryset = AggregationLayer.objects.all()
+    queryset = AggregationLayer.objects.all().order_by('id')
     serializer_class = AggregationLayerSerializer
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', )
@@ -219,3 +223,32 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
         super(ValueCountResultViewSet, self).perform_create(serializer)
         # Manually assign permissions after object was created.
         self._assign_perms(serializer.instance)
+
+
+class WorldLayerGroupViewSet(PermissionsModelViewSet):
+
+    queryset = WorldLayerGroup.objects.all().order_by('id')
+    serializer_class = WorldLayerGroupSerializer
+    filter_backends = (SearchFilter, DjangoFilterBackend, )
+    filter_fields = ('active', )
+    search_fields = ('name', 'description', )
+
+    _model = 'worldlayergroup'
+
+    def _assign_perms(self, obj):
+        # Create permissions for the worldlayer itself.
+        super(WorldLayerGroupViewSet, self)._assign_perms(obj)
+        # Assign permissions to the dependent rasterlayers.
+        for wlayer in obj.worldlayers.all():
+            super(WorldLayerGroupViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
+
+
+class ZoneOfInterestViewSet(PermissionsModelViewSet):
+
+    queryset = ZoneOfInterest.objects.all().order_by('id')
+    serializer_class = ZoneOfInterestSerializer
+    filter_backends = (SearchFilter, DjangoFilterBackend, )
+    filter_fields = ('active', 'worldlayergroup')
+    search_fields = ('name', )
+
+    _model = 'zoneofinterest'

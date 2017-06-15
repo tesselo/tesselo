@@ -11,6 +11,7 @@ from rest_framework.serializers import (
 from django.contrib.auth.models import Group, User
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm, get_perms
+from sentinel.models import WorldLayerGroup, ZoneOfInterest
 
 
 class UserSerializer(ModelSerializer):
@@ -241,3 +242,22 @@ class RasterLayerSerializer(PermissionsModelSerializer):
     def update(self, instance, validated_data):
         instance = super(RasterLayerSerializer, self).update(instance, validated_data)
         return self.check_legend_public_status(instance)
+
+
+class WorldLayerGroupSerializer(PermissionsModelSerializer):
+
+    class Meta:
+        model = WorldLayerGroup
+        fields = (
+            'id', 'name', 'kahunas', 'zonesofinterest', 'all_zones',
+            'worldlayers', 'min_date', 'max_date',
+            'max_cloudy_pixel_percentage', 'active',
+        )
+        read_only_fields = ('kahunas', 'worldlayers', )
+
+
+class ZoneOfInterestSerializer(PermissionsModelSerializer):
+
+    class Meta:
+        model = ZoneOfInterest
+        fields = ('id', 'name', 'geom', 'active', )

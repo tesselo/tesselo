@@ -7,6 +7,8 @@ import time
 import traceback
 import uuid
 
+from celery import task
+from celery.utils.log import get_task_logger
 from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
@@ -15,8 +17,6 @@ import boto3
 import botocore
 import numpy
 from botocore.client import Config
-from celery import task
-from celery.utils.log import get_task_logger
 from dateutil import parser
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon

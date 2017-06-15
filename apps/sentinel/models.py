@@ -137,18 +137,16 @@ class WorldLayerGroup(models.Model):
     # Name of the group.
     name = models.CharField(max_length=500)
     # Zones of interest relevant for this group.
-    zonesofinterest = models.ManyToManyField(ZoneOfInterest, help_text='What zones should this layer be built for?')
+    zonesofinterest = models.ManyToManyField(ZoneOfInterest, blank=True, help_text='What zones should this layer be built for?')
     all_zones = models.BooleanField(default=False, help_text='If checked, this layer will be built for all zones of interest.')
     # One raster layer for each band.
-    worldlayers = models.ManyToManyField(WorldLayer)
+    worldlayers = models.ManyToManyField(WorldLayer, editable=False)
     # Defining parameters of the layer group.
     min_date = models.DateField()
     max_date = models.DateField()
     max_cloudy_pixel_percentage = models.FloatField(default=100)
     # Parse related data.
     active = models.BooleanField(default=True, help_text='If unchecked, this area will not be included in the parsing.')
-    last_built = models.DateTimeField(null=True, blank=True)
-    currently_building = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

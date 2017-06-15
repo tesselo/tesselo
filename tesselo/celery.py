@@ -4,6 +4,7 @@ import os
 import sys
 
 from celery import Celery
+
 from django.conf import settings
 
 # Add the apps directory to the python path for celery to find the apps

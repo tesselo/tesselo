@@ -2,9 +2,9 @@ from rest_framework import routers
 
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView, LegendEntryViewSet,
-    LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, ValueCountResultViewSet
+    LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, ValueCountResultViewSet, WorldLayerGroupViewSet,
+    ZoneOfInterestViewSet
 )
-from sentinel.views import WorldLayerGroupViewSet
 
 router = routers.DefaultRouter(trailing_slash=False)
 
@@ -34,3 +34,4 @@ router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
 
 router.register(r'worldlayergroup', WorldLayerGroupViewSet, base_name='worldlayergroup')
+router.register(r'zoneofinterest', ZoneOfInterestViewSet, base_name='zoneofinterest')
