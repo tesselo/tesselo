@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django_filters',
     'guardian',
     'django_extensions',
+    'django_celery_results',
 
     'raster',
     'raster_aggregation',
@@ -237,8 +238,8 @@ REST_FRAMEWORK = {
 }
 
 # Celery settings.
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//')
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
 

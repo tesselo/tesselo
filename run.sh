@@ -15,7 +15,7 @@ if [ "$DEBUG" = "True" ]; then
     chown -R postgres /pgdata
     chmod -R 700 /pgdata
     service postgresql start
-    sleep 2
+    sleep 5
 fi
 
 # Check if tesselo database exists, if not create it and a new superuser.

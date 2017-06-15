@@ -29,3 +29,4 @@ django-guardian==1.4.8
 https://github.com/geodesign/django-raster/archive/raster_file_field.tar.gz
 https://github.com/celery/celery/archive/master.tar.gz
 https://github.com/geodesign/django-raster-aggregation/archive/master.tar.gz
+django-celery-results==1.0.1
