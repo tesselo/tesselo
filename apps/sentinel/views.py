@@ -13,7 +13,7 @@ from sentinel.serializers import WorldLayerGroupSerializer
 
 
 class WorldLayerGroupViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = WorldLayerGroup.objects.all()
+    queryset = WorldLayerGroup.objects.all().order_by('id')
     serializer_class = WorldLayerGroupSerializer
     filter_backends = (DjangoFilterBackend, )
     filter_fields = ('active', )
