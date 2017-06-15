@@ -17,9 +17,9 @@ define([
         },
 
         ui: {
-            layers: '.layer-input',
+            layer_names: '.layer-names-input',
             formula: '.formula-input',
-            legend: '.legend-input',
+            grouping: '.grouping-input',
             agglayer: '.agglayer-input',
             maxzoom: '.maxzoom-input',
             title: '.title-input',
@@ -29,9 +29,9 @@ define([
 
         report: function(){
             var data = {
-                layers: JSON.parse(this.ui.layers.val()),
+                layer_names: JSON.parse(this.ui.layer_names.val()),
                 formula: this.ui.formula.val(),
-                legend: JSON.parse(this.ui.legend.val()),
+                grouping: JSON.parse(this.ui.grouping.val()),
                 aggregationlayer: this.ui.agglayer.val(),
                 maxzoom: this.ui.maxzoom.val(),
                 title: this.ui.title.val(),
