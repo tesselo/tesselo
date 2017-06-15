@@ -43,6 +43,9 @@ elif [ "$DEBUG" = "True" ]; then
 elif ["$WORKER" = "True"]; then
     # Run django as a celery worker.
     su -m mrdjango -c "celery worker -A tesselo -l info --concurrency=1"
+elif ["$BEAT" = "True"]; then
+    # Run django as a celery beat scheduler.
+    su -m mrdjango -c "celery beat -A tesselo -l info -S django"
 else
     # Run gunicorn in production.
     gunicorn -w 3 -b 0.0.0.0 -u mrdjango tesselo.wsgi
