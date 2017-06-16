@@ -43,7 +43,7 @@ elif [ "$WORKER" = "True" ]; then
 elif [ "$BEAT" = "True" ]; then
     echo 'Running beat.'
     # Run django as a celery beat scheduler.
-    su -m mrdjango -c "celery beat -A tesselo -l info -S django"
+    su -m mrdjango -c "celery beat -A tesselo -l info -S django --pidfile /celery_beat_pid/tesselo_beat.pid"
 elif [ "$DEBUG" = "True" ]; then
     echo 'Running as debug server.'
     # Run the django development server.

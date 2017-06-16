@@ -54,6 +54,10 @@ RUN chown -R mrdjango /staticfiles
 RUN mkdir /tesselo_media
 RUN chown -R mrdjango /tesselo_media
 
+# Create celery beat pid directory.
+RUN mkdir /celery_beat_pid
+RUN chown -R mrdjango /celery_beat_pid
+
 # Set workdir
 WORKDIR /code
 
