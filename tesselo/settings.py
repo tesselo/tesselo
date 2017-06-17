@@ -244,25 +244,6 @@ CELERY_RESULT_BACKEND = 'django-db'
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
 
-CELERY_BEAT_SCHEDULE = {
-    'monitor_queue': {
-        'task': 'sentinel.tasks.drive_sentinel_queue',
-        'schedule': timedelta(seconds=900),
-    },
-    # 'sync_bucket': {
-    # 'task': 'sentinel.tasks.drive_sentinel_bucket_parser',
-    # 'schedule': timedelta(hours=12),
-    # },
-    # 'build_world_layer': {
-    # 'task': 'sentinel.tasks.drive_world_layers',
-    # 'schedule': timedelta(hours=6),
-    # },
-    'repair_incomplete_scenes': {
-        'task': 'sentinel.tasks.repair_incomplete_scenes',
-        'schedule': timedelta(hours=24),
-    },
-}
-
 # Django-raster settings
 RASTER_USE_CELERY = True
 RASTER_PARSE_SINGLE_TASK = True
