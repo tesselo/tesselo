@@ -207,6 +207,7 @@ class AggregationAreaViewSet(ModelViewSet):
     queryset = AggregationArea.objects.all().order_by('id')
     serializer_class = AggregationAreaSimplifiedSerializer
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
+    filter_fields = ('aggregationlayer', )
 
     _parent_model = 'aggregationlayer'
 
