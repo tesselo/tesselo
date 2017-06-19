@@ -409,7 +409,7 @@ def drive_world_layers(world_ids=None):
     """
     worlds = WorldLayerGroup.objects.filter(active=True)
     if world_ids:
-        worlds.filter(id__in=world_ids)
+        worlds = worlds.filter(id__in=world_ids)
 
     for world in worlds:
         # Get all active zones of interest for this world layer.
@@ -450,6 +450,8 @@ def drive_world_layers(world_ids=None):
                     time.sleep(1)
 
                     build_world_layers.delay(world.id, tilex, tiley, const.ZOOM_LEVEL_WORLDLAYER)
+
+    return 'Started world layers for layers {0}.'.format([world.pk for world in worlds])
 
 
 @task
@@ -541,6 +543,8 @@ def build_world_layers(world_id, tilex, tiley, tilez):
 
     # Build pyramid for this zone.
     build_world_pyramids(world, tilex, tiley, tilez)
+
+    return 'Successfully built worldlayer {0} at (x={1}, y={2}, z={3})'.format(world_id, tilex, tiley, tilez)
 
 
 def build_world_pyramids(world, tilex, tiley, tilez):
