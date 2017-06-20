@@ -14,7 +14,7 @@ define([
             // Convert data into hectares.
             _.each(data, function(dat){
                 _.each(dat.value, function(val, key){
-                    dat.value[key] = Math.round(val * 0.404686);
+                    dat.value[key] = Math.round(10 * val * 0.404686) / 10;
                 });
             });
             return data;
