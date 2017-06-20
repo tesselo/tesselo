@@ -119,7 +119,7 @@ define([
 
     const ListTableView = Marionette.View.extend({
         className: 'table table-hover',
-        template: _.template('<h4>Table</h4><table class="table"><thead><tr><th>Color</th><th>Class</th><th>Value</th></tr></thead><tbody></tbody></table>'),
+        template: _.template('<h4>Table</h4><table class="table"><thead><tr><th>Color</th><th>Class</th><th>Hectares</th></tr></thead><tbody></tbody></table>'),
 
         regions: {
             body: {

@@ -319,9 +319,9 @@ define([
                 formula: this.ui.formula.val(),
                 grouping: legend,
                 aggregationlayer: this.agglayer_id,
-                zoom: 7,
+                zoom: 14,
                 acres: 'True',
-                title: 'Samba Report',
+                title: 'Tesselo Report',
                 description: 'Auto generated.'
             }
 

@@ -10,8 +10,14 @@ define([
         model: ValueCountResult,
         url: '/api/valuecountresult',
         parse : function(data) {
-            return data.results;
-            //return _.filter(data, function(dat){ return !_.isEmpty(dat.value); });
+            data = data.results;
+            // Convert data into hectares.
+            _.each(data, function(dat){
+                _.each(dat.value, function(val, key){
+                    dat.value[key] = Math.round(val * 0.404686);
+                });
+            });
+            return data;
         }
     });
 });

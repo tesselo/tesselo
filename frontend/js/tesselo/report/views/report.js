@@ -58,7 +58,7 @@ define([
             };
 
             if(this.options.acres){
-                avals_params.acres = 'True';
+                avals_params.units = 'acres';
             };
 
             if(this.options.zoom){
@@ -110,9 +110,6 @@ define([
                     result.save();
                 }
             });
-
-            // Log obects to console for checking.
-            console.log(this.avals, this.areas);
 
             // Combine the two collections.
             this.avals.each(function(aval){
