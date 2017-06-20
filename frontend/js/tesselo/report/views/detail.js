@@ -136,7 +136,7 @@ define([
     });
 
     const DetailView = Marionette.View.extend({
-        template: _.template('<hr><h3><%- name %></h3><div class="row"><div class="arealist col-xs-4"></div><div class="areachart col-xs-4"></div><div class="areamap col-xs-4"></div></div>'),
+        template: _.template('<hr><h3><%- name %><span class="pull-right"><small><%- status %></small></span></h3><div class="row"><div class="arealist col-xs-4"></div><div class="areachart col-xs-4"></div><div class="areamap col-xs-4"></div></div>'),
         regions: {
             list: '.arealist',
             chart: '.areachart',
