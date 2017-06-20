@@ -29,7 +29,7 @@ define([
     return Marionette.AppRouter.extend({
         controller: ReportController,
         appRoutes: {
-            '(/)report(/)(:reportdata)': 'action',
+            'report/(:reportdata)': 'action',
         },
         initialize: function(root){
             this.controller.root = root;
