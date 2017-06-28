@@ -52,5 +52,10 @@ the certificates are generated on the remote machine. To download the certs, use
     
     cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/cert.pem' > cert.pem
     cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/privkey.pem' > privkey.pem
+    cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/chain.pem' > chain.pem
+    cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/fullchain.pem' > fullchain.pem
 
-Then manually upload them to bluemix.
+Then manually upload them to bluemix, using the cert.pem as main certificate and fullchain.pem as intermediate cert.
+
+Without the intermediate certificate, the page opens successfully in browsers, but the cert chain is not complete. So
+requests from curl or python scripts will fail due to failing cert handshakes.
