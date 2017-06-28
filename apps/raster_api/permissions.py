@@ -12,12 +12,33 @@ class RasterTilePermission(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        if 'layer' in view.kwargs:
-            qs = RasterLayer.objects.filter(id=view.kwargs.get('layer'))
-        else:
-            qs = RasterLayer.objects.filter(id__in=view.get_ids().values())
-
+        qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
         return all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
+
+
+class ValueCountResultCreatePermission(permissions.BasePermission):
+    """
+    Checks if a user can create a value count result object.
+
+    This permission only checks layer and aggregation area dependencies
+    upon create (POST). All other cases are handled by the objec level
+    permissions.
+
+    The rationale for this is that the dependent objects are only needed
+    on creation. The results are owned by the creator even if the layers
+    or aggregation area permissions are unset.
+    """
+    def has_permission(self, request, view):
+        # This check is for creation only.
+        if request.method != 'POST':
+            return True
+        # The user can view all raster layers.
+        qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
+        view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
+        # Check for permission on aggregation area through aggregationlayer.
+        agglyr = AggregationLayer.objects.get(aggregationarea=view.request.data['aggregationarea'])
+        view_agg = request.user.has_perm('view_aggregationlayer', agglyr)
+        return view_all_rasters and view_agg
 
 
 class RasterObjectPermission(permissions.DjangoObjectPermissions):

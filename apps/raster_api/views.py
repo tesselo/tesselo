@@ -23,7 +23,7 @@ from raster_aggregation.serializers import (
 from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
-    RasterTilePermission
+    RasterTilePermission, ValueCountResultCreatePermission
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
@@ -214,6 +214,11 @@ class AggregationAreaViewSet(ModelViewSet):
 
 class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewSet):
 
+    permission_classes = (
+        IsAuthenticated,
+        RasterObjectPermission,
+        ValueCountResultCreatePermission,
+    )
     queryset = ValueCountResult.objects.all().order_by('id')
     serializer_class = ValueCountResultSerializer
 
@@ -224,6 +229,9 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
         super(ValueCountResultViewSet, self).perform_create(serializer)
         # Manually assign permissions after object was created.
         self._assign_perms(serializer.instance)
+
+    def get_ids(self):
+        return self.request.data.get('layer_names', {})
 
 
 class WorldLayerGroupViewSet(PermissionsModelViewSet):
