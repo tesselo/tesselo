@@ -121,6 +121,11 @@ class PermissionsModelViewSet(ModelViewSet):
 
         funk('{perm}_{model}'.format(perm=permission, model=self._model), invitee, obj)
 
+        # Handle worldlayer case.
+        if self._model == 'worldlayergroup':
+            for wlayer in obj.worldlayers.all():
+                funk('{perm}_rasterlayer'.format(perm=permission), invitee, wlayer.rasterlayer)
+
         return Response(status=HTTP_204_NO_CONTENT)
 
     @detail_route(methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
@@ -132,6 +137,13 @@ class PermissionsModelViewSet(ModelViewSet):
         child = getattr(obj, 'public{0}'.format(self._model.lower()))
         child.public = not child.public
         child.save()
+
+        # Handle worldlayer case.
+        if self._model == 'worldlayergroup':
+            for wlayer in obj.worldlayers.all():
+                child = wlayer.rasterlayer.publicrasterlayer
+                child.public = not child.public
+                child.save()
         return Response(status=HTTP_204_NO_CONTENT)
 
     @detail_route(methods=['get'])
