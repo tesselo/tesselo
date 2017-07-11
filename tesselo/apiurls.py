@@ -14,12 +14,12 @@ router.register(r'legendsemantics', LegendSemanticsViewSet)
 router.register(r'legendentry', LegendEntryViewSet)
 
 router.register(
-    r'tile/(?P<layer>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg)',
+    r'tile/(?P<layer>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
     AlgebraAPIView,
     base_name='tile'
 )
 router.register(
-    r'algebra/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>jpg|png)',
+    r'algebra/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>jpg|png|tif)',
     AlgebraAPIView,
     base_name='algebra'
 )
