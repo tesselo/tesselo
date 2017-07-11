@@ -7,19 +7,19 @@ import time
 import traceback
 import uuid
 
+import numpy
 from celery import task
 from celery.utils.log import get_task_logger
+from dateutil import parser
 from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 import boto3
 import botocore
-import numpy
 from botocore.client import Config
-from dateutil import parser
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
-from django.contrib.gis.geos import MultiPolygon
+from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
 from django.db.models import Count, F, Func
 from django.utils import timezone
@@ -99,22 +99,39 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
                 mgrs.geom = OGRGeometry(json.dumps(tileinfo['tileGeometry'])).geos
                 mgrs.save()
 
-            # Get tile data geometry and make sure its a multi polygon.
-            if 'tileDataGeometry' in tileinfo:
-                geom = OGRGeometry(str(tileinfo['tileDataGeometry'])).geos
+            # Tile
+            if 'tileGeometry' in tileinfo:
+                tile_geom = OGRGeometry(str(tileinfo['tileGeometry'])).geos
 
-                if not isinstance(geom, MultiPolygon):
-                    geom = MultiPolygon(geom, srid=geom.srid)
+                if not isinstance(tile_geom, Polygon):
+                    tile_geom = Polygon(tile_geom, srid=tile_geom.srid)
 
                 # Set geom to none if tile data geom is not valid.
-                if not geom.valid:
+                if not tile_geom.valid:
                     log.write('Found invalid geom for {0}. Valid Reason: {1}'.format(
                         tile_prefix,
-                        geom.valid_reason,
+                        tile_geom.valid_reason,
                     ))
-                    geom = None
+                    tile_geom = None
             else:
-                geom = None
+                tile_geom = None
+
+            # Get tile data geometry and make sure its a multi polygon.
+            if 'tileDataGeometry' in tileinfo:
+                tile_data_geom = OGRGeometry(str(tileinfo['tileDataGeometry'])).geos
+
+                if not isinstance(tile_data_geom, MultiPolygon):
+                    tile_data_geom = MultiPolygon(tile_data_geom, srid=tile_data_geom.srid)
+
+                # Set geom to none if tile data geom is not valid.
+                if not tile_data_geom.valid:
+                    log.write('Found invalid geom for {0}. Valid Reason: {1}'.format(
+                        tile_prefix,
+                        tile_data_geom.valid_reason,
+                    ))
+                    tile_data_geom = None
+            else:
+                tile_data_geom = None
 
             # Assume data coverage is zero if info is not available.
             data_coverage_percentage = tileinfo.get('dataCoveragePercentage', 0)
@@ -130,7 +147,8 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
                 datastrip=tileinfo['datastrip']['id'],
                 product_name=tileinfo['productName'],
                 mgrstile=mgrs,
-                tile_data_geom=geom,
+                tile_geom=tile_geom,
+                tile_data_geom=tile_data_geom,
                 collected=date,
                 cloudy_pixel_percentage=tileinfo['cloudyPixelPercentage'],
                 data_coverage_percentage=data_coverage_percentage,

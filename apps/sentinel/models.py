@@ -42,6 +42,7 @@ class SentinelTile(models.Model):
     datastrip = models.TextField()
     product_name = models.TextField()
     mgrstile = models.ForeignKey(MGRSTile)
+    tile_geom = models.PolygonField(null=True)
     tile_data_geom = models.MultiPolygonField(null=True)
     collected = models.DateTimeField()
     cloudy_pixel_percentage = models.FloatField()
