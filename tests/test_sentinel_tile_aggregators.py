@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import numpy
+
 from django.test import TestCase
 from sentinel.tasks import disaggregate_tile
 

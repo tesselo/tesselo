@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import numpy
+
 from sentinel import const
 
 

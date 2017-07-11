@@ -1,9 +1,8 @@
 from __future__ import unicode_literals
 
+import numpy
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_scale
-
-import numpy
 
 # Set parameters for bucket praser
 CLIENT_TYPE = 's3'
