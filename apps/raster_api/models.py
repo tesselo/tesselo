@@ -26,7 +26,7 @@ class RasterLayerGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicRasterLayer(models.Model):
 
-    rasterlayer = models.OneToOneField(RasterLayer)
+    rasterlayer = models.OneToOneField(RasterLayer, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
@@ -58,7 +58,7 @@ class LegendGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicLegend(models.Model):
 
-    legend = models.OneToOneField(Legend)
+    legend = models.OneToOneField(Legend, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
@@ -90,7 +90,7 @@ class LegendSemanticsGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicLegendSemantics(models.Model):
 
-    legendsemantics = models.OneToOneField(LegendSemantics)
+    legendsemantics = models.OneToOneField(LegendSemantics, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
@@ -122,7 +122,7 @@ class AggregationLayerGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicAggregationLayer(models.Model):
 
-    aggregationlayer = models.OneToOneField(AggregationLayer)
+    aggregationlayer = models.OneToOneField(AggregationLayer, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
@@ -154,7 +154,7 @@ class ValueCountResultGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicValueCountResult(models.Model):
 
-    valuecountresult = models.OneToOneField(ValueCountResult)
+    valuecountresult = models.OneToOneField(ValueCountResult, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
@@ -186,7 +186,7 @@ class WorldLayerGroupGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicWorldLayerGroup(models.Model):
 
-    worldlayergroup = models.OneToOneField(WorldLayerGroup)
+    worldlayergroup = models.OneToOneField(WorldLayerGroup, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
@@ -218,7 +218,7 @@ class ZoneOfInterestGroupObjectPermission(GroupObjectPermissionBase):
 
 class PublicZoneOfInterest(models.Model):
 
-    zoneofinterest = models.OneToOneField(ZoneOfInterest)
+    zoneofinterest = models.OneToOneField(ZoneOfInterest, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):

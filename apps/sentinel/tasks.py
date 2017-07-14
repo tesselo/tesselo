@@ -25,7 +25,8 @@ from django.db.models import Count, F, Func
 from django.utils import timezone
 from sentinel import const
 from sentinel.clouds.sun_angle import sun
-from sentinel.clouds.tables import clouds
+#from sentinel.clouds.tables import clouds
+from classify.clouds import clouds
 from sentinel.models import (
     BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest
 )

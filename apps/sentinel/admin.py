@@ -37,6 +37,8 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
     )
     raw_id_fields = ('mgrstile', )
     modifiable = False
+    list_filter = ('mgrstile__utm_zone', 'mgrstile__latitude_band', )
+    search_fields = ('prefix', )
 
 
 class MGRSTileAdmin(PatchedOSMGeoAdmin):
@@ -45,6 +47,7 @@ class MGRSTileAdmin(PatchedOSMGeoAdmin):
         'utm_zone', 'latitude_band', 'grid_square',
     )
     modifiable = False
+    list_filter = ('utm_zone', 'latitude_band', )
 
 
 class WorldLayerGroupAdmin(admin.ModelAdmin):

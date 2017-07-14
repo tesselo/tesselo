@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
     'raster_api',
     'sentinel',
+    'classify',
 ]
 
 MIDDLEWARE = [
@@ -222,6 +223,14 @@ SWIFT_TEMP_URL_KEY = '837364758201019283746462823948475454'
 # export OS_IDENTITY_API_VERSION=3
 # export OS_AUTH_VERSION=3
 # swift post raster-api-static --read-acl ".r:*"
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+    }
+}
+
 
 # Rest framework settings.
 REST_FRAMEWORK = {
