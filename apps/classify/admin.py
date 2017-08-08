@@ -2,6 +2,7 @@ from classify.models import Classifier, TrainingSample
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const
+from classify.tasks import train_cloud_classifier
 
 
 class TrainingSmapleForm(forms.ModelForm):
@@ -32,5 +33,18 @@ class TrainingSampleAdmin(admin.OSMGeoAdmin):
     form = TrainingSmapleForm
 
 
-admin.site.register(Classifier)
+class ClassifierAdmin(admin.ModelAdmin):
+
+    actions = ['train_classifier', ]
+
+    def train_classifier(self, request, queryset):
+        """
+        Admin action to train classifiers.
+        """
+        for clf in queryset:
+            train_cloud_classifier.delay(clf.id)
+        self.message_user(request, 'Started training classifiers.')
+
+
+admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)

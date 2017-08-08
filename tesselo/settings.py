@@ -142,6 +142,13 @@ USE_L10N = True
 
 USE_TZ = True
 
+# S3 Settings
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+AWS_S3_HOST = os.environ.get('AWS_S3_HOST', 's3.amazonaws.com')
+AWS_S3_ENDPOINT_URL = 'https://' + AWS_S3_HOST
+AWS_BUCKET_ACL = AWS_DEFAULT_ACL = 'private'
+AWS_S3_URL_PROTOCOL = 'https:'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
@@ -160,7 +167,21 @@ STATIC_ROOT = '/staticfiles'
 if DEBUG:
     STATIC_URL = '/static/'
 else:
-    STATIC_URL = 'https://dal.objectstorage.open.softlayer.com/v1/AUTH_5aefa817e5074528a22b16636238720a/raster-api-static/'
+    # Storage class for static files and compressor
+    STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootCachedS3Boto3Storage'
+
+    # Get S3 bucket name
+    AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
+
+    # Set the url to the bucket for serving files
+    STATIC_URL = 'https://{bucket}.{host}/'.format(
+        bucket=AWS_STORAGE_BUCKET_NAME_STATIC,
+        host=AWS_S3_HOST,
+    )
+
+    # Define the storage class and url for compression
+    COMPRESS_STORAGE = STATICFILES_STORAGE
+    COMPRESS_URL = STATIC_URL
 
 # Compressor settings
 COMPRESS_JS_FILTERS = [
@@ -183,47 +204,19 @@ COMPRESS_OFFLINE = True
 if DEBUG:
     MEDIA_ROOT = '/tesselo_media'
 else:
-    DEFAULT_FILE_STORAGE = 'swift.storage.SwiftStorage'
-    STATICFILES_STORAGE = 'tesselo.utils.CachedStaticSwiftStorage'
-    COMPRESS_STORAGE = 'tesselo.utils.CachedStaticSwiftStorage'
+    # Storage class for media files
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    # Get S3 bucket name
+    AWS_STORAGE_BUCKET_NAME_MEDIA = os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')
+    AWS_STORAGE_BUCKET_NAME = AWS_STORAGE_BUCKET_NAME_MEDIA
 
-SWIFT_CONTAINER_NAME = 'raster-api-media'
-SWIFT_STATIC_CONTAINER_NAME = 'raster-api-static'
+    # Set the url to the bucket for serving files
+    MEDIA_URL = 'https://{bucket}.{host}/'.format(
+        bucket=AWS_STORAGE_BUCKET_NAME_MEDIA,
+        host=AWS_S3_HOST,
+    )
 
-SWIFT_AUTH_URL = "https://identity.open.softlayer.com/v3"
-SWIFT_AUTH_VERSION = '3'
-SWIFT_USERNAME = "admin_d25a27b832517e8876e43c348baa7d7e7a3a132e"
-SWIFT_KEY = "X/S]w_Ow]d(335Ko"
-SWIFT_TENANT_NAME = "object_storage_ad105e6c_9b10_4fd1_b00d_ba7ce36a88c6"
-SWIFT_USER_DOMAIN_NAME = '1100611'
-SWIFT_PROJECT_DOMAIN_NAME = '1100611'
-SWIFT_USE_TEMP_URLS = False
-SWIFT_TEMP_URL_KEY = '837364758201019283746462823948475454'
-
-# SWIFT_AUTH_VERSION="3"
-# SWIFT_USERNAME="admin_d25a27b832517e8876e43c348baa7d7e7a3a132e",
-# SWIFT_USERNAME="7f5e62716c64422a9d857fafa2a88d0b"
-# SWIFT_USER_ID="7f5e62716c64422a9d857fafa2a88d0b"
-# SWIFT_PASSWORD="X/S]w_Ow]d(335Ko"
-# swift_project_id="5aefa817e5074528a22b16636238720a"
-# SWIFT_USER_DOMAIN_ID="7f5e62716c64422a9d857fafa2a88d0b"
-# SWIFT_USER_DOMAIN_NAME='1100611'
-# SWIFT_PROJECT_DOMAIN_NAME='1100611'
-
-# SWIFT_REGION_NAME="dallas"
-# export OS_AUTH_VERSION=3
-
-
-# Working command to make bucket public.
-# export OS_USER_ID=7f5e62716c64422a9d857fafa2a88d0b
-# export OS_PASSWORD=X/S]w_Ow]d(335Ko
-# export OS_PROJECT_ID=5aefa817e5074528a22b16636238720a
-# export OS_AUTH_URL=https://identity.open.softlayer.com/v3
-# export OS_REGION_NAME=dallas
-# export OS_IDENTITY_API_VERSION=3
-# export OS_AUTH_VERSION=3
-# swift post raster-api-static --read-acl ".r:*"
-
+# Cache settings
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',

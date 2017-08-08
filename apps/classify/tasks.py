@@ -32,6 +32,10 @@ BAND_NAMES = (
     'B12.jp2',
 )
 
+#BAND_NAMES = (
+    #'B01.jp2', 'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2', 'B12.jp2',
+#)
+
 
 def get_training_data(sentineltile, tilez, tilex, tiley):
     """
