@@ -13,7 +13,7 @@ requests==2.14.1
 boto3==1.4.4
 coreapi==2.3.0
 Pillow==4.1.1
-numpy==1.12.1
+numpy==1.13.1
 ephem==3.7.6.0
 mock==2.0.0
 selenium==3.4.3
