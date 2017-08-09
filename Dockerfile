@@ -62,7 +62,7 @@ RUN chown -R mrdjango /celery_beat_pid
 WORKDIR /code
 
 # Set port
-EXPOSE 8000
+EXPOSE 80
 
 # Set the startup script as default command.
 CMD /code/run.sh
