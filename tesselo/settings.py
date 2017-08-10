@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'django.contrib.gis',
 
+    'storages',
     'compressor',
     'django_cleanup',
     'rest_framework',
@@ -145,10 +146,6 @@ USE_TZ = True
 # S3 Settings
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
-AWS_S3_HOST = os.environ.get('AWS_S3_HOST', 's3.amazonaws.com')
-AWS_S3_ENDPOINT_URL = 'https://' + AWS_S3_HOST
-AWS_BUCKET_ACL = AWS_DEFAULT_ACL = 'private'
-AWS_S3_URL_PROTOCOL = 'https:'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
@@ -174,9 +171,8 @@ else:
     AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
 
     # Set the url to the bucket for serving files
-    STATIC_URL = 'https://{bucket}.{host}/'.format(
+    STATIC_URL = 'http://{bucket}.s3.amazonaws.com/'.format(
         bucket=AWS_STORAGE_BUCKET_NAME_STATIC,
-        host=AWS_S3_HOST,
     )
 
     # Define the storage class and url for compression
@@ -211,18 +207,17 @@ else:
     AWS_STORAGE_BUCKET_NAME = AWS_STORAGE_BUCKET_NAME_MEDIA
 
     # Set the url to the bucket for serving files
-    MEDIA_URL = 'https://{bucket}.{host}/'.format(
+    MEDIA_URL = 'https://{bucket}..s3.amazonaws.com/'.format(
         bucket=AWS_STORAGE_BUCKET_NAME_MEDIA,
-        host=AWS_S3_HOST,
     )
 
 # Cache settings
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': '/var/tmp/django_cache',
-    }
-}
+#CACHES = {
+    #'default': {
+        #'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        #'LOCATION': '/var/tmp/django_cache',
+    #}
+#}
 
 
 # Rest framework settings.
