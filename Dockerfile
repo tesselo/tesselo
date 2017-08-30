@@ -10,6 +10,7 @@ RUN apt-get upgrade -y
 # Install Utilities
 RUN apt-get install -y\
     curl\
+    python3-pycurl\
     git\
     vim\
     build-essential\

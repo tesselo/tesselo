@@ -235,14 +235,14 @@ REST_FRAMEWORK = {
 }
 
 # Celery settings.
-if 'CELERY_BROKER_URL' in os.environ:
-    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//')
+if DEBUG:
+    CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 else:
     CELERY_BROKER_URL = 'sqs://{0}:{1}@'.format(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
     CELERY_BROKER_TRANSPORT_OPTIONS = {
         'region': 'eu-central-1',
         'visibility_timeout': 2 * 3600,  # 2 hours.
-        'polling_interval': 1,
+        'polling_interval': 5,
         'queue_name_prefix': 'tesselo-',
     }
 CELERY_RESULT_BACKEND = 'django-db'

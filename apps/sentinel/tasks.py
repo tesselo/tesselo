@@ -25,8 +25,8 @@ from django.db.models import Count, F, Func
 from django.utils import timezone
 from sentinel import const
 from sentinel.clouds.sun_angle import sun
-#from sentinel.clouds.tables import clouds
-from classify.clouds import clouds
+from sentinel.clouds.tables import clouds
+#from classify.clouds import clouds
 from sentinel.models import (
     BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest
 )
@@ -644,7 +644,6 @@ def build_world_pyramids(world, tilex, tiley, tilez):
                     result_dict = {
                         'name': '/vsimem/{}'.format(uuid.uuid4()),
                         'driver': 'tif',
-                        'compress': 'DEFLATE',
                         'origin': (bounds[0], bounds[3]),
                         'width': WEB_MERCATOR_TILESIZE,
                         'height': WEB_MERCATOR_TILESIZE,
@@ -652,6 +651,10 @@ def build_world_pyramids(world, tilex, tiley, tilez):
                         'srid': WEB_MERCATOR_SRID,
                         'datatype': 2,
                         'bands': [{'nodata_value': 0, }],
+                        'papsz_options': {
+                            'compress': 'deflate',
+                            'predictor': 2,
+                        },
                     }
 
                     # Write tile to database, update if tile already exists.
