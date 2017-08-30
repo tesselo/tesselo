@@ -4,13 +4,13 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - $(aws ecr get-login --region eu-central-1)
+      - $(aws ecr get-login --no-include-email --region eu-central-1)
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...          
       - docker build -t tesselo .
-      - docker tag 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
+      - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
