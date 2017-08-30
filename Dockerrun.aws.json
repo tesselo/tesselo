@@ -4,6 +4,11 @@
     "Name": "595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest",
     "Update": "true"
   },
+  "Ports": [
+    {
+      "ContainerPort": "8000"
+    }
+  ],
   "Volumes": [
       {
           "HostDirectory": "/tmp/rasterwd",
