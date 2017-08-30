@@ -8,7 +8,8 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - echo Building the Docker image...          
+      - echo Building the Docker image...
+      - echo "Testing codebuild build id ${CODEBUILD_BUILD_ID##*:}"
       - docker build -t tesselo .
       - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
       - echo Build completed on `date`
