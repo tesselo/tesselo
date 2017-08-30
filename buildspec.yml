@@ -1,0 +1,25 @@
+version: 0.1
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --region eu-central-1)
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...          
+      - docker build -t tesselo .
+      - docker tag 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
+      - "echo {\\\"image\\\":\\\"595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest}\\\"} > image.json"
+      #- "docker tag $IMAGE $REPO/$IMAGE:${CODEBUILD_BUILD_ID##*:}"
+      #- echo Build completed on `date`
+      #- echo Pushing the Docker image...
+      #- "docker push $REPO/$IMAGE:${CODEBUILD_BUILD_ID##*:}"
+      #- "echo {\\\"image\\\":\\\"$REPO/$IMAGE:${CODEBUILD_BUILD_ID##*:}\\\"} > image.json"
+artifacts:
+  files:
+    - 'image.json'
