@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+if [ "$WORKER" = "True" ]; then
+    echo "Running worker, no migrations necessary."
+    return
+fi
+
 echo "Compressing static files"
 python3 manage.py compress --force
 
