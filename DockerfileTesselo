@@ -94,3 +94,6 @@ RUN r.js -o frontend/js/build.js
 
 # Make startup script executable.
 RUN chmod +x /code/run.sh
+
+# Make compress collect migrate script executable.
+RUN chmod +x /code/compress_collect_migrate.sh
