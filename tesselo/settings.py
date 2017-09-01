@@ -25,11 +25,10 @@ ALLOWED_HOSTS = ['*']
 LOGIN_REDIRECT_URL = '/'
 
 # Forward to ssl if not ssl recieved.
-#SECURE_SSL_REDIRECT = not DEBUG
-#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
