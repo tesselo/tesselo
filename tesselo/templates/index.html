@@ -1,86 +1,267 @@
 <!DOCTYPE html>
 {% load compress %}
 <html lang="en">
-<head>
-    <title>Tesselo</title>
-    <link rel="icon" type="image/png" href="{{ STATIC_URL }}images/tesselo-favicon.png"/>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    {% compress css %}
+    <head>
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="">
+        <meta name="author" content="">
+
+        <title>Tesselo</title>
+        <link rel="icon" type="image/png" href="{{ STATIC_URL }}images/tesselo-favicon.png"/>
+
+        {% compress css %}
         <link rel="stylesheet" href="{{ STATIC_URL }}node_modules/leaflet/dist/leaflet.css" type="text/css"/>
         <link rel="stylesheet" href="{{ STATIC_URL }}node_modules/nouislider/distribute/nouislider.css" type="text/css"/>
         <link rel="stylesheet" href="{{ STATIC_URL }}less/swatchmaker.less" type="text/less"/>
         <link rel="stylesheet" href="{{ STATIC_URL }}less/main.less" type="text/less"/>
-    {% endcompress css %}
-</head>
+        <!-- Bootstrap Core CSS -->
+        <!--<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
 
-<body>
-    {% if not user.is_authenticated %}
-        <div class="background"></div>
-    {% endif %}
-    <nav class="navbar navbar-default navbar-fixed-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">Tesselo</a>
-            </div>
-            <div class="collapse navbar-collapse" id="navbar-collapse-1">
-                <ul class="nav navbar-nav navbar-right">
-                    {% if user.is_authenticated %}
-                        <li><a href="/logout/?next=/"><span class="glyphicon glyphicon-log-out"></span></a></li>
-                    {% else %}
-                        <li><a href="/login/?next=/"><span class="glyphicon glyphicon-log-in"></span></a></li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
+        <!-- Theme CSS -->
+        <link href="{{ STATIC_URL }}less/tesselo.less" rel="stylesheet" type="text/less">
+        {% endcompress css %}
+
+        <!-- Custom Fonts -->
+        <link href="https://fonts.googleapis.com/css?family=Abel" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+    </head>
     {% if user.is_authenticated %}
-        <div class="main"></div>
-        {% compress js %}
-            <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
-            {% if DEBUG %}
-                <script data-main="{{ STATIC_URL }}js/tesselo/main" src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
-            {% else %}
-                <script src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
-                <script src="{{ STATIC_URL }}js/dist.js"></script>
-            {% endif %}
-        {% endcompress %}
-    {% else %}
-        <div class="main landing container">
-            <div class="row">
-                <div class="col-sm-6 col-sm-offset-3">
-                    <h2>Welcome to Tesselo</h2>
-                    <h4>Access to this page is by invitation only at the moment.</h4>
-                    <form action="/login/?next=/" method="post">{% csrf_token %}
-                        <div class="form-group">
-                            <label for="Username">Username</label>
-                            <input type="text" class="form-control" id="Username" name="username" placeholder="Username">
-                        </div>
-                        <div class="form-group">
-                            <label for="InputPassword">Password</label>
-                            <input type="password" class="form-control" id="InputPassword" name="password" placeholder="Password">
-                        </div>
-                        <div class="text-right">
-                            <button type="submit" class="btn btn-default" name="signin">Sign In</button>
-                        </div>
-                    </form>
+    <body>
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">Tesselo</a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        {% if user.is_authenticated %}
+                        <li><a href="/logout/?next=/"><span class="glyphicon glyphicon-log-out"></span></a></li>
+                        {% else %}
+                        <li><a href="/login/?next=/"><span class="glyphicon glyphicon-log-in"></span></a></li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
+        </nav>
+        <div class="main"></div>
+        {% compress js %}
+        <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
+        {% if DEBUG %}
+        <script data-main="{{ STATIC_URL }}js/tesselo/main" src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
+        {% else %}
+        <script src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
+        <script src="{{ STATIC_URL }}js/dist.js"></script>
+        {% endif %}
+        {% endcompress %}
+    </body>
+
+    {% else %}
+
+    <body id="page-top" class="index">
+        <div id="skipnav"><a href="#maincontent">Skip to main content</a></div>
+
+        <!-- Navigation -->
+        <nav id="mainNav" class="navbar navbar-default navbar-fixed-top navbar-custom">
+            <div class="container">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header page-scroll">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span> Menu <i class="fa fa-bars"></i>
+                    </button>
+                    <a class="navbar-brand" href="#page-top"><img src="{{ STATIC_URL }}images/logo-tesselo.jpg" /></a>
+                </div>
+
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="hidden">
+                            <a href="#page-top"></a>
+                        </li>
+                        <li class="page-scroll">
+                            <a href="#services">Services</a>
+                        </li>
+                        <li class="page-scroll">
+                            <a href="#platform">Platform</a>
+                        </li>
+                        <li class="page-scroll">
+                            <a href="#about">About</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /.navbar-collapse -->
+            </div>
+            <!-- /.container-fluid -->
+        </nav>
+
+        <!-- Header -->
+        <header>
+            <div class="container" id="maincontent" tabindex="-1">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="intro-text">
+                            <h1 class="name animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">Geospatial intelligence for sustainability</h1>
+                            <div class="text-center animate" data-animate="fadeInUp" data-duration="1.0s" data-delay="0.1s">
+                                <a href="https://app.tesselo.com" class="btn btn-lg btn-outline">Launch Tesselo</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Services Grid Section -->
+        <section id="services">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="2.0s" data-delay="0.1s">
+                        <h2>Services</h2>
+                        <hr class="star-primary">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4 services-item">
+                        <img src="{{ STATIC_URL }}images/agriculture.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Agriculture">
+                        <h3 class="fadeIn">Agriculture</h3>
+                        <p class="fadeInLeft">Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                    <div class="col-sm-4 services-item">
+                        <img src="{{ STATIC_URL }}images/forest.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Forest">
+                        <h3 class="fadeIn">Forestry</h3>
+                        <p class="fadeInLeft">Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                    <div class="col-sm-4 services-item">
+                        <img src="{{ STATIC_URL }}images/road.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Road">
+                        <h3 class="fadeIn">Urban planning</h3>
+                        <p class="fadeInLeft">Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Platform Section -->
+        <section class="success" id="platform">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="1.0s" data-delay="0.1s">
+                        <h2>The Platform</h2>
+                        <hr class="star-primary">
+                    </div>
+                </div>
+                <div class="row animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
+                    <div class="col-sm-4 platform-item">
+                        <img src="{{ STATIC_URL }}images/icon-perf.png" class="img-responsive" alt="Performance">
+                        <h3>Performance</h3>
+                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                    <div class="col-sm-4 platform-item">
+                        <img src="{{ STATIC_URL }}images/icon-ai.png" class="img-responsive" alt="Artificial Intelligence">
+                        <h3>Artificial Intelligence</h3>
+                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                    <div class="col-sm-4 platform-item">
+                        <img src="{{ STATIC_URL }}images/icon-cloud.png" class="img-responsive" alt="Cloud">
+                        <h3>Cloud API</h3>
+                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="1.0s" data-delay="0.1s">
+                        <h2>About</h2>
+                        <hr class="star-primary">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-9 animate" data-animate="fadeInRight" data-duration="1.0s" data-delay="0.1s">
+                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                    </div>
+                    <div class="col-lg-3 animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
+                        <span>In partnership with</span>
+                        <img src="{{ STATIC_URL }}images/esa-logo.jpg" class="img-responsive" alt="ESA logo">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="text-center animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
+                            <a href="mailto:contact@tesselo.com" class="btn btn-lg btn-outline">Contact</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center">
+            <div class="footer-below">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            Made with care in Lisbon, Portugal.
+                        </div>
+                        <div class="col-lg-6 copyright">
+                            Copyright &copy; 2017 Space Mosaic Lda All rights reserved
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Scroll to Top Button (Only visible on small and extra-small screen sizes) -->
+        <div class="scroll-top page-scroll hidden-sm hidden-xs hidden-lg hidden-md">
+            <a class="btn btn-primary" href="#page-top">
+                <i class="fa fa-chevron-up"></i>
+            </a>
         </div>
 
         {% compress js %}
-            <script>var STATIC_URL={{ STATIC_URL }};</script>
+            <!-- jQuery -->
             <script src="{{ STATIC_URL }}node_modules/jquery/dist/jquery.js"></script>
+
+            <!-- Bootstrap Core JavaScript -->
             <script src="{{ STATIC_URL }}node_modules/bootstrap/dist/js/bootstrap.js"></script>
+
+            <!-- Plugin viewportchecker -->
+            <script src="{{ STATIC_URL }}landing/js/scrolla.js"></script>
+
+            <!-- Theme JavaScript -->
+            <script src="{{ STATIC_URL }}landing/js/tesselo.js"></script>
         {% endcompress %}
+
+        <!-- Plugin JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+
+    </body>
+
     {% endif %}
-</body>
+
 </html>
