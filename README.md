@@ -6,7 +6,7 @@ Copyright (c) 2017 Daniel Wiesmann
 Docker image
 ------------
 
-The tesselo docker image can be used for local development. 
+The tesselo docker image can be used for local development.
 
 To build the image, run
 
@@ -49,7 +49,7 @@ The ssh keys are generated through letsencrypt using a utiltiy app (https://gith
 Set the url domain name to ``tesselo.com``, and subdomain to ``www``, then run ``python setup-app.py``.
 The running of the script will fail when trying ``Making GET request to https://www.tesselo.com``, but
 the certificates are generated on the remote machine. To download the certs, use
-    
+
     cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/cert.pem' > cert.pem
     cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/privkey.pem' > privkey.pem
     cf ssh letsencrypt -c 'cat ~/app/conf/live/www.tesselo.com/chain.pem' > chain.pem
@@ -59,3 +59,9 @@ Then manually upload them to bluemix, using the cert.pem as main certificate and
 
 Without the intermediate certificate, the page opens successfully in browsers, but the cert chain is not complete. So
 requests from curl or python scripts will fail due to failing cert handshakes.
+
+CodeBuild Test Command
+----------------------
+Command used on the CodePipeline CodeBuild on aws.
+
+    $(aws ecr get-login --region eu-central-1) && docker run --rm --env DEBUG=True 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest /code/run.sh test
