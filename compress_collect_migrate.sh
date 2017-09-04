@@ -10,7 +10,7 @@ echo "Compressing static files"
 python3 manage.py compress --force
 
 echo "Collecting static files"
-ccmd = `python3 manage.py collectstatic --noinput\
+python3 manage.py collectstatic --noinput\
     -i tesselo\
     -i docs\
     -i fonts\
