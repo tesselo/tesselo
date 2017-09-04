@@ -170,7 +170,7 @@ else:
     AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
 
     # Set the url to the bucket for serving files
-    STATIC_URL = 'http://{bucket}.s3.amazonaws.com/'.format(
+    STATIC_URL = 'https://{bucket}.s3.amazonaws.com/'.format(
         bucket=AWS_STORAGE_BUCKET_NAME_STATIC,
     )
 
