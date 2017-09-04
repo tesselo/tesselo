@@ -21,8 +21,12 @@
         <!-- Bootstrap Core CSS -->
         <!--<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
 
-        <!-- Theme CSS -->
-        <link href="{{ STATIC_URL }}less/tesselo.less" rel="stylesheet" type="text/less">
+        {% endcompress css %}
+
+        {% compress css %}
+            {% if not user.is_authenticated %}
+                <link href="{{ STATIC_URL }}less/tesselo.less" rel="stylesheet" type="text/less">
+            {% endif %}
         {% endcompress css %}
 
         <!-- Custom Fonts -->
@@ -119,7 +123,7 @@
                         <div class="intro-text">
                             <h1 class="name animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">Geospatial intelligence for sustainability</h1>
                             <div class="text-center animate" data-animate="fadeInUp" data-duration="1.0s" data-delay="0.1s">
-                                <a href="https://app.tesselo.com" class="btn btn-lg btn-outline">Launch Tesselo</a>
+                                <a href="/login/" class="btn btn-lg btn-outline">Launch Tesselo</a>
                             </div>
                         </div>
                     </div>
