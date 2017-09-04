@@ -7,11 +7,11 @@ from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import get_raster_tile, tile_bounds, tile_index_range, tile_scale
+from sklearn.metrics import confusion_matrix
 
 from classify.models import Classifier
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
-from sklearn.metrics import confusion_matrix
 
 ZOOM = 14
 

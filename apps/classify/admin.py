@@ -1,8 +1,8 @@
 from classify.models import Classifier, TrainingSample
+from classify.tasks import train_cloud_classifier
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const
-from classify.tasks import train_cloud_classifier
 
 
 class TrainingSmapleForm(forms.ModelForm):

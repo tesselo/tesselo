@@ -1,10 +1,12 @@
-import numpy
 import pickle
-from django.core.cache import cache
-from sentinel import const
+
+import numpy
+from raster.tiles.const import WEB_MERCATOR_TILESIZE
+
 from classify.models import Classifier
 from classify.tasks import BAND_NAMES
-from raster.tiles.const import WEB_MERCATOR_TILESIZE
+from django.core.cache import cache
+from sentinel import const
 
 
 def clouds(stack):

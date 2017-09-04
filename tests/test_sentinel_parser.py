@@ -6,6 +6,8 @@ import tempfile
 import mock
 from raster.models import RasterLayer, RasterTile
 
+from classify.models import Classifier, TrainingSample
+from classify.tasks import train_cloud_classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.urlresolvers import reverse
@@ -19,8 +21,6 @@ from sentinel.tasks import (
     drive_sentinel_queue, drive_world_layers, repair_incomplete_scenes, sync_sentinel_bucket_utm_zone
 )
 from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
-from classify.models import Classifier, TrainingSample
-from classify.tasks import train_cloud_classifier
 
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)

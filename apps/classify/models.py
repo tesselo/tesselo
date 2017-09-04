@@ -1,9 +1,10 @@
-from django.contrib.gis.db import models
-from django.contrib.postgres.fields import HStoreField
-from sentinel.models import SentinelTile, WorldLayerGroup
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
+
+from django.contrib.gis.db import models
+from django.contrib.postgres.fields import HStoreField
+from sentinel.models import SentinelTile, WorldLayerGroup
 
 
 class TrainingSample(models.Model):

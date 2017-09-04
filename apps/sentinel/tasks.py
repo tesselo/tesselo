@@ -7,7 +7,9 @@ import time
 import traceback
 import uuid
 
+import botocore
 import numpy
+from botocore.client import Config
 from celery import task
 from celery.utils.log import get_task_logger
 from dateutil import parser
@@ -16,17 +18,18 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 import boto3
-import botocore
-from botocore.client import Config
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
 from django.db.models import Count, F, Func
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
+from raster_aggregation.models import AggregationArea
 from sentinel import const
 from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
-#from classify.clouds import clouds
+# from classify.clouds import clouds
 from sentinel.models import (
     BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest
 )
@@ -164,6 +167,50 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
     log.write('Finished parsing, {0} tiles created.'.format(counter))
     log.end = timezone.now()
     log.save()
+
+
+@task
+def get_aggregation_area_scenes(aggregationarea_id):
+    """
+    Get all available scenes for each aggregation area in the system.
+    """
+    area = AggregationArea.objects.get(id=aggregationarea_id)
+
+    tiles = SentinelTile.objects.filter(
+        sentineltileband=None,  # Ignore scenes that were already fetched.
+        tile_data_geom__intersects=area.geom,
+    )
+
+    for tile in tiles:
+        # Loop through all choices
+        for filename, description in const.BAND_CHOICES:
+            # Fix zoom level by band to ensure consistency.
+            if filename in const.BANDS_10M:
+                zoom = const.ZOOM_LEVEL_10M
+            elif filename in const.BANDS_20M:
+                zoom = const.ZOOM_LEVEL_20M
+            else:
+                zoom = const.ZOOM_LEVEL_60M
+            # Create new raster layer and register it as sentinel band
+            layer = RasterLayer.objects.create(
+                name=tile.prefix + filename,
+                datatype=RasterLayer.CONTINUOUS,
+                source_url=tile.url + filename,
+                nodata=const.SENTINEL_NODATA_VALUE,
+                max_zoom=zoom,
+                build_pyramid=True,
+                store_reprojected=False,
+            )
+            SentinelTileBand.objects.create(
+                layer=layer,
+                band=filename,
+                tile=tile,
+            )
+
+
+@receiver(post_save, sender=AggregationArea)
+def trigger_scene_ingestion(sender, instance, **kwargs):
+    get_aggregation_area_scenes.delay(instance.id)
 
 
 @task

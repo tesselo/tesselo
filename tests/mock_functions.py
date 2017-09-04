@@ -4,13 +4,13 @@ import datetime
 import io
 import os
 
+import botocore
+import botocore.session
 import numpy
+from botocore.stub import Stubber
 from raster.tiles.const import WEB_MERCATOR_SRID
 from raster.tiles.utils import tile_scale
 
-import botocore
-import botocore.session
-from botocore.stub import Stubber
 from django.contrib.gis.gdal import GDALRaster
 from sentinel import const
 
