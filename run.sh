@@ -39,7 +39,7 @@ if [ "$1" = "test" ]; then
 elif [ "$WORKER" = "True" ]; then
     echo 'Running worker.'
     # Run django as a celery worker.
-    su -m mrdjango -c "celery worker -A tesselo -l info --concurrency=1"
+    su -m mrdjango -c "celery worker -A tesselo -l info --concurrency=2"
 elif [ "$BEAT" = "True" ]; then
     echo 'Running beat.'
     # Run django as a celery beat scheduler.
