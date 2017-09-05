@@ -23,11 +23,11 @@
 
         {% endcompress css %}
 
-        {% compress css %}
-            {% if not user.is_authenticated %}
+        {% if not user.is_authenticated %}
+            {% compress css %}
                 <link href="{{ STATIC_URL }}less/tesselo.less" rel="stylesheet" type="text/less">
-            {% endif %}
-        {% endcompress css %}
+            {% endcompress css %}
+        {% endif %}
 
         <!-- Custom Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Abel" rel="stylesheet" type="text/css">
