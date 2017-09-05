@@ -6,11 +6,12 @@ from unittest import skip
 from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.urlresolvers import reverse
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from guardian.shortcuts import assign_perm
 from raster_aggregation.models import AggregationArea, AggregationLayer
 
 
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 class AggregationViewTests(TestCase):
 
     def setUp(self):
