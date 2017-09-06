@@ -8,9 +8,12 @@ phases:
   build:
     commands:
       - echo "Started Docker Build ${CODEBUILD_BUILD_ID##*:}"
+      - echo Building the Docker image...
       - docker build -t tesselo -f DockerfileTesselo .
-      - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
+      - echo Running tests on Docker image...
+      - docker run --rm --env DEBUG=True tesselo /code/run.sh test
       - echo Pushing the Docker image...
+      - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
       - docker push 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
       - "echo {\\\"image\\\":\\\"595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest}\\\"} > image.json"
 
