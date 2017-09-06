@@ -28,6 +28,7 @@ django-filter==1.0.2
 django-crispy-forms==1.6.1
 django-storage-swift==1.2.16
 django-guardian==1.4.8
+django-cors-headers==2.1.0
 https://github.com/celery/celery/archive/master.tar.gz
 django-celery-results==1.0.1
 django-celery-beat==1.0.1

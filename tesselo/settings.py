@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_celery_results',
     'django_celery_beat',
+    'corsheaders',
 
     'raster',
     'raster_aggregation',
@@ -62,6 +63,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -92,6 +94,13 @@ if DEBUG:
     TEMPLATES[0]['OPTIONS']['context_processors'].append('tesselo.utils.debug_tag')
 
 WSGI_APPLICATION = 'tesselo.wsgi.application'
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+#CORS_ORIGIN_WHITELIST = (
+    #'localhost:8080',
+    #'tesselo.com',
+#)
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
