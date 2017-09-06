@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# Setup raster wd.
+mkdir -p /rasterwd
+chmod ugo+w /rasterwd
+chown -R mrdjango /rasterwd
+
 if [ "$DEBUG" = "True" ]; then
     service rabbitmq-server start
 fi
