@@ -251,6 +251,7 @@ CELERY_TASK_ACKS_LATE = True
 # Django-raster settings
 RASTER_USE_CELERY = True
 RASTER_PARSE_SINGLE_TASK = True
+RASTER_WORKDIR = os.environ.get('RASTER_WORKDIR', None)
 
 if not DEBUG:
     LOGGING = {
