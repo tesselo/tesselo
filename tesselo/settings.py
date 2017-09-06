@@ -231,13 +231,13 @@ else:
     CELERY_BROKER_URL = 'sqs://{0}:{1}@'.format(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
     CELERY_BROKER_TRANSPORT_OPTIONS = {
         'region': 'eu-central-1',
-        'visibility_timeout': 2 * 3600,  # 2 hours.
+        'visibility_timeout': 2 * 60 * 60,  # 2 hours.
         'polling_interval': 5,
         'queue_name_prefix': 'tesselo-',
     }
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_ACKS_LATE = False
 
 # Django-raster settings
 RASTER_USE_CELERY = True
