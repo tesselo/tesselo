@@ -10,7 +10,6 @@ RUN apt-get upgrade -y
 # Install Utilities
 RUN apt-get install -y\
     curl\
-    python3-pycurl\
     git\
     vim\
     build-essential\
@@ -21,6 +20,12 @@ RUN apt-get install -y\
     libxml2-dev\
     libxslt1-dev\
     npm
+
+# Re-install pycurl using openssl bindings.
+# Ref: https://stackoverflow.com/questions/41084351
+RUN pip3 install --upgrade pip
+RUN apt-get install -y python3-pycurl
+RUN pip3 install pycurl --global-option="--with-openssl"
 
 # DB & GIS
 RUN apt-get install -y postgresql-server-dev-9.5 postgis gdal-bin libgeos-3.5.0 redis-server rabbitmq-server
