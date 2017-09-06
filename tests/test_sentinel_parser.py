@@ -116,7 +116,6 @@ class SentinelBucketParserTest(TestCase):
 
         self.assertTrue(self.clf.trained is not None)
 
-
     def test_world_layer(self):
         # Worldlayer objects have been created.
         sync_sentinel_bucket_utm_zone(1)

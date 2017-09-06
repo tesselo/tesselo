@@ -210,15 +210,6 @@ else:
         bucket=AWS_STORAGE_BUCKET_NAME_MEDIA,
     )
 
-# Cache settings
-#CACHES = {
-    #'default': {
-        #'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        #'LOCATION': '/var/tmp/django_cache',
-    #}
-#}
-
-
 # Rest framework settings.
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (

@@ -7,7 +7,6 @@ from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import get_raster_tile, tile_bounds, tile_index_range, tile_scale
-from sklearn.metrics import confusion_matrix
 
 from classify.models import Classifier
 from django.contrib.gis.gdal import GDALRaster
@@ -31,10 +30,6 @@ BAND_NAMES = (
     'B07.jp2', 'B08.jp2', 'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2',
     'B12.jp2',
 )
-
-#BAND_NAMES = (
-    #'B01.jp2', 'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2', 'B12.jp2',
-#)
 
 
 def get_training_data(sentineltile, tilez, tilex, tiley):

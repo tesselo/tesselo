@@ -6,12 +6,14 @@ define([
     ){
 
     var WLGModel = Backbone.Model.extend({
-        urlRoot: '/api/worldlayergroup'
+        urlRoot: '/api/sentineltileaggregationarea'
+        //urlRoot: '/api/worldlayergroup'
     });
 
     return Backbone.Collection.extend({
         model: WLGModel,
-        url: '/api/worldlayergroup',
+        url: '/api/sentineltileaggregationarea',
+        //url: '/api/worldlayergroup',
         parse : function(data) {
           return data.results;
         }

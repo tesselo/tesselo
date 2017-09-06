@@ -10,11 +10,11 @@ from django.contrib.auth.models import User
 from django.contrib.staticfiles.testing import LiveServerTestCase
 from django.test.utils import override_settings
 
-
 # os.environ['DJANGO_LIVE_TEST_SERVER_ADDRESS'] = 'web:8000'
 # os.environ['DJANGO_LIVE_TEST_SERVER_ADDRESS'] = '0.0.0.0:8000'
 # os.environ['DJANGO_LIVE_TEST_SERVER_ADDRESS'] = 'localhost:8000'
 # from selenium.webdriver.firefox.webdriver import WebDriver
+
 
 @skip('Not yet functional.')
 @override_settings(CSRF_COOKIE_SECURE=False, SESSION_COOKIE_SECURE=False)

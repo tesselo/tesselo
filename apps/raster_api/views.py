@@ -28,9 +28,9 @@ from raster_api.permissions import (
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer, RasterLayerSerializer,
-    UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
+    SentinelTileAggregationAreaSerializer, UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
 )
-from sentinel.models import WorldLayerGroup, ZoneOfInterest
+from sentinel.models import SentinelTileAggregationArea, WorldLayerGroup, ZoneOfInterest
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -273,3 +273,18 @@ class ZoneOfInterestViewSet(PermissionsModelViewSet):
     search_fields = ('name', )
 
     _model = 'zoneofinterest'
+
+
+class SentinelTileAggregationAreaViewSet(ModelViewSet):
+
+    serializer_class = SentinelTileAggregationAreaSerializer
+    permission_classes = (IsAuthenticated, DependentObjectPermission, )  # AggregationAreaListPermission, )
+
+    _parent_model = 'aggregationlayer'
+
+    def get_queryset(self):
+        qs = SentinelTileAggregationArea.objects.all().order_by('id')
+        agglyr = self.request.GET.get('aggregationlayer', None)
+        if agglyr:
+            qs = qs.filter(aggregationarea__aggregationlayer_id=agglyr)
+        return qs

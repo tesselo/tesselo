@@ -5,7 +5,7 @@ from raster.tiles.const import WEB_MERCATOR_TILESIZE
 
 from classify.models import Classifier
 from classify.tasks import BAND_NAMES
-from django.core.cache import cache
+# from django.core.cache import cache
 from sentinel import const
 
 
@@ -15,11 +15,11 @@ def clouds(stack):
     """
     # Get classifier (should use cache in production).
     clf = pickle.loads(Classifier.objects.filter(name__icontains='cloud').first().trained.read())
-    #clf = cache.get('cloud_classifier')
+    # clf = cache.get('cloud_classifier')
     # If the classifier is not cached, get it from storage and cache it locally.
-    #if not clf:
-        #clf = pickle.loads(Classifier.objects.filter(name__icontains='cloud').first().trained.read())
-        #cache.set('cloud_classifier', clf, 6000)
+    # if not clf:
+    #     clf = pickle.loads(Classifier.objects.filter(name__icontains='cloud').first().trained.read())
+    #     cache.set('cloud_classifier', clf, 6000)
 
     # Construct the prediction input matrix.
     X = numpy.array([stack[name].ravel() for name in BAND_NAMES])

@@ -11,7 +11,7 @@ from rest_framework.serializers import (
 from django.contrib.auth.models import Group, User
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm, get_perms
-from sentinel.models import WorldLayerGroup, ZoneOfInterest
+from sentinel.models import SentinelTileAggregationArea, WorldLayerGroup, ZoneOfInterest
 
 
 class UserSerializer(ModelSerializer):
@@ -261,3 +261,16 @@ class ZoneOfInterestSerializer(PermissionsModelSerializer):
     class Meta:
         model = ZoneOfInterest
         fields = ('id', 'name', 'geom', 'active', )
+
+
+class SentinelTileAggregationAreaSerializer(PermissionsModelSerializer):
+
+    kahunas = SerializerMethodField()
+    name = CharField(source='sentineltile.prefix')
+
+    class Meta:
+        model = SentinelTileAggregationArea
+        fields = ('id', 'name', 'kahunas', )
+
+    def get_kahunas(self, obj):
+        return {band.band: band.layer_id for band in obj.sentineltile.sentineltileband_set.all()}

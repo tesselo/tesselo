@@ -11,6 +11,7 @@ from django.contrib.gis.gdal import SpatialReference
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from raster_aggregation.models import AggregationArea, AggregationLayer
 from sentinel import const
 
 
@@ -86,6 +87,15 @@ class SentinelTileBand(models.Model):
         return const.BAND_RESOLUTIONS[self.band]
 
 
+class SentinelTileAggregationArea(models.Model):
+    sentineltile = models.ForeignKey(SentinelTile)
+    aggregationarea = models.ForeignKey(AggregationArea)
+
+    @property
+    def aggregationlayer(self):
+        return self.aggregationarea.aggregationlayer
+
+
 class BucketParseLog(models.Model):
     """
     Track parse attempts and progress.
@@ -139,6 +149,7 @@ class WorldLayerGroup(models.Model):
     name = models.CharField(max_length=500)
     # Zones of interest relevant for this group.
     zonesofinterest = models.ManyToManyField(ZoneOfInterest, blank=True, help_text='What zones should this layer be built for?')
+    aggregationlayers = models.ManyToManyField(AggregationLayer, blank=True, help_text='What aggregation layers should this layer be built for?')
     all_zones = models.BooleanField(default=False, help_text='If checked, this layer will be built for all zones of interest.')
     # One raster layer for each band.
     worldlayers = models.ManyToManyField(WorldLayer, editable=False)

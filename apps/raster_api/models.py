@@ -7,7 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster_aggregation.models import AggregationLayer, ValueCountResult
-from sentinel.models import WorldLayerGroup, ZoneOfInterest
+from sentinel.models import SentinelTileAggregationArea, WorldLayerGroup, ZoneOfInterest
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):
@@ -126,7 +126,7 @@ class PublicAggregationLayer(models.Model):
     public = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.AggregationLayer, 'public' if self.public else 'private')
+        return '{0} | {1}'.format(self.aggregationlayer, 'public' if self.public else 'private')
 
 
 @receiver(post_save, sender=AggregationLayer, weak=False, dispatch_uid="create_aggregationlayer_public_object")
@@ -232,3 +232,35 @@ def create_zoneofinterest_public_object(sender, instance, created, **kwargs):
     """
     if created:
         PublicZoneOfInterest.objects.create(zoneofinterest=instance)
+
+
+class SentinelTileAggregationAreaUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(SentinelTileAggregationArea, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
+
+
+class SentinelTileAggregationAreaGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(SentinelTileAggregationArea, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
+
+
+class PublicSentinelTileAggregationArea(models.Model):
+
+    sentineltileaggregationarea = models.OneToOneField(SentinelTileAggregationArea, on_delete=models.CASCADE)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.worldlayergroup, 'public' if self.public else 'private')
+
+
+@receiver(post_save, sender=SentinelTileAggregationArea, weak=False, dispatch_uid="create_sentineltileaggregationarea_public_object")
+def create_sentineltileaggregationarea_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public sentineltileaggregationarea object.
+    """
+    if created:
+        PublicSentinelTileAggregationArea.objects.create(sentineltileaggregationarea=instance)

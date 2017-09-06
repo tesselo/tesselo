@@ -31,7 +31,7 @@ from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
-    BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest
+    BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest, SentinelTileAggregationArea,
 )
 
 logger = get_task_logger(__name__)
@@ -182,6 +182,11 @@ def get_aggregation_area_scenes(aggregationarea_id):
     )
 
     for tile in tiles:
+        # Register tile for this aggregationarea.
+        SentinelTileAggregationArea.objects.get_or_create(
+            sentineltile=tile,
+            aggregationarea=area,
+        )
         # Loop through all choices
         for filename, description in const.BAND_CHOICES:
             # Fix zoom level by band to ensure consistency.
