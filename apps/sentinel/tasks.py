@@ -177,7 +177,6 @@ def get_aggregation_area_scenes(aggregationarea_id):
     area = AggregationArea.objects.get(id=aggregationarea_id)
 
     tiles = SentinelTile.objects.filter(
-        sentineltileband=None,  # Ignore scenes that were already fetched.
         tile_data_geom__intersects=area.geom,
     )
 
@@ -187,6 +186,9 @@ def get_aggregation_area_scenes(aggregationarea_id):
             sentineltile=tile,
             aggregationarea=area,
         )
+        # Ignore scenes that were already fetched.
+        if tile.sentineltileband_set.count() > 0:
+            continue
         # Loop through all choices
         for filename, description in const.BAND_CHOICES:
             # Fix zoom level by band to ensure consistency.
