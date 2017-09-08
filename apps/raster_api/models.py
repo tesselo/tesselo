@@ -254,7 +254,7 @@ class PublicSentinelTileAggregationArea(models.Model):
     public = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.worldlayergroup, 'public' if self.public else 'private')
+        return '{0} | {1}'.format(self.sentineltileaggregationarea, 'public' if self.public else 'private')
 
 
 @receiver(post_save, sender=SentinelTileAggregationArea, weak=False, dispatch_uid="create_sentineltileaggregationarea_public_object")

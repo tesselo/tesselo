@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'raster_api',
     'sentinel',
     'classify',
+    'formulary',
 ]
 
 MIDDLEWARE = [
@@ -96,11 +97,6 @@ if DEBUG:
 WSGI_APPLICATION = 'tesselo.wsgi.application'
 
 CORS_ORIGIN_ALLOW_ALL = True
-
-#CORS_ORIGIN_WHITELIST = (
-    #'localhost:8080',
-    #'tesselo.com',
-#)
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases

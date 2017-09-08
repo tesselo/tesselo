@@ -7,6 +7,7 @@ from rest_framework.decorators import detail_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
@@ -275,10 +276,21 @@ class ZoneOfInterestViewSet(PermissionsModelViewSet):
     _model = 'zoneofinterest'
 
 
-class SentinelTileAggregationAreaViewSet(ModelViewSet):
+class STAAPageNumberPagination(PageNumberPagination):
+    page_size = 100
 
+
+class SentinelTileAggregationAreaViewSet(ModelViewSet):
+    """
+    TODO: this wont work if multiple areas are present. Need filtering
+    of the scenes on the frontend.
+    """
     serializer_class = SentinelTileAggregationAreaSerializer
-    permission_classes = (IsAuthenticated, DependentObjectPermission, )  # AggregationAreaListPermission, )
+    permission_classes = (IsAuthenticated, DependentObjectPermission, )
+    pagination_class = STAAPageNumberPagination
+
+    filter_backends = (DjangoFilterBackend, )
+    filter_fields = ('active', )
 
     _parent_model = 'aggregationlayer'
 

@@ -52,9 +52,16 @@ body {
 #menu {
     position: absolute;
     right: 10px;
-    max-width: 230px;
-    @media (max-width: 768px) { bottom: 10px }
-    @media (min-width: 768px) { top: 10px }
+    &.scene-menu {
+        max-width: none;
+        bottom: 25px;
+        top: none;
+    }
+    &.explorer-menu {
+        max-width: 230px;
+        @media (max-width: 768px) { bottom: 10px }
+        @media (min-width: 768px) { top: 10px }
+    }
     z-index: 9999;
     .baackground {
         position: absolute;
@@ -116,6 +123,8 @@ body {
                 display: none;
             }
         }
+        max-height: 400px;
+        /*overflow: auto;*/
     }
     .report-wrap {
         display: none;
@@ -124,4 +133,7 @@ body {
 .detail-colorbox {
     width: 30px;
     height: 15px;
+}
+.filters, .filters-header {
+    display: none;
 }

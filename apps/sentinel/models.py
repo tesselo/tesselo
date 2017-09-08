@@ -90,6 +90,7 @@ class SentinelTileBand(models.Model):
 class SentinelTileAggregationArea(models.Model):
     sentineltile = models.ForeignKey(SentinelTile)
     aggregationarea = models.ForeignKey(AggregationArea)
+    active = models.BooleanField(default=True)
 
     @property
     def aggregationlayer(self):

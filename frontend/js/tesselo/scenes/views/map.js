@@ -14,7 +14,7 @@ define([
     return Marionette.View.extend({
         className: 'map',
 
-        template: _.template('<div id="menu" class="explorer-menu"></div><div class="opacity-slider"></div>'),
+        template: _.template('<div id="menu" class="scene-menu"></div><div class="opacity-slider"></div>'),
 
         regions: {
             menuRegion: '#menu',

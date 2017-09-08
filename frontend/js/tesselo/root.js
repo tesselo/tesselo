@@ -2,12 +2,14 @@ define([
         'marionette',
         'auth/router',
         'explorer/router',
+        'scenes/router',
         'report/router',
         'report/views/report'
     ], function(
         Marionette,
         AuthRouter,
         ExplorerRouter,
+        ScenesRouter,
         ReportRouter,
         ReportView
     ){
@@ -22,6 +24,7 @@ define([
             new AuthRouter(this);
             new ExplorerRouter(this);
             new ReportRouter(this);
+            new ScenesRouter(this);
         },
 
         onChildviewDidReport: function(data){

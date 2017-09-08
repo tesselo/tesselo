@@ -31,7 +31,8 @@ from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
-    BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest, SentinelTileAggregationArea,
+    BucketParseLog, MGRSTile, SentinelTile, SentinelTileAggregationArea, SentinelTileBand, WorldLayerGroup,
+    WorldParseProcess, ZoneOfInterest
 )
 
 logger = get_task_logger(__name__)

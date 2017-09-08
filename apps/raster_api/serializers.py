@@ -270,7 +270,7 @@ class SentinelTileAggregationAreaSerializer(PermissionsModelSerializer):
 
     class Meta:
         model = SentinelTileAggregationArea
-        fields = ('id', 'name', 'kahunas', )
+        fields = ('id', 'name', 'kahunas', 'active', )
 
     def get_kahunas(self, obj):
         return {band.band: band.layer_id for band in obj.sentineltile.sentineltileband_set.all()}

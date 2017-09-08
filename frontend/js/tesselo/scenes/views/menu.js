@@ -3,8 +3,9 @@ define([
         'd3-scale-chromatic',
         '../collections/worldlayergroups',
         '../collections/aggregationlayers',
-        './picker',
+        '../collections/formulas',
         './world',
+        './formulas',
         './agglayer',
         'text!../templates/menu.html'
     ], function(
@@ -12,8 +13,9 @@ define([
         d3,
         WLGCollection,
         AggLayerCollection,
-        PickerView,
+        FormulaCollection,
         WorldView,
+        FormulaView,
         AggLayerView,
         template
     ){
@@ -23,33 +25,23 @@ define([
         regions: {
             pickerRegion: '.color-picker',
             worldRegion: '.world-picker',
-            aggLayerRegion: '.agglayer-picker'
+            aggLayerRegion: '.agglayer-picker',
+            formulaRegion: '.formula-list'
         },
 
         ui: {
-            rgb: '.rgb',
-            rgb_btn: '.btn-rgb',
-            formula: '.formula',
-            formula_wrap: '.formula-wrap',
-            refresh: '.refresh',
-            scale_min: '.scale-min',
-            scale_max: '.scale-max',
-            scale_breaks: '.scale-breaks',
             report_toggle: '.report-toggle',
             report_wrap: '.report-wrap',
             report_show: '.report'
         },
 
         events: {
-            'click @ui.refresh': 'setAlgebra',
-            'click @ui.rgb': 'toggleRGB',
             'click @ui.report_toggle': 'reportToggle',
             'click @ui.report_show': 'report'
-            //'keyup @ui.formula': 'setAlgebraByKey'
         },
 
         initialize: function(){
-            _.bindAll(this, 'refresh', 'setLayerDict', 'report', 'reportToggle');
+            _.bindAll(this, 'refresh', 'setLayerDict','setFormulaModel', 'report', 'reportToggle');
         },
 
         buildWorldPicker: function(){
@@ -63,7 +55,6 @@ define([
             var params = {data: $.param({active: true})};
             // Fetch worldlayergroup data and set first layer.
             collection.fetch(params).done(function(){
-                _this.setLayerDict(collection.models[0]);
                 // Fetch child view for selected worldlayergroup, or the first one if not specified.
                 if(_this.options.worldlayergroup){
                     var worldview = world.children.filter(function(view){  return view.model.id == _this.options.worldlayergroup; })[0];
@@ -74,11 +65,39 @@ define([
                 } else {
                     var worldview = world.children.first();
                 }
-                _this.setLayerDict(worldview.model);
                 worldview.toggle();
             });
             // Hook worldlayergroup selector into map renderer.
             world.on('childview:world-changed', this.setLayerDict);
+        },
+
+        buildFormulaPicker: function(){
+            var _this = this;
+            // Create collection and list view
+            var collection = new FormulaCollection();
+            var form = new FormulaView({collection: collection});
+            // Show world layer group view.
+            this.showChildView('formulaRegion', form);
+            // Limit worldlayergroups to active layers.
+            var params = {data: $.param({active: true})};
+            // Fetch worldlayergroup data and set first layer.
+            collection.fetch(params).done(function(){
+                // Fetch child view for selected worldlayergroup, or the first one if not specified.
+                if(_this.options.formula){
+                    var formulaview = form.children.filter(function(view){  return view.model.id == _this.options.worldlayergroup; })[0];
+                    // Fallback to first layer if id is not found.
+                    if(!formulaview){
+                        var formulaview = form.children.first();
+                    }
+                } else {
+                    // Default to RGB.
+                    var formulaview = form.children.filter(function(view){ return view.model.get('name') == 'RGB'; })[0];
+                }
+                _this.setFormulaModel(formulaview.model, true);
+                formulaview.toggle();
+            });
+            // Hook worldlayergroup selector into map renderer.
+            form.on('childview:formula-changed', this.setFormulaModel);
         },
 
         buildAggLayerPicker: function(){
@@ -104,88 +123,37 @@ define([
             this.refresh();
         },
 
-        onRender: function(){
-
-            var color_choices = new Backbone.Collection([
-                    {'name': 'BrBG'},
-                    {'name': 'PRGn'},
-                    {'name': 'PiYG'},
-                    {'name': 'PuOr'},
-                    {'name': 'RdBu'},
-                    {'name': 'RdGy'},
-                    {'name': 'RdYlBu'},
-                    {'name': 'RdYlGn'},
-                    {'name': 'Spectral'},
-                    {'name': 'Blues'},
-                    {'name': 'Greens'},
-                    {'name': 'Greys'},
-                    {'name': 'Oranges'},
-                    {'name': 'Purples'},
-                    {'name': 'Reds'},
-                    {'name': 'BuGn'},
-                    {'name': 'BuPu'},
-                    {'name': 'GnBu'},
-                    {'name': 'OrRd'},
-                    {'name': 'PuBuGn'},
-                    {'name': 'PuBu'},
-                    {'name': 'PuRd'},
-                    {'name': 'RdPu'},
-                    {'name': 'YlGnBu'},
-                    {'name': 'YlGn'},
-                    {'name': 'YlOrBr'},
-                    {'name': 'YlOrRd'}
-            ]);
-            var picker = new PickerView({collection: color_choices, color: this.options.color});
-            this.showChildView('pickerRegion', picker);
-            picker.on('childview:colors-changed', this.refresh);
-
-            if(this.options.formula){
-                this.ui.formula.val(this.options.formula);
-                this.ui.scale_min.val(this.options.scale_min);
-                this.ui.scale_max.val(this.options.scale_max);
-                this.ui.scale_breaks.val(this.options.scale_breaks > 0 ? this.options.scale_breaks : '');
-                $(this.ui.rgb).children().toggleClass('btn-primary');
-            }
-            this.buildWorldPicker();
-            this.buildAggLayerPicker();
-        },
-
-        toggleRGB: function(){
-            $(this.ui.rgb).children().toggleClass('btn-primary');
-            this.refresh();
-        },
-
-        setAlgebra: function(){
-            if(this.ui.rgb_btn.hasClass('btn-primary')){
-                $(this.ui.rgb).children().toggleClass('btn-primary');
-            }
-            this.refresh();
-        },
-
-        setAlgebraByKey: function(e){
-            if(e.key == "Enter"){
+        setFormulaModel: function(model, not_refresh){
+            this.formula_model = model;
+            if(!not_refresh){
                 this.refresh();
             }
         },
 
+        onRender: function(){
+            this.buildWorldPicker();
+            this.buildFormulaPicker();
+            this.buildAggLayerPicker();
+        },
+
         refresh: function(){
+            if(!this.formula_model) return;
+            if(!this.layer_dict) return;
+
             if(Backbone.history.fragment){
                 var urlsplit = Backbone.history.fragment.split('@');
                 var coords = urlsplit[1] ? '@' + urlsplit[1] : '';
             }
 
-            if(this.ui.rgb_btn.hasClass('btn-primary')){
+            if(this.formula_model.get('name') == 'RGB'){
                 // Extract rgb channels from current world layer.
                 var red = _.filter(this.layer_dict, function(val, key){ return key == 'B04.jp2' })[0];
                 var green = _.filter(this.layer_dict, function(val, key){ return key == 'B03.jp2' })[0];
                 var blue = _.filter(this.layer_dict, function(val, key){ return key == 'B02.jp2' })[0];
 
-                this.ui.formula_wrap.hide();
                 var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=3e3';
                 var nav_base = this.worldlayergroup_id + '/';
             } else {
-                // Show formula container.
-                this.ui.formula_wrap.show();
                 // Construct ids array from current world layer.
                 var ids = [];
                 var _this = this;
@@ -195,14 +163,14 @@ define([
                     // Remove zero in band names.
                     name = name.split('B0').join('B');
                     // Filter bands that are in formula.
-                    if(_this.ui.formula.val().indexOf(name) !== -1){
+                    if(_this.formula_model.get('formula').indexOf(name) !== -1){
                         ids.push(name + '=' + val);
                     }
                 });
                 ids = ids.join(',');
 
                 // Encode formula.
-                var formula = encodeURIComponent(this.ui.formula.val().split(' ').join(''));
+                var formula = encodeURIComponent(this.formula_model.get('formula').split(' ').join(''));
 
                 // Get and encode colormap.
                 var legend = this.colormap();
@@ -212,31 +180,25 @@ define([
                 var url = '/api/algebra/{z}/{x}/{y}.png?layers=' + ids +'&formula=' + formula + '&colormap=' + legend;
 
                 // Navigation base
-                var min = parseFloat(this.ui.scale_min.val());
-                var max = parseFloat(this.ui.scale_max.val());
-                var brk = parseFloat(this.ui.scale_breaks.val());
-                var colorview = this.getChildView('pickerRegion').children.filter(function(view){ return view.$el.hasClass('selected')})[0];
-                var color = colorview.model.get('name');
-                var nav_base = this.worldlayergroup_id + '/' + formula + '/' + min + '/' + max + '/' + (brk ? brk : '0') + '/' + color + '/';
+                //var nav_base = this.worldlayergroup_id + '/' + formula + '/' + min + '/' + max + '/' + (brk ? brk : '0') + '/' + color + '/';
 
             }
 
             this.triggerMethod('did:refresh', url);
 
             // Update navigation history
-            Backbone.history.navigate(nav_base + coords);
+            //Backbone.history.navigate(nav_base + coords);
         },
 
         colormap: function(brk){
             // Get d3 color scale using current selection.
-            var colorview = this.getChildView('pickerRegion').children.filter(function(view){ return view.$el.hasClass('selected')})[0];
-            var scale = d3['interpolate' + colorview.model.get('name')];
+            var scale = d3['interpolate' + this.formula_model.get('color_palette')];
 
             // Get color min, max and breaks from ui.
-            var min = parseFloat(this.ui.scale_min.val());
-            var max = parseFloat(this.ui.scale_max.val());
+            var min = parseFloat(this.formula_model.get('min_val'));
+            var max = parseFloat(this.formula_model.get('max_val'));
             if(!brk){
-                var brk = parseFloat(this.ui.scale_breaks.val());
+                var brk = parseFloat(this.formula_model.get('breaks'));
             }
 
             var map = {};
@@ -291,7 +253,7 @@ define([
         report: function(){
             var _this = this;
 
-            var brk = parseFloat(this.ui.scale_breaks.val());
+            var brk = parseFloat(this.formula_model.get('breaks'));
             brk = brk ? brk : 7;
             var legend = this.colormap(brk);
             legend = _.map(legend, function(val, key){
@@ -309,14 +271,14 @@ define([
                 // Remove zero in band names.
                 name = name.split('B0').join('B');
                 // Filter bands that are in formula.
-                if(_this.ui.formula.val().indexOf(name) !== -1){
+                if(_this.formula_model.get('formula').indexOf(name) !== -1){
                     ids[name] = val;
                 }
             });
 
             var data = {
                 layer_names: ids,
-                formula: this.ui.formula.val(),
+                formula: this.formula_model.get('formula'),
                 grouping: legend,
                 aggregationlayer: this.agglayer_id,
                 zoom: 14,
