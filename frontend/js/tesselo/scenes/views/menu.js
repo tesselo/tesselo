@@ -91,7 +91,7 @@ define([
                     }
                 } else {
                     // Default to RGB.
-                    var formulaview = form.children.filter(function(view){ return view.model.get('name') == 'RGB'; })[0];
+                    var formulaview = form.children.filter(function(view){ return view.model.get('acronym') == 'RGB'; })[0];
                 }
                 _this.setFormulaModel(formulaview.model, true);
                 formulaview.toggle();
@@ -118,6 +118,7 @@ define([
         },
 
         setLayerDict: function(model){
+            this.layer_dict_date = model.get('name');
             this.layer_dict = model.get('kahunas');
             this.worldlayergroup_id = model.id;
             this.refresh();
@@ -145,7 +146,7 @@ define([
                 var coords = urlsplit[1] ? '@' + urlsplit[1] : '';
             }
 
-            if(this.formula_model.get('name') == 'RGB'){
+            if(this.formula_model.get('acronym') == 'RGB'){
                 // Extract rgb channels from current world layer.
                 var red = _.filter(this.layer_dict, function(val, key){ return key == 'B04.jp2' })[0];
                 var green = _.filter(this.layer_dict, function(val, key){ return key == 'B03.jp2' })[0];
@@ -279,11 +280,15 @@ define([
             var data = {
                 layer_names: ids,
                 formula: this.formula_model.get('formula'),
-                grouping: legend,
+                grouping: 'continuous',
+                //grouping: legend,
                 aggregationlayer: this.agglayer_id,
                 zoom: 14,
                 acres: 'True',
-                title: 'Tesselo Report'
+                title: this.formula_model.get('name') + ' <span class="small pull-right">' + this.layer_dict_date + '</span>',
+                description: this.formula_model.get('description'),
+                color_palette: this.formula_model.get('color_palette'),
+                hide_data_table: true
             }
 
             this.triggerMethod('did:report', data);

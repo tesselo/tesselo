@@ -8,10 +8,11 @@
 
         <div class="aggdetail"></div>
 
-        <hr>
-
-        <h2>Global Data Table</h2>
-        <p>All values are given in Hectares.</p>
-        <div class="aggtable"></div>
+        <% if(typeof hide_data_table != 'undefined') {%>
+            <hr>
+            <h2>Global Data Table</h2>
+            <p>All values are given in Hectares.</p>
+        <% } %>
+            <div class="aggtable"></div>
     </div>
 </div>

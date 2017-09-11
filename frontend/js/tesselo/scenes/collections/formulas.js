@@ -13,7 +13,7 @@ define([
         model: Model,
         url: '/api/formula',
         parse : function(data) {
-          data.results.push({'name': 'RGB'});
+          data.results.push({'acronym': 'RGB'});
           data.results.reverse();
           return data.results;
         }

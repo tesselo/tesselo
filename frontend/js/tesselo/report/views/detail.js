@@ -1,11 +1,13 @@
 define([
         'marionette',
         'chartjs',
-        'leaflet'
+        'leaflet',
+        'd3-scale-chromatic'
 ], function(
     Marionette,
     Chart,
-    L
+    L,
+    d3
     ){
 
     const MapView = Marionette.View.extend({
@@ -59,9 +61,19 @@ define([
 
             // Stringify grouping dict.
             var colormap = {};
-            _.each(this.options.grouping, function(leg){
-                colormap[leg.expression] = leg.color;
-            });
+            if(this.options.grouping == 'continuous' || this.options.grouping == 'discrete'){
+                var scale = d3['interpolate' + this.options.color_palette];
+
+                colormap['continuous'] = true;
+                colormap['range'] = [this.model.get('min'), this.model.get('max')];
+                colormap['from'] = JSON.parse(scale(0).replace('rgb', '').replace('(', '[').replace(')', ']'));
+                colormap['to'] = JSON.parse(scale(1).replace('rgb', '').replace('(', '[').replace(')', ']'));
+                colormap['over'] = JSON.parse(scale(0.5).replace('rgb', '').replace('(', '[').replace(')', ']'));
+            } else {
+                _.each(this.options.grouping, function(leg){
+                    colormap[leg.expression] = leg.color;
+                });
+            }
             var colormap = JSON.stringify(colormap);
 
             // Setup query filter parameters for fetching agg data.
@@ -85,25 +97,58 @@ define([
         },
 
         onRender: function(){
-            var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
-            data = _.map(data, function(dat){ return {name: dat[0].name, color: dat[0].color, value: dat[1]}; })
-            data = _.filter(data, function(dat){ return dat.value; });
-            var data = {
-                labels: _.pluck(data, 'name'),
-                datasets: [{
-                    data: _.pluck(data, 'value'),
-                    backgroundColor: _.pluck(data, 'color')
-                }]
-            };
-            var totalschart = new Chart(this.ui.chart, {
-                type: 'doughnut',
-                data: data,
-                options: {
-                    legend: {
-                        display: false
+            var _this = this;
+            if(this.options.grouping == 'continuous' || this.options.grouping == 'discrete'){
+                var scale = d3['interpolate' + this.options.color_palette];
+
+                var data = _.map(this.model.get('value'), function(val, key){
+                    var bla = parseFloat(key.split(',')[0].split('(')[1]);
+                    bla = Math.round(bla * 100) / 100;
+                    return {color: 'gray', name: bla, value: val};
+                });
+                
+                data = _.sortBy(data, 'name');
+
+                data = {
+                    labels: _.pluck(data, 'name'),
+                    datasets: [{
+                        data: _.pluck(data, 'value'),
+                        backgroundColor: _.map(_.pluck(data, 'name'), function(val){
+                            return scale((val - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
+                        })
+                    }]
+                };
+                var totalschart = new Chart(this.ui.chart, {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        legend: {
+                            display: false
+                        }
                     }
-                }
-            });
+                });
+
+            } else {
+                var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
+                data = _.map(data, function(dat){ return {name: dat[0].name, color: dat[0].color, value: dat[1]}; })
+                data = _.filter(data, function(dat){ return dat.value; });
+                var data = {
+                    labels: _.pluck(data, 'name'),
+                    datasets: [{
+                        data: _.pluck(data, 'value'),
+                        backgroundColor: _.pluck(data, 'color')
+                    }]
+                };
+                var totalschart = new Chart(this.ui.chart, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            }
         }
     });
 
@@ -143,12 +188,32 @@ define([
             map: '.areamap'
         },
         onRender: function(){
-            // Construct list element data.
-            var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
-            data = _.map(data, function(dat){ dat[0].value = dat[1]; return dat[0]; });
-            this.showChildView('list', new ListTableView({collection: new Backbone.Collection(data)}));
-            this.showChildView('chart', new ChartView({model: this.model, grouping: this.options.grouping}));
-            this.showChildView('map', new MapView({model: this.model, grouping: this.options.grouping, formula: this.options.formula, layer_names: this.options.layer_names}));
+            var _this = this;
+
+            if(this.options.grouping == 'continuous' || this.options.grouping == 'discrete'){
+                var scale = d3['interpolate' + this.options.color_palette];
+
+                var reshaped_data = _.sortBy(_.map(this.model.get('value'), function(val, key){
+                    var from = parseFloat(key.split(',')[0].split('(')[1]);
+                    from = Math.round(from * 100) / 100;
+                    var to = parseFloat(key.split(',')[1].split(')')[0]);
+                    to = Math.round(to * 100) / 100;
+                    var color = scale((from - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
+
+                    return {color: color, name: from + ' - ' + to, value: val, from: from};
+                }), 'from');
+
+                this.showChildView('list', new ListTableView({collection: new Backbone.Collection(reshaped_data), color_palette: this.options.color_palette}));
+                this.showChildView('chart', new ChartView({model: this.model, grouping: this.options.grouping, color_palette: this.options.color_palette}));
+                this.showChildView('map', new MapView({model: this.model, grouping: this.options.grouping, formula: this.options.formula, layer_names: this.options.layer_names, color_palette: this.options.color_palette}));
+            } else {
+                // Construct list element data.
+                var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
+                data = _.map(data, function(dat){ dat[0].value = dat[1]; return dat[0]; });
+                this.showChildView('list', new ListTableView({collection: new Backbone.Collection(data)}));
+                this.showChildView('chart', new ChartView({model: this.model, grouping: this.options.grouping}));
+                this.showChildView('map', new MapView({model: this.model, grouping: this.options.grouping, formula: this.options.formula, layer_names: this.options.layer_names}));
+            }
         }
     });
 
@@ -158,7 +223,8 @@ define([
             return {
                 grouping: this.options.grouping,
                 layer_names: this.options.layer_names,
-                formula: this.options.formula
+                formula: this.options.formula,
+                color_palette: this.options.color_palette
             }
         }
     });

@@ -39,9 +39,11 @@ define([
             _.bindAll(this, 'processAvals', 'processAreas', 'processAll', 'filter');
 
             // Render Filter items.
-            var filter = new FilterView({collection: new Backbone.Collection(this.options.grouping)});
-            this.showChildView('filter', filter);
-            filter.on('filter', this.filter);
+            if(this.options.grouping != 'continuous' && this.options.grouping != 'discrete'){
+                var filter = new FilterView({collection: new Backbone.Collection(this.options.grouping)});
+                this.showChildView('filter', filter);
+                filter.on('filter', this.filter);
+            }
 
             // Instantiate aggregation area values collection.
             this.avals = new ValueCountResults();
@@ -54,7 +56,8 @@ define([
                 aggregationarea__aggregationlayer: this.options.aggregationlayer,
                 layer_names: this.options.layer_names,
                 formula: this.options.formula,
-                grouping: JSON.stringify(this.options.grouping)
+                grouping: 'continuous'
+                //grouping: JSON.stringify(this.options.grouping)
             };
 
             if(this.options.acres){
@@ -132,12 +135,15 @@ define([
             var names = _.pluck(this.options.grouping, 'name');
 
             // Construct and render details.
-            var aggdetail = new DetailView({collection: this.avals, grouping: this.options.grouping, layer_names: this.options.layer_names, formula: this.options.formula});
+            var aggdetail = new DetailView({collection: this.avals, grouping: this.options.grouping, layer_names: this.options.layer_names, formula: this.options.formula, color_palette: this.options.color_palette});
             this.showChildView('detail', aggdetail);
 
             // Construct and render table.
-            var aggtable = new TableView({collection: this.avals, model: new Backbone.Model({names: names})});
-            this.showChildView('table', aggtable);
+            debugger;
+            if(!this.options.hide_data_table) {
+                var aggtable = new TableView({collection: this.avals, model: new Backbone.Model({names: names})});
+                this.showChildView('table', aggtable);
+            }
         }
     });
 });

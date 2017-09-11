@@ -4,7 +4,7 @@ define([
         Marionette
     ){
     var FormulaChoiceView = Marionette.View.extend({
-        template: _.template('<%= name %>'),
+        template: _.template('<%= acronym %>'),
         className: 'btn btn-default btn-sm',
         tagName: 'button',
         events: {'click': 'toggle'},

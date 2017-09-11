@@ -28,10 +28,10 @@ define([
         },
 
         onChildviewDidReport: function(data){
+            var url = '/report/' + encodeURIComponent(JSON.stringify(data));
             data.model = new Backbone.Model({title: data.title, description: data.description});
             var report = new ReportView(data);
             this.showChildView('contentRegion', report);
-            var url = '/report/' + encodeURIComponent(JSON.stringify(data));
             Backbone.history.navigate(url);
         }
     });
