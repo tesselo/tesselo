@@ -96,6 +96,9 @@ class SentinelTileAggregationArea(models.Model):
     def aggregationlayer(self):
         return self.aggregationarea.aggregationlayer
 
+    def __str__(self):
+        return '{} | {} | {}'.format(self.sentineltile, self.aggregationarea, 'active ' if self.active else 'not active')
+
 
 class BucketParseLog(models.Model):
     """
