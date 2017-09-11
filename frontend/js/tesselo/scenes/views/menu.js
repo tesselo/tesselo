@@ -276,6 +276,8 @@ define([
                 title: this.formula_model.get('name') + ' <span class="small pull-right">' + this.layer_dict_date + '</span>',
                 description: this.formula_model.get('description'),
                 color_palette: this.formula_model.get('color_palette'),
+                min_val: this.formula_model.get('min_val'),
+                max_val: this.formula_model.get('max_val'),
                 hide_data_table: true
             }
 

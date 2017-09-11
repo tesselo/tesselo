@@ -3,6 +3,11 @@
         <h1><% if(title) { %><%= title %><% } else { %>Generic Report<% } %></h1>
         <% if(description) { %><p><%= description %></p><% } %>
 
+            <div class="checkbox<% if(typeof hide_data_table == 'undefined') {%> hiddden<% }%>">
+                <label>
+                    <input class="absolute_range" type="checkbox"> Absoluto
+                </label>
+            </div>
         <h3 class="filters-header">Sort by Index Value</h3>
         <div class="filters"></div>
 

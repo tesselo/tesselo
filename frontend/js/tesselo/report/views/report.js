@@ -26,6 +26,14 @@ define([
             table: '.aggtable'
         },
 
+        ui: {
+            absolute: '.absolute_range'
+        },
+
+        events: {
+            'click @ui.absolute': 'processAll'
+        },
+
         childViewEvents: {
             'filter': 'filter'
         },
@@ -135,7 +143,18 @@ define([
             var names = _.pluck(this.options.grouping, 'name');
 
             // Construct and render details.
-            var aggdetail = new DetailView({collection: this.avals, grouping: this.options.grouping, layer_names: this.options.layer_names, formula: this.options.formula, color_palette: this.options.color_palette});
+            var aggdetail = new DetailView({
+                collection: this.avals,
+                grouping: this.options.grouping,
+                layer_names: this.options.layer_names,
+                formula: this.options.formula,
+                color_palette: this.options.color_palette,
+                absolute: this.ui.absolute.is(':checked'),
+                max_val: this.options.max_val,
+                min_val: this.options.min_val
+
+            });
+
             this.showChildView('detail', aggdetail);
 
             // Construct and render table.

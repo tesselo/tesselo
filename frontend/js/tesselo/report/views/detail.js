@@ -65,7 +65,12 @@ define([
                 var scale = d3['interpolate' + this.options.color_palette];
 
                 colormap['continuous'] = true;
-                colormap['range'] = [this.model.get('min'), this.model.get('max')];
+                if(this.options.absolute){
+                    colormap['range'] = [this.options.min_val, this.options.max_val];
+                    
+                } else {
+                    colormap['range'] = [this.model.get('min'), this.model.get('max')];
+                }
                 colormap['from'] = JSON.parse(scale(0).replace('rgb', '').replace('(', '[').replace(')', ']'));
                 colormap['to'] = JSON.parse(scale(1).replace('rgb', '').replace('(', '[').replace(')', ']'));
                 colormap['over'] = JSON.parse(scale(0.5).replace('rgb', '').replace('(', '[').replace(')', ']'));
@@ -114,7 +119,11 @@ define([
                     datasets: [{
                         data: _.pluck(data, 'value'),
                         backgroundColor: _.map(_.pluck(data, 'name'), function(val){
-                            return scale((val - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
+                            if(_this.options.absolute){
+                                return scale((val - _this.options.min_val) / (_this.options.max_val - _this.options.min_val));
+                            } else {
+                                return scale((val - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
+                            }
                         })
                     }]
                 };
@@ -198,14 +207,39 @@ define([
                     from = Math.round(from * 100) / 100;
                     var to = parseFloat(key.split(',')[1].split(')')[0]);
                     to = Math.round(to * 100) / 100;
-                    var color = scale((from - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
-
+                    if(_this.options.absolute){
+                        var color = scale((val - _this.options.min_val) / (_this.options.max_val - _this.options.min_val));
+                    } else {
+                        var color = scale((from - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
+                    }
                     return {color: color, name: from + ' - ' + to, value: val, from: from};
                 }), 'from');
 
-                this.showChildView('list', new ListTableView({collection: new Backbone.Collection(reshaped_data), color_palette: this.options.color_palette}));
-                this.showChildView('chart', new ChartView({model: this.model, grouping: this.options.grouping, color_palette: this.options.color_palette}));
-                this.showChildView('map', new MapView({model: this.model, grouping: this.options.grouping, formula: this.options.formula, layer_names: this.options.layer_names, color_palette: this.options.color_palette}));
+                this.showChildView('list', new ListTableView({
+                    collection: new Backbone.Collection(reshaped_data),
+                    color_palette: this.options.color_palette,
+                    absolute: this.options.absolute,
+                    max_val: this.options.max_val,
+                    min_val: this.options.min_val
+                }));
+                this.showChildView('chart', new ChartView({
+                    model: this.model,
+                    grouping: this.options.grouping,
+                    color_palette: this.options.color_palette,
+                    absolute: this.options.absolute,
+                    max_val: this.options.max_val,
+                    min_val: this.options.min_val
+                }));
+                this.showChildView('map', new MapView({
+                    model: this.model,
+                    grouping: this.options.grouping,
+                    formula: this.options.formula,
+                    layer_names: this.options.layer_names,
+                    color_palette: this.options.color_palette,
+                    absolute: this.options.absolute,
+                    max_val: this.options.max_val,
+                    min_val: this.options.min_val
+                }));
             } else {
                 // Construct list element data.
                 var data = _.zip(this.options.grouping, this.model.get('ordered_values'));
@@ -221,6 +255,9 @@ define([
         childView: DetailView,
         childViewOptions: function(){
             return {
+                absolute: this.options.absolute,
+                max_val: this.options.max_val,
+                min_val: this.options.min_val,
                 grouping: this.options.grouping,
                 layer_names: this.options.layer_names,
                 formula: this.options.formula,
