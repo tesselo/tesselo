@@ -41,6 +41,8 @@ class Formula(models.Model):
     )
 
     name = models.CharField(max_length=200)
+    acronym = models.CharField(max_length=50, default='')
+    description = models.TextField(default='')
     formula = models.TextField()
     min_val = models.FloatField()
     max_val = models.FloatField()

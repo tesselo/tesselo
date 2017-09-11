@@ -7,6 +7,6 @@ class FormulaSerializer(PermissionsModelSerializer):
     class Meta:
         model = Formula
         fields = (
-            'id', 'name', 'formula', 'min_val', 'max_val', 'breaks',
+            'id', 'name', 'acronym', 'description', 'formula', 'min_val', 'max_val', 'breaks',
             'color_palette',
         )
