@@ -254,17 +254,6 @@ define([
         report: function(){
             var _this = this;
 
-            var brk = parseFloat(this.formula_model.get('breaks'));
-            brk = brk ? brk : 7;
-            var legend = this.colormap(brk);
-            legend = _.map(legend, function(val, key){
-                return {
-                    color: _this.rgbToHex(val[0], val[1], val[2]),
-                    name: key,
-                    expression: key
-                }
-            });
-
             var ids = {};
             _.each(this.layer_dict, function(val, key){
                 // Remove jp2 from band names.
@@ -281,7 +270,6 @@ define([
                 layer_names: ids,
                 formula: this.formula_model.get('formula'),
                 grouping: 'continuous',
-                //grouping: legend,
                 aggregationlayer: this.agglayer_id,
                 zoom: 14,
                 acres: 'True',

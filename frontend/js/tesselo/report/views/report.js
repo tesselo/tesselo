@@ -139,7 +139,6 @@ define([
             this.showChildView('detail', aggdetail);
 
             // Construct and render table.
-            debugger;
             if(!this.options.hide_data_table) {
                 var aggtable = new TableView({collection: this.avals, model: new Backbone.Model({names: names})});
                 this.showChildView('table', aggtable);
