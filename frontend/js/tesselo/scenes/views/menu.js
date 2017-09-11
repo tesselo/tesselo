@@ -278,7 +278,10 @@ define([
                 color_palette: this.formula_model.get('color_palette'),
                 min_val: this.formula_model.get('min_val'),
                 max_val: this.formula_model.get('max_val'),
-                hide_data_table: true
+                hide_data_table: true,
+                formula_id: this.formula_model.id,
+                wlgrp: this.worldlayergroup_id
+
             }
 
             this.triggerMethod('did:report', data);

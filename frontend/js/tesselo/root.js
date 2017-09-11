@@ -28,7 +28,11 @@ define([
         },
 
         onChildviewDidReport: function(data){
-            var url = '/report/' + encodeURIComponent(JSON.stringify(data));
+            if(data.grouping == 'continuous' || data.grouping == 'discrete'){
+                var url = '/report/scene/' + data.wlgrp + '/aggregationarea/' + data.aggregationlayer + '/formula/' + data.formula_id;
+            } else {
+                var url = '/report/' + encodeURIComponent(JSON.stringify(data));
+            }
             data.model = new Backbone.Model({title: data.title, description: data.description});
             var report = new ReportView(data);
             this.showChildView('contentRegion', report);
