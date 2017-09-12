@@ -32,9 +32,8 @@ define([
             // Instantiate leaflet map, padding by 10%
             var bounds = agg.getBounds().pad(0.2);
             var LMap = L.map(this.ui.map[0], {
-                //zoom: 8,
                 minZoom: 0,
-                maxZoom: 15,
+                maxZoom: 18,
                 maxBounds: bounds,
                 scrollWheelZoom: false,
                 attributionControl: false,
