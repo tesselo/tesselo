@@ -67,7 +67,6 @@ define([
                 colormap['continuous'] = true;
                 if(this.options.absolute){
                     colormap['range'] = [this.options.min_val, this.options.max_val];
-                    
                 } else {
                     colormap['range'] = [this.model.get('min'), this.model.get('max')];
                 }
@@ -208,7 +207,7 @@ define([
                     var to = parseFloat(key.split(',')[1].split(')')[0]);
                     to = Math.round(to * 100) / 100;
                     if(_this.options.absolute){
-                        var color = scale((val - _this.options.min_val) / (_this.options.max_val - _this.options.min_val));
+                        var color = scale((from - _this.options.min_val) / (_this.options.max_val - _this.options.min_val));
                     } else {
                         var color = scale((from - _this.model.get('min')) / (_this.model.get('max') - _this.model.get('min')));
                     }
