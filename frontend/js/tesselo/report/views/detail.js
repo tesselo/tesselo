@@ -10,6 +10,8 @@ define([
     d3
     ){
 
+    const relative_palette = 'RdYlBu';
+
     const MapView = Marionette.View.extend({
         template: _.template('<h4>Minimap</h4><div class="minimap" style="width: 100%; height: 300px;"></div>'),
         ui: {
@@ -62,12 +64,13 @@ define([
             // Stringify grouping dict.
             var colormap = {};
             if(this.options.grouping == 'continuous' || this.options.grouping == 'discrete'){
-                var scale = d3['interpolate' + this.options.color_palette];
 
                 colormap['continuous'] = true;
                 if(this.options.absolute){
+                    var scale = d3['interpolate' + this.options.color_palette];
                     colormap['range'] = [this.options.min_val, this.options.max_val];
                 } else {
+                    var scale = d3['interpolate' + relative_palette];
                     colormap['range'] = [this.model.get('min'), this.model.get('max')];
                 }
                 colormap['from'] = JSON.parse(scale(0).replace('rgb', '').replace('(', '[').replace(')', ']'));
@@ -103,7 +106,11 @@ define([
         onRender: function(){
             var _this = this;
             if(this.options.grouping == 'continuous' || this.options.grouping == 'discrete'){
-                var scale = d3['interpolate' + this.options.color_palette];
+                if(_this.options.absolute){
+                    var scale = d3['interpolate' + this.options.color_palette];
+                } else {
+                    var scale = d3['interpolate' + relative_palette];
+                }
 
                 var data = _.map(this.model.get('value'), function(val, key){
                     var bla = parseFloat(key.split(',')[0].split('(')[1]);
@@ -199,7 +206,12 @@ define([
             var _this = this;
 
             if(this.options.grouping == 'continuous' || this.options.grouping == 'discrete'){
-                var scale = d3['interpolate' + this.options.color_palette];
+                if(_this.options.absolute){
+                    var scale = d3['interpolate' + this.options.color_palette];
+                } else {
+                    var scale = d3['interpolate' + relative_palette];
+
+                }
 
                 var reshaped_data = _.sortBy(_.map(this.model.get('value'), function(val, key){
                     var from = parseFloat(key.split(',')[0].split('(')[1]);
