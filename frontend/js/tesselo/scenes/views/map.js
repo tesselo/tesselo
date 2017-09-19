@@ -22,7 +22,6 @@ define([
     };
 
     //const VectorHighlight = { ...VectorStyle, fillColor: '#990000'};
-    const VectorHighlight = { ...VectorStyle, fill: false};
 
     return Marionette.View.extend({
         className: 'map',
