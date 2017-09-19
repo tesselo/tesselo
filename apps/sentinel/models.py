@@ -15,6 +15,18 @@ from raster_aggregation.models import AggregationArea, AggregationLayer
 from sentinel import const
 
 
+def get_duration(obj):
+        if obj.end:
+            if not obj.start:
+                return 'Completed'
+            else:
+                return 'Completed in {0}'.format(obj.end - obj.start)
+        elif obj.start:
+            return 'Running since {0}'.format(timezone.now() - obj.start)
+        else:
+            return 'Not started yet'
+
+
 class MGRSTile(models.Model):
     """
     Military grid reference system tiles.
@@ -110,7 +122,7 @@ class BucketParseLog(models.Model):
     log = models.TextField(default='')
 
     def __str__(self):
-        return 'Utm Zone {0}, {1}'.format(self.utm_zone, self.start)
+        return 'Utm Zone {0}, {1}'.format(self.utm_zone, get_duration(self))
 
     def write(self, data):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
@@ -223,20 +235,10 @@ class WorldParseProcess(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        if self.end:
-            if not self.start:
-                duration = 'Completed'
-            else:
-                duration = 'Completed in {0}'.format(self.end - self.start)
-        elif self.start:
-            duration = 'Running since {0}'.format(timezone.now() - self.start)
-        else:
-            duration = 'Not started yet'
-
         return '{0} - {1}/{2}/{3} - {4}'.format(
             self.worldlayergroup.name,
             self.tilez,
             self.tilex,
             self.tiley,
-            duration,
+            get_duration(self),
         )
