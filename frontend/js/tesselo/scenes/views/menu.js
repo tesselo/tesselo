@@ -30,18 +30,16 @@ define([
         },
 
         ui: {
-            report_toggle: '.report-toggle',
             report_wrap: '.report-wrap',
             report_show: '.report'
         },
 
         events: {
-            'click @ui.report_toggle': 'reportToggle',
             'click @ui.report_show': 'report'
         },
 
         initialize: function(){
-            _.bindAll(this, 'refresh', 'setLayerDict','setFormulaModel', 'report', 'reportToggle');
+            _.bindAll(this, 'refresh', 'setLayerDict','setFormulaModel', 'report');
         },
 
         buildWorldPicker: function(){
@@ -114,6 +112,7 @@ define([
             // Hook agglayer selector into map renderer.
             aggs.on('childview:agglayer-changed', function(model){
                 _this.agglayer_id = model.id;
+                _this.triggerMethod('agglayer:changed', model);
             });
         },
 

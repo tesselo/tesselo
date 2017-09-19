@@ -21,7 +21,7 @@ from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCo
 from raster_aggregation.serializers import (
     AggregationAreaSimplifiedSerializer, AggregationLayerSerializer, ValueCountResultSerializer
 )
-from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
+from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig, AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
     RasterTilePermission, ValueCountResultCreatePermission
@@ -211,6 +211,11 @@ class AggregationLayerViewSet(PermissionsModelViewSet):
     serializer_class = AggregationLayerSerializer
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', )
+
+    _model = 'aggregationlayer'
+
+
+class AggregationLayerVectorTilesViewSet(AggregationLayerVectorTilesViewSetOrig, PermissionsModelViewSet):
 
     _model = 'aggregationlayer'
 

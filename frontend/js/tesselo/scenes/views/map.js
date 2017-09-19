@@ -3,6 +3,7 @@ define([
         'leaflet',
         './menu',
         './slider',
+        'leaflet.vectorgrid'
     ],
     function(
         Marionette,
@@ -10,6 +11,18 @@ define([
         MenuView,
         SliderView
     ){
+
+    const VectorStyle = {
+        fill: false,
+        weight: 5,
+        fillColor: '#3333FF',
+        color: '#BB2222',
+        fillOpacity: 0.3,
+        opacity: 0.8
+    };
+
+    //const VectorHighlight = { ...VectorStyle, fillColor: '#990000'};
+    const VectorHighlight = { ...VectorStyle, fill: false};
 
     return Marionette.View.extend({
         className: 'map',
@@ -37,6 +50,45 @@ define([
             // Add new layer.
             this.layer = L.tileLayer(url, {opacity: current_opacity});
             this.layer.addTo(this.map);
+        },
+
+        onChildviewAgglayerChanged: function(model){
+            var _this = this;
+            this.mouse_is_over = false;
+            // Remove current layer.
+            if(this.map.hasLayer(this.vtiles)){
+                this.map.removeLayer(this.vtiles);
+            }
+            // Dont add layer for the "none selected" choice.
+            if(typeof model.id == 'undefined') return;
+            // Create style sheet with the new layer name.
+            var style = {};
+            style[model.get('name')] = VectorStyle;
+            // Create vector tile layer.
+            this.vtiles = L.vectorGrid.protobuf('/api/vtiles/' + model.id + '/{z}/{x}/{y}.pbf', {
+                fetchOptions: {credentials: 'same-origin'},
+                getFeatureId: function(f) {
+                    return f.properties.id;
+                },
+                interactive: true,
+                vectorTileLayerStyles: style,
+                zIndex: 9999,
+            })
+            .on('click', function(e){
+                console.log('Should report', e.layer.properties.id);
+            })
+            .addTo(this.map);
+            //.on('mouseover', function(e) {
+                //console.log('mouse', _this.mouse_is_over);
+                //if(_this.mouse_is_over) return;
+                //_this.mouse_is_over = true;
+                //this.setFeatureStyle(e.layer.properties.id, VectorHighlight);
+            //})
+            //.on('mouseout', function(e){
+                //console.log('mouseout')
+                //_this.mouse_is_over = false;
+                //this.resetFeatureStyle(e.layer.properties.id);
+            //})
         },
 
         onChildviewDidReport: function(data){
@@ -67,6 +119,7 @@ define([
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }
             ).addTo(map);
+
 
             // Attach map to object.
             this.map = map;

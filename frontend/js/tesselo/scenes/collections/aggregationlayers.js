@@ -13,7 +13,11 @@ define([
         model: Model,
         url: '/api/aggregationlayer',
         parse : function(data) {
-          return data.results;
+            var results =  _.sortBy(data.results, 'name');
+            results = results.reverse();
+            results.push({'name': '-----'});
+            results = results.reverse();
+          return results;
         }
     });
 });

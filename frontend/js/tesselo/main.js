@@ -11,6 +11,7 @@ requirejs.config({
         marionette: '../../node_modules/backbone.marionette/lib/backbone.marionette',
         text: '../../node_modules/requirejs-text/text',
         leaflet: '../../node_modules/leaflet/dist/leaflet',
+        'leaflet.vectorgrid': '../../node_modules/leaflet.vectorgrid/dist/Leaflet.VectorGrid',
         'd3-color': '../../node_modules/d3-color/build/d3-color',
         'd3-interpolate': '../../node_modules/d3-interpolate/build/d3-interpolate',
         'd3-scale-chromatic': '../../node_modules/d3-scale-chromatic/build/d3-scale-chromatic',
@@ -46,6 +47,9 @@ requirejs.config({
         },
         'leaflet': {
             exports: 'L'
+        },
+        'leaflet.vectorgrid': {
+            deps: ['leaflet']
         }
     }
 });

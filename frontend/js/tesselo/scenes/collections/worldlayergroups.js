@@ -24,7 +24,8 @@ define([
                 result.name = yr + '-' + mo + '-' + da;
                 return result;
             });
-            return _.sortBy(results, 'name');
+            results =  _.sortBy(results, 'name');
+            return results;
         }
     });
 });

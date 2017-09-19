@@ -6,17 +6,17 @@
     "backbone.babysitter": "^0.1.12",
     "backbone.marionette": "3.1.0",
     "backbone.wreqr": "^1.3.7",
-    "jquery": "latest",
-    "jquery.cookie": "^1.4.1",
     "bootstrap": "^3.3.7",
     "bootswatch": "^3.3.7",
+    "chart.js": "^2.5.0",
+    "d3-scale-chromatic": "^1.1.0",
+    "jquery": "latest",
+    "jquery.cookie": "^1.4.1",
+    "leaflet": "1.0.3",
+    "leaflet.vectorgrid": "^1.3.0",
+    "nouislider": "^9.1.0",
     "requirejs": "2.3.1",
     "requirejs-text": "2.0.12",
-    "underscore": "^1.8.3",
-    "leaflet": "1.0.3",
-    "chart.js": "^2.5.0",
-    "nouislider": "^9.1.0",
-    "d3-scale-chromatic": "^1.1.0"
+    "underscore": "^1.8.3"
   }
 }
-

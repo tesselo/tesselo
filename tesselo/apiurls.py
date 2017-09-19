@@ -4,7 +4,7 @@ from formulary.views import FormulaViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView, LegendEntryViewSet,
     LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, SentinelTileAggregationAreaViewSet,
-    ValueCountResultViewSet, WorldLayerGroupViewSet, ZoneOfInterestViewSet
+    ValueCountResultViewSet, WorldLayerGroupViewSet, ZoneOfInterestViewSet, AggregationLayerVectorTilesViewSet,
 )
 
 router = routers.DefaultRouter(trailing_slash=False)
@@ -28,6 +28,11 @@ router.register(
     r'export',
     ExportAPIView,
     base_name='export'
+)
+router.register(
+    r'vtiles/(?P<aggregationlayer>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>json|pbf)',
+    AggregationLayerVectorTilesViewSet,
+    base_name='vectortiles'
 )
 
 router.register(r'aggregationlayer', AggregationLayerViewSet)
