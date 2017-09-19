@@ -22,12 +22,12 @@
         <!--<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
 
         {% endcompress css %}
-
         {% if not user.is_authenticated %}
             {% compress css %}
                 <link href="{{ STATIC_URL }}less/tesselo.less" rel="stylesheet" type="text/less">
             {% endcompress css %}
         {% endif %}
+
 
         <!-- Custom Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Abel" rel="stylesheet" type="text/css">
@@ -139,22 +139,34 @@
                         <h2>Services</h2>
                         <hr class="star-primary">
                     </div>
+                    <div class="col-lg-8 col-lg-offset-2 platform-header-item ">
+                        <p>
+                        Tesselo brings together satellite imagery and artificial intelligence to deliver real-time geospatial intelligence.
+                        We specialize in remote sensing analysis, land cover mapping and sustainability. If your business depends on managing land-based natural resources, Tesselo can provide you with easy-to-use continuous environmental monitoring tools.
+                        </p>
+                    </div>
                 </div>
                 <div class="row">
                     <div class="col-sm-4 services-item">
                         <img src="{{ STATIC_URL }}images/agriculture.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Agriculture">
                         <h3 class="fadeIn">Agriculture</h3>
-                        <p class="fadeInLeft">Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        <p class="fadeInLeft">
+                        Our systems support continuous monitoring of crops to catch problems early, and reduce the need of inputs. The increased efficiency enables farmers to lower costs and clears the path for applying sustainable agricultural practices. For insurers, investors and certifiers our data helps to increase the confidence in their portfolios, lowering the cost of capital, insurance and compliance verification.
+                        </p>
                     </div>
                     <div class="col-sm-4 services-item">
                         <img src="{{ STATIC_URL }}images/forest.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Forest">
                         <h3 class="fadeIn">Forestry</h3>
-                        <p class="fadeInLeft">Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        Tesselo supports both production and conservation applications in forestry. We can monitor health-related indices across vast areas. Our platform measures above and below ground carbon stocks using standard international protocols.
+                        <p class="fadeInLeft">
+                        </p>
                     </div>
                     <div class="col-sm-4 services-item">
                         <img src="{{ STATIC_URL }}images/road.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Road">
                         <h3 class="fadeIn">Urban planning</h3>
-                        <p class="fadeInLeft">Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        Tesselo provides an up-to-date map of your region  across multiple administrative boundaries out of the box.  We use artificial intelligence to produce impervious cover maps, watershed and green infrastructure analysis. Our platform can deliver in near real time what used to take weeks to produce.
+                        <p class="fadeInLeft">
+                        </p>
                     </div>
                 </div>
             </div>
@@ -168,22 +180,37 @@
                         <h2>The Platform</h2>
                         <hr class="star-primary">
                     </div>
+                    <div class="col-lg-8 col-lg-offset-2 platform-header-item">
+                        <p>
+                        Our cloud based platform is blazingly fast and easy to use. No prior knowledge of satellite image processing is required.  Tesselo continuously ingests earth observation data, and processes it to generate beautiful imagery and accurate analysis.
+
+                        We have optimized the platform to brings the massive processing needed for satellite imagery at a fraction of the standard price to bring the best value for money for our customers.
+                        </p>
+                    </div>
                 </div>
                 <div class="row animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
                     <div class="col-sm-4 platform-item">
                         <img src="{{ STATIC_URL }}images/icon-perf.png" class="img-responsive" alt="Performance">
-                        <h3>Performance</h3>
-                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        <h3>User Centric</h3>
+                        <p>
+                        Tesselo features extensive custom dashboard and reporting capabilities. This makes it simple to securely distribute your management information to various stakeholders - no additional software or skills required. You can also incorporate your monitoring information into standard business intelligence tools.
+                        </p>
                     </div>
                     <div class="col-sm-4 platform-item">
                         <img src="{{ STATIC_URL }}images/icon-ai.png" class="img-responsive" alt="Artificial Intelligence">
                         <h3>Artificial Intelligence</h3>
-                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        <p>
+                        Our team combines expert knowledge in vegetation remote sensing, urban planning and artificial intelligence. We bring state-of-the-art machine learning and deep learning technique to satellite imagery. Obtain the business intelligence your organization needs at the click of a button.
+                        </p>
                     </div>
                     <div class="col-sm-4 platform-item">
                         <img src="{{ STATIC_URL }}images/icon-cloud.png" class="img-responsive" alt="Cloud">
                         <h3>Cloud API</h3>
-                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        <p>
+                        Tesselo leverages cloud distributed cloud computing to power our API.
+
+                        We designed our platform to be easy-to-use for non-specialists but you our data can be plugged your app into our API to instantly collect up to date geo-spatial intelligence.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -200,8 +227,12 @@
                 </div>
                 <div class="row">
                     <div class="col-lg-9 animate" data-animate="fadeInRight" data-duration="1.0s" data-delay="0.1s">
-                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
-                        <p>Nullam in ligula ut quam malesuada suscipit. Nam aliquet sit amet odio vehicula eleifend. Cras sollicitudin tellus ligula, at suscipit sapien vehicula vel. Integer pretium odio massa, porttitor rut rum nunc sollicitudin eget. Aliquam sed faucibus cras amet.</p>
+                        <p>
+                        Tesselo is a startup founded in 2017 in Portugal. The founders combine passions for remote sensing, artificial intelligence, urban planning and environmental sustainability.
+                        </p>
+                        <p>
+                        Tesselo is backed by the European Space Agency (ESA) through the ESA BIC program.
+                        </p>
                     </div>
                     <div class="col-lg-3 animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
                         <span>In partnership with</span>
