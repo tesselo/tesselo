@@ -1,11 +1,8 @@
-import json
-import tempfile
-from unittest import skip
+from rest_framework import status
+from rest_framework.authtoken.models import Token
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-from rest_framework.authtoken.models import Token
-from rest_framework import status
 
 
 class ApiLogoutViewTests(TestCase):
@@ -30,7 +27,7 @@ class ApiLogoutViewTests(TestCase):
         # Use token to logout via POST.
         token = response.json()['token']
         headers = {'HTTP_AUTHORIZATION': 'Token {}'.format(token)}
-        response = self.client.post('/api-token-logout/', {},  **headers)
+        response = self.client.post('/api-token-logout/', {}, **headers)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Token.objects.filter(user=self.usr).exists())
 

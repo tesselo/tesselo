@@ -51,20 +51,6 @@ define([
             this.showChildView('worldRegion', world);
             // Limit worldlayergroups to active layers.
             var params = {data: $.param({active: true})};
-            // Fetch worldlayergroup data and set first layer.
-            collection.fetch(params).done(function(){
-                // Fetch child view for selected worldlayergroup, or the first one if not specified.
-                if(_this.options.worldlayergroup){
-                    var worldview = world.children.filter(function(view){  return view.model.id == _this.options.worldlayergroup; })[0];
-                    // Fallback to first layer if id is not found.
-                    if(!worldview){
-                        var worldview = world.children.first();
-                    }
-                } else {
-                    var worldview = world.children.first();
-                }
-                worldview.toggle();
-            });
             // Hook worldlayergroup selector into map renderer.
             world.on('childview:world-changed', this.setLayerDict);
         },
@@ -108,12 +94,43 @@ define([
             // Fetch agglayer data and set first layer.
             collection.fetch().done(function(){
                 aggs.children.first().toggle();
+                _this.filterWorldLayers();
             });
             // Hook agglayer selector into map renderer.
             aggs.on('childview:agglayer-changed', function(model){
                 _this.agglayer_id = model.id;
                 _this.triggerMethod('agglayer:changed', model);
+                _this.filterWorldLayers();
             });
+        },
+
+        filterWorldLayers: function(){
+            var _this = this;
+            var world = this.getChildView('worldRegion');
+            if(typeof this.agglayer_id == 'undefined'){
+                world.collection.reset();
+            } else {
+                var params = {data: $.param({
+                    active: true,
+                    aggregationlayer: this.agglayer_id
+                })};
+                // Fetch worldlayergroup data and set first layer.
+                world.collection.fetch(params).done(function(){
+                    // Fetch child view for selected worldlayergroup, or the first one if not specified.
+                    if(_this.options.worldlayergroup){
+                        var worldview = world.children.filter(function(view){  return view.model.id == _this.options.worldlayergroup; })[0];
+                        // Fallback to first layer if id is not found.
+                        if(!worldview){
+                            var worldview = world.children.first();
+                        }
+                    } else {
+                        var worldview = world.children.first();
+                    }
+                    if(worldview){
+                        worldview.toggle();
+                    }
+                });
+            }
         },
 
         setLayerDict: function(model){

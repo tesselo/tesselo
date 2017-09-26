@@ -19,8 +19,8 @@ from rest_framework.documentation import include_docs_urls
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic.base import TemplateView
-from tesselo.apiurls import router
 from tesselo.apilogout import remove_auth_token
+from tesselo.apiurls import router
 
 urlpatterns = [
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs')),
