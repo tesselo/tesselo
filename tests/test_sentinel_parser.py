@@ -187,3 +187,12 @@ class SentinelBucketParserTest(TestCase):
         })
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_public_rasterlayer(self):
+        """
+        The sentinel band rasterlayer is public after creation.
+        """
+        sync_sentinel_bucket_utm_zone(1)
+        drive_sentinel_queue()
+        for tile in SentinelTileBand.objects.all():
+            self.assertTrue(tile.layer.publicrasterlayer.public)

@@ -216,6 +216,8 @@ def get_aggregation_area_scenes(aggregationarea_id):
                 build_pyramid=True,
                 store_reprojected=False,
             )
+            layer.publicrasterlayer.public = True
+            layer.publicrasterlayer.save()
             try:
                 SentinelTileBand.objects.create(
                     layer=layer,
@@ -332,11 +334,17 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
                         build_pyramid=False,
                         store_reprojected=False,
                     )
-                    SentinelTileBand.objects.create(
-                        layer=layer,
-                        band=filename,
-                        tile=tile,
-                    )
+                    layer.publicrasterlayer.public = True
+                    layer.publicrasterlayer.save()
+                    try:
+                        SentinelTileBand.objects.create(
+                            layer=layer,
+                            band=filename,
+                            tile=tile,
+                        )
+                    except:
+                        layer.delete()
+                        raise
 
 
 @task
