@@ -289,11 +289,11 @@ class STALPageNumberPagination(PageNumberPagination):
 class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
     serializer_class = SentinelTileAggregationLayerSerializer
     pagination_class = STALPageNumberPagination
-
+    permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
     filter_backends = (DjangoFilterBackend, )
     filter_fields = ('active', )
 
-    _model = 'aggregationlayer'
+    _parent_model = 'aggregationlayer'
 
     def get_queryset(self):
         qs = SentinelTileAggregationLayer.objects.all().order_by('id')
