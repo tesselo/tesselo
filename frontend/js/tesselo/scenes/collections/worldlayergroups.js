@@ -6,12 +6,12 @@ define([
     ){
 
     var WLGModel = Backbone.Model.extend({
-        urlRoot: '/api/sentineltileaggregationarea'
+        urlRoot: '/api/sentineltileaggregationlayer'
     });
 
     return Backbone.Collection.extend({
         model: WLGModel,
-        url: '/api/sentineltileaggregationarea',
+        url: '/api/sentineltileaggregationlayer',
         parse : function(data) {
             var results = _.map(data.results, function(result){
                 // Replace prefix with nice date stamp.

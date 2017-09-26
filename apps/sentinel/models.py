@@ -11,7 +11,7 @@ from django.contrib.gis.gdal import SpatialReference
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from raster_aggregation.models import AggregationArea, AggregationLayer
+from raster_aggregation.models import AggregationLayer
 from sentinel import const
 
 
@@ -99,17 +99,16 @@ class SentinelTileBand(models.Model):
         return const.BAND_RESOLUTIONS[self.band]
 
 
-class SentinelTileAggregationArea(models.Model):
+class SentinelTileAggregationLayer(models.Model):
     sentineltile = models.ForeignKey(SentinelTile)
-    aggregationarea = models.ForeignKey(AggregationArea)
+    aggregationlayer = models.ForeignKey(AggregationLayer)
     active = models.BooleanField(default=True)
 
-    @property
-    def aggregationlayer(self):
-        return self.aggregationarea.aggregationlayer
+    class Meta:
+        unique_together = (('sentineltile', 'aggregationlayer'),)
 
     def __str__(self):
-        return '{} | {} | {}'.format(self.sentineltile, self.aggregationarea, 'active ' if self.active else 'not active')
+        return '{} | {} | {}'.format(self.sentineltile, self.aggregationlayer, 'active ' if self.active else 'not active')
 
 
 class BucketParseLog(models.Model):

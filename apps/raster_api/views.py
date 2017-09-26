@@ -21,7 +21,8 @@ from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCo
 from raster_aggregation.serializers import (
     AggregationAreaSimplifiedSerializer, AggregationLayerSerializer, ValueCountResultSerializer
 )
-from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig, AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
+from raster_aggregation.views import AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
+from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
     RasterTilePermission, ValueCountResultCreatePermission
@@ -29,9 +30,9 @@ from raster_api.permissions import (
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer, RasterLayerSerializer,
-    SentinelTileAggregationAreaSerializer, UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
+    SentinelTileAggregationLayerSerializer, UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
 )
-from sentinel.models import SentinelTileAggregationArea, WorldLayerGroup, ZoneOfInterest
+from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -281,27 +282,22 @@ class ZoneOfInterestViewSet(PermissionsModelViewSet):
     _model = 'zoneofinterest'
 
 
-class STAAPageNumberPagination(PageNumberPagination):
+class STALPageNumberPagination(PageNumberPagination):
     page_size = 100
 
 
-class SentinelTileAggregationAreaViewSet(ModelViewSet):
-    """
-    TODO: this wont work if multiple areas are present. Need filtering
-    of the scenes on the frontend.
-    """
-    serializer_class = SentinelTileAggregationAreaSerializer
-    permission_classes = (IsAuthenticated, DependentObjectPermission, )
-    pagination_class = STAAPageNumberPagination
+class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
+    serializer_class = SentinelTileAggregationLayerSerializer
+    pagination_class = STALPageNumberPagination
 
     filter_backends = (DjangoFilterBackend, )
     filter_fields = ('active', )
 
-    _parent_model = 'aggregationlayer'
+    _model = 'aggregationlayer'
 
     def get_queryset(self):
-        qs = SentinelTileAggregationArea.objects.all().order_by('id')
+        qs = SentinelTileAggregationLayer.objects.all().order_by('id')
         agglyr = self.request.GET.get('aggregationlayer', None)
         if agglyr:
-            qs = qs.filter(aggregationarea__aggregationlayer_id=agglyr)
+            qs = qs.filter(aggregationlayer_id=agglyr)
         return qs

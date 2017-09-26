@@ -31,7 +31,7 @@ from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
-    BucketParseLog, MGRSTile, SentinelTile, SentinelTileAggregationArea, SentinelTileBand, WorldLayerGroup,
+    BucketParseLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, WorldLayerGroup,
     WorldParseProcess, ZoneOfInterest
 )
 
@@ -183,9 +183,9 @@ def get_aggregation_area_scenes(aggregationarea_id):
 
     for tile in tiles:
         # Register tile for this aggregationarea.
-        SentinelTileAggregationArea.objects.get_or_create(
+        SentinelTileAggregationLayer.objects.get_or_create(
             sentineltile=tile,
-            aggregationarea=area,
+            aggregationlayer_id=area.aggregationlayer_id,
         )
         # Ignore scenes that were already fetched.
         if tile.sentineltileband_set.count() > 0:
@@ -209,11 +209,15 @@ def get_aggregation_area_scenes(aggregationarea_id):
                 build_pyramid=True,
                 store_reprojected=False,
             )
-            SentinelTileBand.objects.create(
-                layer=layer,
-                band=filename,
-                tile=tile,
-            )
+            try:
+                SentinelTileBand.objects.create(
+                    layer=layer,
+                    band=filename,
+                    tile=tile,
+                )
+            except:
+                layer.delete()
+                raise
 
 
 @receiver(post_save, sender=AggregationArea)
