@@ -177,8 +177,15 @@ def get_aggregation_area_scenes(aggregationarea_id):
     """
     area = AggregationArea.objects.get(id=aggregationarea_id)
 
+    # Get tiles that intersect with the aggregation area, but are not
+    # at the utm zone boundaries.
+    # TODO: repair the boundary geometries instead of filtering them.
     tiles = SentinelTile.objects.filter(
         tile_data_geom__intersects=area.geom,
+    ).exclude(
+        prefix__startswith='tiles/1/',
+    ).exclude(
+        prefix__startswith='tiles/60/',
     )
 
     for tile in tiles:
