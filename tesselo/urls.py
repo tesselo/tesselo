@@ -20,6 +20,7 @@ from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic.base import TemplateView
 from tesselo.apiurls import router
+from tesselo.apilogout import remove_auth_token
 
 urlpatterns = [
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs')),
@@ -30,4 +31,5 @@ urlpatterns = [
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^$', TemplateView.as_view(template_name='index.html')),
     url(r'^api-token-auth/', obtain_auth_token),
+    url(r'^api-token-logout/', remove_auth_token),
 ]
