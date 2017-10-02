@@ -170,15 +170,12 @@ if DEBUG:
 else:
     # Storage class for static files and compressor
     STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootCachedS3Boto3Storage'
-
     # Get S3 bucket name
     AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
-
     # Set the url to the bucket for serving files
     STATIC_URL = 'https://{bucket}.s3.amazonaws.com/'.format(
         bucket=AWS_STORAGE_BUCKET_NAME_STATIC,
     )
-
     # Define the storage class and url for compression
     COMPRESS_STORAGE = STATICFILES_STORAGE
     COMPRESS_URL = STATIC_URL
@@ -205,13 +202,11 @@ if DEBUG:
     MEDIA_ROOT = '/tesselo_media'
 else:
     # Storage class for media files
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE = 'tesselo.s3storages.PrivateMediaS3Boto3Storage'
     # Get S3 bucket name
     AWS_STORAGE_BUCKET_NAME_MEDIA = os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')
-    AWS_STORAGE_BUCKET_NAME = AWS_STORAGE_BUCKET_NAME_MEDIA
-
     # Set the url to the bucket for serving files
-    MEDIA_URL = 'https://{bucket}..s3.amazonaws.com/'.format(
+    MEDIA_URL = 'https://{bucket}.s3.amazonaws.com/'.format(
         bucket=AWS_STORAGE_BUCKET_NAME_MEDIA,
     )
 
