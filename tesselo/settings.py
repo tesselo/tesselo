@@ -228,11 +228,9 @@ REST_FRAMEWORK = {
 if DEBUG:
     CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 else:
-    CELERY_BROKER_URL = 'sqs://{0}:{1}@'.format(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+    CELERY_BROKER_URL = 'redis://tesselo-redis-broker.xu1tb1.0001.euc1.cache.amazonaws.com:6379'
     CELERY_BROKER_TRANSPORT_OPTIONS = {
-        'region': 'eu-central-1',
         'visibility_timeout': 2 * 60 * 60,  # 2 hours.
-        'polling_interval': 5,
         'queue_name_prefix': 'tesselo-',
     }
 CELERY_RESULT_BACKEND = 'django-db'
