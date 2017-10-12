@@ -19,6 +19,7 @@ SECRET_KEY = 'j7$22brg^e@qpnnwtgw%1l@&=9=2yjbo-ky3ox-m_jgym*8iap'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', False) == 'True'
+LOCAL = os.environ.get('LOCAL') == 'True' if 'LOCAL' in os.environ else DEBUG
 
 ALLOWED_HOSTS = ['*']
 
@@ -165,7 +166,7 @@ STATICFILES_DIRS = (
 )
 
 STATIC_ROOT = '/staticfiles'
-if DEBUG:
+if LOCAL:
     STATIC_URL = '/static/'
 else:
     # Storage class for static files and compressor
@@ -198,7 +199,7 @@ COMPRESS_PRECOMPILERS = (
 COMPRESS_OFFLINE = True
 
 # Storage settings
-if DEBUG:
+if LOCAL:
     MEDIA_ROOT = '/tesselo_media'
 else:
     # Storage class for media files
@@ -225,7 +226,7 @@ REST_FRAMEWORK = {
 }
 
 # Celery settings.
-if DEBUG:
+if LOCAL:
     CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 else:
     CELERY_BROKER_URL = 'redis://tesselo-redis-broker.xu1tb1.0001.euc1.cache.amazonaws.com:6379'
