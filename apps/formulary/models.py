@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
+from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
+
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 
 class Formula(models.Model):

@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
+from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import Legend, LegendSemantics, RasterLayer
+from raster_aggregation.models import AggregationLayer, ValueCountResult
 
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
-from raster_aggregation.models import AggregationLayer, ValueCountResult
 from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
 
 

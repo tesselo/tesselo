@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import json
 
+from guardian.shortcuts import assign_perm
 from raster.models import Legend, LegendEntry, LegendSemantics
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -9,7 +10,6 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from guardian.shortcuts import assign_perm
 from raster_api.views import LegendEntryViewSet, LegendViewSet
 from sentinel.models import WorldLayerGroup
 

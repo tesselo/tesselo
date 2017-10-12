@@ -3,12 +3,13 @@ from __future__ import unicode_literals
 import tempfile
 from unittest import skip
 
+from guardian.shortcuts import assign_perm
+from raster_aggregation.models import AggregationArea, AggregationLayer
+
 from django.contrib.auth.models import User
 from django.core.files import File
 from django.core.urlresolvers import reverse
 from django.test import TestCase, override_settings
-from guardian.shortcuts import assign_perm
-from raster_aggregation.models import AggregationArea, AggregationLayer
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)

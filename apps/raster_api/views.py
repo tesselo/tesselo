@@ -1,8 +1,15 @@
 from __future__ import unicode_literals
 
 from django_filters.rest_framework import DjangoFilterBackend
+from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
 from raster.views import AlgebraView, ExportView, RasterView
+from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
+from raster_aggregation.serializers import (
+    AggregationAreaSimplifiedSerializer, AggregationLayerSerializer, ValueCountResultSerializer
+)
+from raster_aggregation.views import AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
+from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
@@ -16,13 +23,6 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from django.contrib.auth.models import Group, User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
-from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
-from raster_aggregation.serializers import (
-    AggregationAreaSimplifiedSerializer, AggregationLayerSerializer, ValueCountResultSerializer
-)
-from raster_aggregation.views import AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
-from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
     RasterTilePermission, ValueCountResultCreatePermission

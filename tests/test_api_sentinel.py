@@ -2,14 +2,14 @@ from __future__ import unicode_literals
 
 import json
 
+from guardian.shortcuts import assign_perm
 from raster.models import RasterLayer
+from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
 from rest_framework import status
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from guardian.shortcuts import assign_perm
-from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
 from sentinel.models import WorldLayerGroup, ZoneOfInterest
 
 

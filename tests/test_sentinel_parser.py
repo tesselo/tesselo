@@ -5,6 +5,7 @@ import tempfile
 
 import mock
 from raster.models import RasterLayer, RasterTile
+from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
 
 from classify.models import Classifier, TrainingSample
 from classify.tasks import train_cloud_classifier
@@ -20,7 +21,6 @@ from sentinel.models import (
 from sentinel.tasks import (
     drive_sentinel_queue, drive_world_layers, repair_incomplete_scenes, sync_sentinel_bucket_utm_zone
 )
-from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
 
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)

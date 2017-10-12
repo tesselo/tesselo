@@ -7,6 +7,7 @@ import time
 import traceback
 import uuid
 
+import boto3
 import botocore
 import numpy
 from botocore.client import Config
@@ -16,8 +17,8 @@ from dateutil import parser
 from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+from raster_aggregation.models import AggregationArea
 
-import boto3
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
@@ -25,7 +26,6 @@ from django.db.models import Count, F, Func
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from raster_aggregation.models import AggregationArea
 from sentinel import const
 from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds

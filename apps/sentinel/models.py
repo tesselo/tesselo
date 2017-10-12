@@ -5,13 +5,13 @@ import datetime
 from raster.models import RasterLayer, RasterLayerParseStatus
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
 from raster.tiles.utils import tile_index_range
+from raster_aggregation.models import AggregationLayer
 
 from django.contrib.gis.db import models
 from django.contrib.gis.gdal import SpatialReference
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from raster_aggregation.models import AggregationLayer
 from sentinel import const
 
 

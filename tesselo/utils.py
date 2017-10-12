@@ -1,5 +1,6 @@
-from django.core.files.storage import get_storage_class
 from swift.storage import StaticSwiftStorage
+
+from django.core.files.storage import get_storage_class
 
 
 class CachedStaticSwiftStorage(StaticSwiftStorage):

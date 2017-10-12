@@ -1,5 +1,6 @@
 import json
 
+from guardian.shortcuts import assign_perm, get_perms
 from raster.models import (
     Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerBandMetadata, RasterLayerMetadata,
     RasterLayerParseStatus
@@ -10,7 +11,6 @@ from rest_framework.serializers import (
 
 from django.contrib.auth.models import Group, User
 from django.shortcuts import get_object_or_404
-from guardian.shortcuts import assign_perm, get_perms
 from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
 
 
