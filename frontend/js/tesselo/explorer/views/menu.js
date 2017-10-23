@@ -181,7 +181,7 @@ define([
                 var blue = _.filter(this.layer_dict, function(val, key){ return key == 'B02.jp2' })[0];
 
                 this.ui.formula_wrap.hide();
-                var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=3e3';
+                var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=3,3e3&alpha';
                 var nav_base = this.worldlayergroup_id + '/';
             } else {
                 // Show formula container.
