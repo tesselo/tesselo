@@ -173,7 +173,7 @@ define([
                 var urlsplit = Backbone.history.fragment.split('@');
                 var base = urlsplit[0];
             } else {
-                var base = this.worldlayergroup_id + '/';
+                var base = 'scenes';
             }
 
             Backbone.history.navigate(base + '@' + lat + ',' + lng + ',' + zoom);

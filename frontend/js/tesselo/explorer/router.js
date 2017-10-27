@@ -27,7 +27,7 @@ define([
     return Marionette.AppRouter.extend({
         controller: MapController,
         appRoutes: {
-            '(/)': 'actionMap',
+            'mosaic': 'actionMap',
             '(/)(:worldlayergroup)(/)(:formula)(/)(:scale_min)(/)(:scale_max)(/)(:scale_breaks)(/)(:color)(/)@:lat,:lon,:zoom': 'actionMap'
         },
         initialize: function(root){

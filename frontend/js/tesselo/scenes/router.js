@@ -8,17 +8,11 @@ define([
 
     // Define Router
     var MapController = {
-        actionMap: function(worldlayergroup, formula, scale_min, scale_max, scale_breaks, color, lat, lon, zoom){
+        actionMap: function(lat, lon, zoom){
             var map = new MapView({
-                worldlayergroup: worldlayergroup,
                 lat: lat,
                 lon: lon,
-                zoom: zoom,
-                formula: formula,
-                scale_min: scale_min,
-                scale_max: scale_max,
-                scale_breaks: scale_breaks,
-                color: color
+                zoom: zoom
             });
             this.root.showChildView('contentRegion', map);
         }
@@ -27,8 +21,9 @@ define([
     return Marionette.AppRouter.extend({
         controller: MapController,
         appRoutes: {
+            '': 'actionMap',
             'scenes': 'actionMap',
-            '(/)(:worldlayergroup)(/)(:formula)(/)(:scale_min)(/)(:scale_max)(/)(:scale_breaks)(/)(:color)(/)@:lat,:lon,:zoom': 'actionMap'
+            'scenes@:lat,:lon,:zoom': 'actionMap'
         },
         initialize: function(root){
             this.controller.root = root;
