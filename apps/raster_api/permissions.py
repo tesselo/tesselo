@@ -12,7 +12,12 @@ class RasterTilePermission(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
+        # Check user permissions only on non-public rasterlayers.
+        qs = RasterLayer.objects.exclude(
+            publicrasterlayer__public=True
+        ).filter(
+            id__in=view.get_ids().values()
+        ).only('id').distinct()
         return all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
 
 
