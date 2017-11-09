@@ -25,6 +25,11 @@ router.register(
     base_name='algebra'
 )
 router.register(
+    r'^pixel/(?P<xcoord>-?\d+(?:\.\d+)?)/(?P<ycoord>-?\d+(?:\.\d+)?)$',
+    AlgebraAPIView,
+    base_name='algebra'
+)
+router.register(
     r'export',
     ExportAPIView,
     base_name='export'
