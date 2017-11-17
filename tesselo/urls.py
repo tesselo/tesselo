@@ -19,7 +19,7 @@ from rest_framework.documentation import include_docs_urls
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic.base import TemplateView
-from raster_api.wmts import WMTSAPIView
+from formulary.wmts import WMTSAPIView
 from tesselo.apilogout import remove_auth_token
 from tesselo.apiurls import router
 

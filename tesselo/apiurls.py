@@ -1,6 +1,6 @@
 from rest_framework import routers
 
-from formulary.views import FormulaViewSet
+from formulary.views import FormulaViewSet, WMTSLayerViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView,
     LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, SentinelTileAggregationLayerViewSet,
@@ -47,4 +47,6 @@ router.register(r'valuecountresult', ValueCountResultViewSet)
 router.register(r'worldlayergroup', WorldLayerGroupViewSet, base_name='worldlayergroup')
 router.register(r'zoneofinterest', ZoneOfInterestViewSet, base_name='zoneofinterest')
 router.register(r'sentineltileaggregationlayer', SentinelTileAggregationLayerViewSet, base_name='sentineltileaggregationlayer')
+
 router.register(r'formula', FormulaViewSet, base_name='formula')
+router.register(r'wmtslayer', WMTSLayerViewSet, base_name='wmtslayer')

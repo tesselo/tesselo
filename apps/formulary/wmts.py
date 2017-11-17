@@ -77,22 +77,44 @@ class WMTSAPIView(APIView):
     """
 
     def get(self, request):
-        layers = ''
+        # Get url base from request.
+        host = request.get_host()
+        urlbase = '{0}://{1}/api/algebra/'.format(
+            'http' if host == 'localhost' else 'https',
+            host,
+        )
 
-        aggs = get_objects_for_user(request.user, 'sentinel.change_sentineltileaggregationlayer')
+        # Get wmts layers for the request user.
+        wmts_layers = get_objects_for_user(request.user, 'formulary.change_wmtslayer')
 
-        for agg in aggs[:100]:
-            layers += TILE_LAYER_TEMPLATE.format(
-                title='{0} {1} RGB'.format(agg.sentineltile.mgrstile, agg.sentineltile.collected.date()),
-                identifier='{}-RGB'.format(agg.id),
-                url="http://localhost/api/algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={r},g={g},b={b}&amp;scale=3,3e3&amp;alpha".format(
-                    r=agg.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id,
-                    g=agg.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id,
-                    b=agg.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id,
-                ),
+        # Construct wmts layer list from wmts layers.
+        layer_list = ''
+        for layer in wmts_layers:
+            if layer.formula:
+                # Generate raster algebra url.
+                url = "{urlbase}{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
+                    urlbase=urlbase,
+                    layers=layer.layer_ids,
+                    formula=layer.formula.formula,
+                    colormap=layer.formula.colormap,
+                )
+            else:
+                # Generate RGB url.
+                url = "{urlbase}{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=3,3e3&amp;alpha".format(
+                    urlbase=urlbase,
+                    red=layer.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id,
+                    green=layer.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id,
+                    blue=layer.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id,
+                )
+
+            # Add layer to wmts capabilities list.
+            layer_list += TILE_LAYER_TEMPLATE.format(
+                title=layer.title,
+                identifier='{0}'.format(layer.id),
+                url=url
             )
 
-        return HttpResponse(WMTS_BASE_TEMPLATE.format(layers=layers, mat=self.tile_matrix_set_3857), content_type="text/xml")
+        return HttpResponse(WMTS_BASE_TEMPLATE.format(layers=layer_list, mat=self.tile_matrix_set_3857), content_type="text/xml")
 
     @property
     def tile_matrix_set_3857(self):
