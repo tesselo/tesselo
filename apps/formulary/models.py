@@ -6,7 +6,7 @@ from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from sentinel.const import BAND_CHOICES
-from sentinel.models import SentinelTile
+from sentinel.models import SentinelTile, SentinelTileBand
 
 
 class Formula(models.Model):
@@ -101,8 +101,12 @@ class WMTSLayer(models.Model):
         ids = []
         for tpl in BAND_CHOICES:
             key = tpl[0]
-            if key.split('.')[0] in self.formula.formula:
-                ids.append('='.join(key.split('.')[0], str(self.sentineltile.get(band=key).only('pk').pk)))
+            form_key = ''.join(key.split('.')[0].split('0'))
+            if form_key in self.formula.formula:
+                try:
+                    ids.append('='.join(form_key, str(self.sentineltile.sentineltileband_set.get(band=key).only('pk').pk)))
+                except SentinelTileBand.DoesNotExist:
+                    continue
         return ','.join(ids)
 
 

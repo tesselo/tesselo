@@ -1,3 +1,5 @@
+import json
+
 from guardian.shortcuts import get_objects_for_user
 from raster.tiles.utils import tile_bounds, tile_scale
 from rest_framework.views import APIView
@@ -91,12 +93,15 @@ class WMTSAPIView(APIView):
         layer_list = ''
         for layer in wmts_layers:
             if layer.formula:
+                layer_ids = layer.layer_ids
+                if not layer_ids:
+                    continue
                 # Generate raster algebra url.
                 url = "{urlbase}{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
+                    layers=layer_ids,
                     urlbase=urlbase,
-                    layers=layer.layer_ids,
-                    formula=layer.formula.formula,
-                    colormap=layer.formula.colormap,
+                    formula=layer.formula.formula.replace(' ', ''),
+                    colormap=json.dumps({"continuous": True, "from": [165, 0, 38], "to": [0, 104, 55], "over": [249, 247, 174]}).replace('"', '&quot;'),
                 )
             else:
                 # Generate RGB url.
