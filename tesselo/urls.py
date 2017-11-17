@@ -19,6 +19,7 @@ from rest_framework.documentation import include_docs_urls
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic.base import TemplateView
+from raster_api.wmts import WMTSAPIView
 from tesselo.apilogout import remove_auth_token
 from tesselo.apiurls import router
 
@@ -32,4 +33,5 @@ urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name='index.html')),
     url(r'^api-token-auth/', obtain_auth_token),
     url(r'^api-token-logout/', remove_auth_token),
+    url(r'^wmts$', WMTSAPIView.as_view()),
 ]
