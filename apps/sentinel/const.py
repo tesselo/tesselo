@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import datetime
+
 import numpy
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_scale
@@ -119,3 +121,16 @@ BANDS_COUNT_BY_RES = {
     ZOOM_LEVEL_20M: len(BANDS_20M),
     ZOOM_LEVEL_60M: len(BANDS_60M),
 }
+
+# L2A bucket.
+L2A_BUCKET = 's3://sentinel-s2-l2a/'
+L2A_AVAILABILITY_DATE = datetime.date(2017, 3, 28)
+
+# Sentinel2 Process levels.
+LEVEL_L1C = 'l1c'
+LEVEL_L2A = 'l2a'
+
+PROCESS_LEVELS = (
+    (LEVEL_L1C, 'Level 1C'),
+    (LEVEL_L2A, 'Level 2A'),
+)

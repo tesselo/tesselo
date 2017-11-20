@@ -197,36 +197,8 @@ def get_aggregation_area_scenes(aggregationarea_id):
         # Ignore scenes that were already fetched.
         if tile.sentineltileband_set.count() > 0:
             continue
-        # Loop through all choices
-        for filename, description in const.BAND_CHOICES:
-            # Fix zoom level by band to ensure consistency.
-            if filename in const.BANDS_10M:
-                zoom = const.ZOOM_LEVEL_10M
-            elif filename in const.BANDS_20M:
-                zoom = const.ZOOM_LEVEL_20M
-            else:
-                zoom = const.ZOOM_LEVEL_60M
-            # Create new raster layer and register it as sentinel band
-            layer = RasterLayer.objects.create(
-                name=tile.prefix + filename,
-                datatype=RasterLayer.CONTINUOUS,
-                source_url=tile.url + filename,
-                nodata=const.SENTINEL_NODATA_VALUE,
-                max_zoom=zoom,
-                build_pyramid=True,
-                store_reprojected=False,
-            )
-            layer.publicrasterlayer.public = True
-            layer.publicrasterlayer.save()
-            try:
-                SentinelTileBand.objects.create(
-                    layer=layer,
-                    band=filename,
-                    tile=tile,
-                )
-            except:
-                layer.delete()
-                raise
+
+        register_bands_for_tile(tile)
 
 
 @receiver(post_save, sender=AggregationArea)
@@ -315,36 +287,46 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
                     logger.info('No more layers found to parse in zone {0}'.format(zone.name))
                     continue
 
-                # Loop through all choices
-                for filename, description in const.BAND_CHOICES:
-                    # Fix zoom level by band to ensure consistency.
-                    if filename in const.BANDS_10M:
-                        zoom = const.ZOOM_LEVEL_10M
-                    elif filename in const.BANDS_20M:
-                        zoom = const.ZOOM_LEVEL_20M
-                    else:
-                        zoom = const.ZOOM_LEVEL_60M
-                    # Create new raster layer and register it as sentinel band
-                    layer = RasterLayer.objects.create(
-                        name=tile.prefix + filename,
-                        datatype=RasterLayer.CONTINUOUS,
-                        source_url=tile.url + filename,
-                        nodata=const.SENTINEL_NODATA_VALUE,
-                        max_zoom=zoom,
-                        build_pyramid=False,
-                        store_reprojected=False,
-                    )
-                    layer.publicrasterlayer.public = True
-                    layer.publicrasterlayer.save()
-                    try:
-                        SentinelTileBand.objects.create(
-                            layer=layer,
-                            band=filename,
-                            tile=tile,
-                        )
-                    except:
-                        layer.delete()
-                        raise
+                register_bands_for_tile(tile)
+
+
+def register_bands_for_tile(tile):
+    # Loop through all bands.
+    for filename, description in const.BAND_CHOICES:
+
+        # Fix zoom level by band to ensure consistency.
+        if filename in const.BANDS_10M:
+            zoom = const.ZOOM_LEVEL_10M
+        elif filename in const.BANDS_20M:
+            zoom = const.ZOOM_LEVEL_20M
+        else:
+            zoom = const.ZOOM_LEVEL_60M
+
+        # Create new raster layer and register it as sentinel band.
+        layer = RasterLayer.objects.create(
+            name=tile.prefix + filename,
+            datatype=RasterLayer.CONTINUOUS,
+            source_url=tile.get_source_url(filename),
+            nodata=const.SENTINEL_NODATA_VALUE,
+            max_zoom=zoom,
+            build_pyramid=False,
+            store_reprojected=False,
+        )
+
+        # Make sentinel bands available to all users.
+        layer.publicrasterlayer.public = True
+        layer.publicrasterlayer.save()
+
+        # Register raster layer as sentinel tile band.
+        try:
+            SentinelTileBand.objects.create(
+                layer=layer,
+                band=filename,
+                tile=tile,
+            )
+        except:
+            layer.delete()
+            raise
 
 
 @task
@@ -373,7 +355,7 @@ def repair_incomplete_scenes():
             layer = RasterLayer.objects.create(
                 name=incomplete.prefix + filename,
                 datatype=RasterLayer.CONTINUOUS,
-                source_url=incomplete.url + filename,
+                source_url=incomplete.get_source_url(filename),
                 nodata=const.SENTINEL_NODATA_VALUE,
                 max_zoom=zoom,
                 build_pyramid=False,

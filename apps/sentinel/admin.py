@@ -30,15 +30,21 @@ class SentinelTileBandAdmin(admin.ModelAdmin):
 
 
 class SentinelTileAdmin(PatchedOSMGeoAdmin):
+    actions = ('upgrade_to_l2a', )
     readonly_fields = (
         'prefix', 'datastrip', 'product_name', 'angle_altitude',
         'angle_azimuth', 'data_coverage_percentage',
-        'cloudy_pixel_percentage', 'collected', 'mgrstile'
+        'cloudy_pixel_percentage', 'collected', 'mgrstile', 'level',
     )
     raw_id_fields = ('mgrstile', )
     modifiable = False
     list_filter = ('mgrstile__utm_zone', 'mgrstile__latitude_band', )
     search_fields = ('prefix', )
+
+    def upgrade_to_l2a(self, request, queryset):
+        for tile in queryset:
+            tile.upgrade_to_l2a()
+        self.message_user(request, 'Triggered update for all tile bands to L2A.')
 
 
 class MGRSTileAdmin(PatchedOSMGeoAdmin):

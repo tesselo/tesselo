@@ -49,7 +49,7 @@ class MGRSTile(models.Model):
 
 class SentinelTile(models.Model):
     """
-    Sentinel-2 tiles at Level 1C.
+    Sentinel-2 tiles.
     """
     prefix = models.TextField(unique=True)
     datastrip = models.TextField()
@@ -62,13 +62,10 @@ class SentinelTile(models.Model):
     data_coverage_percentage = models.FloatField()
     angle_azimuth = models.FloatField(default=0)
     angle_altitude = models.FloatField(default=0)
+    level = models.CharField(max_length=10, choices=const.PROCESS_LEVELS, default=const.LEVEL_L1C)
 
     def __str__(self):
         return '{0} {1}'.format(self.mgrstile.code, self.collected)
-
-    @property
-    def url(self):
-        return const.BUCKET_URL + self.prefix
 
     @property
     def complete(self):
@@ -78,6 +75,36 @@ class SentinelTile(models.Model):
         qs = self.sentineltileband_set.all()
         all_finished = (band.layer.parsestatus.status == RasterLayerParseStatus.FINISHED for band in qs)
         return sum(all_finished) == len(const.BAND_CHOICES)
+
+    def get_source_url(self, band):
+        if self.level == const.LEVEL_L1C:
+            return const.BUCKET_URL + self.prefix + band
+        else:
+            return '{bucket}{prefix}R{resolution}m/{band}'.format(
+                bucket=const.L2A_BUCKET,
+                prefix=self.prefix,
+                resolution=const.BAND_RESOLUTIONS[band],
+                band=band,
+            )
+
+    def upgrade_to_l2a(self):
+        # Return if the product is already at Level 2.
+        if self.level == const.LEVEL_L2A:
+            return
+
+        # Abort if image is before L2A avaliablitiy cutoff.
+        if self.collected.date() < const.L2A_AVAILABILITY_DATE:
+            return
+
+        # Update level.
+        self.level = const.LEVEL_L2A
+        self.save()
+
+        # Update raster layers with L2A bucket addresses, which triggers
+        # re-parsing.
+        for band in self.sentineltileband_set.all():
+            band.layer.source_url = self.get_source_url(band.band)
+            band.layer.save()
 
 
 class SentinelTileBand(models.Model):
