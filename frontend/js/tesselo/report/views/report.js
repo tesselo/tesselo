@@ -47,11 +47,11 @@ define([
             _.bindAll(this, 'processAvals', 'processAreas', 'processAll', 'filter');
 
             // Render Filter items.
-            if(this.options.grouping != 'continuous' && this.options.grouping != 'discrete'){
-                var filter = new FilterView({collection: new Backbone.Collection(this.options.grouping)});
-                this.showChildView('filter', filter);
-                filter.on('filter', this.filter);
-            }
+            //if(this.options.grouping != 'continuous' && this.options.grouping != 'discrete'){
+                //var filter = new FilterView({collection: new Backbone.Collection(this.options.grouping)});
+                //this.showChildView('filter', filter);
+                //filter.on('filter', this.filter);
+            //}
 
             // Instantiate aggregation area values collection.
             this.avals = new ValueCountResults();
@@ -64,8 +64,7 @@ define([
                 aggregationarea__aggregationlayer: this.options.aggregationlayer,
                 layer_names: this.options.layer_names,
                 formula: this.options.formula,
-                grouping: 'continuous'
-                //grouping: JSON.stringify(this.options.grouping)
+                grouping: this.options.grouping ? JSON.stringify(this.options.grouping) : 'continuous'
             };
 
             if(this.options.acres){
