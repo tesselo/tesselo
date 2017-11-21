@@ -5,7 +5,7 @@ import numpy
 from sentinel import const
 
 
-def clouds(stack):
+def clouds_v1(stack):
     """
     Wrapper function to call L2A Scene Class.
     """
@@ -31,3 +31,28 @@ def clouds(stack):
     cloud_probs[stack[const.BD2] == const.SENTINEL_NODATA_VALUE] = 2
 
     return cloud_probs
+
+
+def clouds(stack):
+    """
+    Wrapper function to call L2A Scene Class.
+    """
+    # Aggressive cutoff for thick clouds.
+    thick = stack[const.BD1] > 2000
+    # Aggressive cutoff for cirrus clouds.
+    cirrus = stack[const.BD10] > 60
+    # Nodata mask
+    nodata = stack[const.BD2] == const.SENTINEL_NODATA_VALUE
+    # Bright edge pixels.
+    edge = (stack[const.BD2] + stack[const.BD3] + stack[const.BD4]) > (1500 * 3)
+    # Dark pixel index. Once clouds are masked, use the brightest remaining
+    # pixel to avoid shadows.
+    dark = 1 - numpy.clip(stack[const.BD2] + stack[const.BD3] + stack[const.BD4], 1, 3e4).astype('float') / 3e4
+    # The cloud index is 5 for nodata, 4 for thick clouds, 3 for cirrus,
+    # 2 for bright bixels and [0, 1] for the dark pixel index.
+    dark[nodata] = 5
+    dark[thick] = 4
+    dark[cirrus] = 3
+    dark[edge] = 2
+
+    return dark
