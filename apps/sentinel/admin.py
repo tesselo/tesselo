@@ -8,8 +8,8 @@ from sentinel.models import (
 from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers
 
 
-class PatchedOSMGeoAdmin(admin.OSMGeoAdmin):
-    openlayers_url = 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js'
+class PatchedOSMGeoAdmin(admin.GeoModelAdmin):
+    openlayers_url = 'https://openlayers.org/api/2.13.1/OpenLayers.js'
 
 
 class BucketParseLogModelAdmin(admin.ModelAdmin):
