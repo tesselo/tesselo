@@ -290,8 +290,9 @@ class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
     serializer_class = SentinelTileAggregationLayerSerializer
     pagination_class = STALPageNumberPagination
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
-    filter_backends = (DjangoFilterBackend, )
+    filter_backends = (SearchFilter, DjangoFilterBackend, )
     filter_fields = ('active', )
+    search_fields = ('sentineltile__prefix', )
 
     _parent_model = 'aggregationlayer'
 
