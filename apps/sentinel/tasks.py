@@ -294,6 +294,10 @@ def register_bands_for_tile(tile):
     # Loop through all bands.
     for filename, description in const.BAND_CHOICES:
 
+        # Continue if this band already exists.
+        if SentinelTileBand.objects.filter(band=filename, tile=tile).exists():
+            continue
+
         # Fix zoom level by band to ensure consistency.
         if filename in const.BANDS_10M:
             zoom = const.ZOOM_LEVEL_10M
@@ -309,7 +313,7 @@ def register_bands_for_tile(tile):
             source_url=tile.get_source_url(filename),
             nodata=const.SENTINEL_NODATA_VALUE,
             max_zoom=zoom,
-            build_pyramid=False,
+            build_pyramid=True,
             store_reprojected=False,
         )
 
@@ -341,31 +345,7 @@ def repair_incomplete_scenes():
         count__lt=const.NR_OF_BANDS,
     ).distinct()
     for incomplete in qs:
-        for filename, description in const.BAND_CHOICES:
-            # Contineu if this band already exists.
-            if SentinelTileBand.objects.filter(band=filename, tile=incomplete).exists():
-                continue
-            # Fix zoom level by band to ensure consistency.
-            if filename in const.BANDS_10M:
-                zoom = const.ZOOM_LEVEL_10M
-            elif filename in const.BANDS_20M:
-                zoom = const.ZOOM_LEVEL_20M
-            else:
-                zoom = const.ZOOM_LEVEL_60M
-            layer = RasterLayer.objects.create(
-                name=incomplete.prefix + filename,
-                datatype=RasterLayer.CONTINUOUS,
-                source_url=incomplete.get_source_url(filename),
-                nodata=const.SENTINEL_NODATA_VALUE,
-                max_zoom=zoom,
-                build_pyramid=False,
-                store_reprojected=False,
-            )
-            SentinelTileBand.objects.create(
-                layer=layer,
-                band=filename,
-                tile=incomplete,
-            )
+        register_bands_for_tile(incomplete)
 
 
 def get_range_tiles(sentineltiles, tilex, tiley, tilez):
@@ -500,6 +480,7 @@ def drive_world_layers(world_ids=None):
 
             for tilex in range(indexrange[0], indexrange[2] + 1):
                 for tiley in range(indexrange[1], indexrange[3] + 1):
+                    print(world, zone, tilex, tiley)
 
                     # Check if the zone is currently building.
                     processing = WorldParseProcess.objects.filter(
