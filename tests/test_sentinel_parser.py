@@ -5,7 +5,7 @@ import tempfile
 from unittest import skip
 
 import mock
-from raster.models import RasterLayer, RasterTile
+from raster.models import RasterTile
 from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
 
 from classify.models import Classifier, TrainingSample
@@ -103,6 +103,7 @@ class SentinelBucketParserTest(TestCase):
                 (7, 26),
             ],
         )
+
     def _assign_sentineltile(self):
         sent = SentinelTile.objects.first()
 
