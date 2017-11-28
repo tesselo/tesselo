@@ -3,6 +3,7 @@ import urllib
 
 import matplotlib.pyplot as plt
 import numpy
+import pandas
 import requests
 from geomet import wkt
 from raster.rasterize import rasterize
@@ -13,17 +14,48 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import cohen_kappa_score
 from sklearn.neural_network import MLPClassifier
 
-import pandas
 from django.conf import settings
-from django.contrib.gis.gdal import GDALRaster, OGRGeometry
+from django.contrib.gis.gdal import DataSource, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import GEOSGeometry
+
+CELPA_CLASSES = {
+    "Acacia": "Other Trees",
+    "Aguas Interiores": "Water",
+    "Amieiro": "Other Trees",
+    "Arvores de Fruto": "Other Trees",
+    "Azinheira": "Other Trees",
+    "Borrazeira negra": "Other Trees",
+    "Caminhos e Aceiros": "Shrub",
+    "Carvalho cerquinho": "Other Trees",
+    "Carvalho roble": "Other Trees",
+    "Culturas Arvenses": "Arable Crops",
+    "Edificacoes": "Buildings",
+    "Estevas": "Shrub",
+    "Eucalipto globulus": "Eucaliptus",
+    "Eucalipto nitens": "Eucaliptus",
+    "Floresta ribeirinha": "Other Trees",
+    "Freixo comum": "Other Trees",
+    "Linhas electricas": "Shrub",
+    "Matos": "Shrub",
+    "Outras Folhosas": "Other Trees",
+    "Outras Infraestruturas": "Buildings",
+    "Outros Eucaliptos": "Eucaliptus",
+    "Pastagens": "Shrub",
+    "Pinheiro bravo": "Pine",
+    "Pinheiro Bravo": "Pine",
+    "Pinheiro Manso": "Pine",
+    "Recodificar": "Shrub",
+    "Sobreiro": "Cork",
+    "Tojo": "Other Trees",
+    "Urze": "Other Trees",
+}
 
 
 class Tesselo(object):
 
     api = 'https://tesselo.com/api/'
 
-    bands_to_include = ('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'NDVI', 'EVI', )
+    bands_to_include = ('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12', 'NDVI', 'EVI', )
 
     zoom = 14
 
@@ -253,17 +285,14 @@ class Tesselo(object):
 
         print('Finished RGB export.')
 
-    def construct_training_data(self, targets, aggregationlayer, buffer=-30):
-
-        type_count = 0
-        type_dict = {}
-
-        train_x = numpy.empty((len(targets), 0))
-        train_y = numpy.empty((0, ))
+    def _get_geoms_from_ggregationlayer(self, aggregationlayer):
 
         for agg in aggregationlayer['aggregationareas']:
 
             agg_area = self.get('aggregationarea/{}'.format(agg))
+
+            # Standardize agg types.
+            agg_type = CELPA_CLASSES[agg_area['name']]
 
             # Construct classification class name.
             agg_type = agg_area['name'].split(' ')
@@ -273,16 +302,50 @@ class Tesselo(object):
             else:
                 agg_type = ' '.join(agg_type[1:])
 
-            # Check if class exists, otherwise add to dictionary.
-            if agg_type not in type_dict:
-                type_count += 1
-                type_dict[agg_type] = type_count
+            # Differenciate Eucaliptus by age.
+            if agg_type == 'Eucalipto globulus':
+                yr = int(agg_area['attributes']['year'])
+                if yr == 2017:
+                    agg_type += ' 2017'
+                elif yr > 2012:
+                    agg_type += ' 2013 - 2016'
+                else:
+                    agg_type += ' <= 2012'
 
             # Construct the aggregationarea geom object in web mercator projection.
             geom = wkt.dumps(agg_area['geom'])
             geom = GEOSGeometry(geom)
             geom.srid = 4326
             geom.transform(WEB_MERCATOR_SRID)
+
+            yield agg_type, geom
+
+    def _get_geoms_from_shapefile(self, shapefile):
+
+        ds = DataSource(shapefile)
+        lyr = ds[0]
+        for feat in lyr:
+            yield feat.get('name'), feat.geom.geos
+
+    def construct_training_data(self, targets, aggregationlayer, buffer=-30):
+
+        type_count = 0
+        type_dict = {}
+
+        train_x = numpy.empty((len(targets), 0))
+        train_y = numpy.empty((0, ))
+
+        if isinstance(aggregationlayer, str):
+            iterator = self._get_geoms_from_shapefile
+        else:
+            iterator = self._get_geoms_from_ggregationlayer
+
+        for agg_type, geom in iterator(aggregationlayer):
+
+            # Check if class exists, otherwise add to dictionary.
+            if agg_type not in type_dict:
+                type_count += 1
+                type_dict[agg_type] = type_count
 
             # Use a negative buffer to avoid mixed boundary pixels.
             buff = geom.buffer(buffer)
@@ -311,14 +374,14 @@ class Tesselo(object):
 
     def classify(self, splitfraction=0.5, clf_name='rf'):
         # Create split selector.
-        if not self._selector:
+        if self._selector is None:
             self._selector = numpy.random.random(len(self.train_y)) > splitfraction
 
         # Extract training part of dataset.
         train_y_s = self.train_y[self._selector]
         train_x_s = self.train_x[self._selector, :]
 
-        print('Using split franction:', round(float(len(train_y_s)) / len(self.train_y), 2))
+        print('Using split franction:', round(float(len(train_y_s)) / len(self.train_y), 2), ' (', len(train_y_s), ' pixels).')
 
         # Instantiate classifier.
         if clf_name == 'rf':
@@ -326,13 +389,10 @@ class Tesselo(object):
         elif clf_name == 'svm':
             self.clf = svm.SVC(kernel='linear', C=0.01)
         elif clf_name == 'nn':
-            raise NotImplementedError('Neural networks do not work at the moment.')
-            self.clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+            self.clf = MLPClassifier()  # solver='adam', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
 
         # Fit classifier.
         self.clf.fit(train_x_s, train_y_s)
-
-        print(self.clf)
 
     def accuracy(self):
         """
@@ -351,7 +411,7 @@ class Tesselo(object):
 
         return pandas.crosstab(y_true, y_pred, rownames=['True'], colnames=['Predicted'], margins=True)
 
-    def predict_raster(self, targets, bbox, clf_name, region_key=None):
+    def predict_raster(self, targets, bbox, clf_name, region_key=None, plot=False):
         """
         Export predicted raster.
         """
@@ -390,5 +450,6 @@ class Tesselo(object):
         print(predicted_raster.name)
 
         # Print raster to screen.
-        plt.imshow(predicted_raster.bands[0].data())
-        plt.show()
+        if plot:
+            plt.imshow(predicted_raster.bands[0].data())
+            plt.show()
