@@ -5,10 +5,36 @@ import numpy
 from sentinel import const
 
 
+def clouds(stack):
+    # Aggressive cutoff for thick clouds.
+    index = stack[const.BD1] + stack[const.BD10]
+    index[stack[const.BD2] == const.SENTINEL_NODATA_VALUE] = 6e4
+    return index
+
+
+def clouds_v2(stack):
+    # Aggressive cutoff for thick clouds.
+    thick = stack[const.BD1] > 2000
+    # Aggressive cutoff for cirrus clouds.
+    cirrus = stack[const.BD10] > 60
+    # Nodata mask
+    nodata = stack[const.BD2] == const.SENTINEL_NODATA_VALUE
+    # Bright edge pixels.
+    edge = (stack[const.BD2] + stack[const.BD3] + stack[const.BD4]) > (1500 * 3)
+    # Dark pixel index. Once clouds are masked, use the brightest remaining
+    # pixel to avoid shadows.
+    dark = 1 - numpy.clip(stack[const.BD2] + stack[const.BD3] + stack[const.BD4], 1, 3e4).astype('float') / 3e4
+    # The cloud index is 5 for nodata, 4 for thick clouds, 3 for cirrus,
+    # 2 for bright bixels and [0, 1] for the dark pixel index.
+    dark[nodata] = 5
+    dark[thick] = 4
+    dark[cirrus] = 3
+    dark[edge] = 2
+
+    return dark
+
+
 def clouds_v1(stack):
-    """
-    Wrapper function to call L2A Scene Class.
-    """
     # Get sum of SWIR bands - the brighter the pixel in SWIR, the more
     # likely it is a cloud.
     swir = numpy.clip(stack['B10.jp2'], 0, 1e4) + numpy.clip(stack['B11.jp2'], 0, 1e4) + numpy.clip(stack['B12.jp2'], 0, 1e4)
@@ -31,28 +57,3 @@ def clouds_v1(stack):
     cloud_probs[stack[const.BD2] == const.SENTINEL_NODATA_VALUE] = 2
 
     return cloud_probs
-
-
-def clouds(stack):
-    """
-    Wrapper function to call L2A Scene Class.
-    """
-    # Aggressive cutoff for thick clouds.
-    thick = stack[const.BD1] > 2000
-    # Aggressive cutoff for cirrus clouds.
-    cirrus = stack[const.BD10] > 60
-    # Nodata mask
-    nodata = stack[const.BD2] == const.SENTINEL_NODATA_VALUE
-    # Bright edge pixels.
-    edge = (stack[const.BD2] + stack[const.BD3] + stack[const.BD4]) > (1500 * 3)
-    # Dark pixel index. Once clouds are masked, use the brightest remaining
-    # pixel to avoid shadows.
-    dark = 1 - numpy.clip(stack[const.BD2] + stack[const.BD3] + stack[const.BD4], 1, 3e4).astype('float') / 3e4
-    # The cloud index is 5 for nodata, 4 for thick clouds, 3 for cirrus,
-    # 2 for bright bixels and [0, 1] for the dark pixel index.
-    dark[nodata] = 5
-    dark[thick] = 4
-    dark[cirrus] = 3
-    dark[edge] = 2
-
-    return dark
