@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import shutil
 import tempfile
-from unittest import skip
 
 import mock
 from raster.models import RasterTile
@@ -31,12 +30,14 @@ from sentinel.tasks import (
 class SentinelBucketParserTest(TestCase):
 
     def setUp(self):
-        bbox = [650000, 9530240, 660000, 9650040]
+        bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
         bbox = OGRGeometry.from_bbox(bbox)
-        bbox.srid = 32748
+        bbox.srid = 3857
         self.zone = ZoneOfInterest.objects.create(name='A zone', geom=bbox.ewkt)
+        bbox.transform(4326)
         self.world = WorldLayerGroup.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
         self.world.zonesofinterest.add(self.zone)
+
         settings.MEDIA_ROOT = tempfile.mkdtemp()
 
         self.cloud = TrainingSample.objects.create(
@@ -127,9 +128,7 @@ class SentinelBucketParserTest(TestCase):
 
         self.assertTrue(self.clf.trained is not None)
 
-    @skip('The worldlayer pyramids are not working.')
     def test_world_layer(self):
-        # Worldlayer objects have been created.
         sync_sentinel_bucket_utm_zone(1)
         self.assertEqual(self.world.worldlayers.count(), len(const.BAND_CHOICES))
 

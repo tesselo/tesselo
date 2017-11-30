@@ -352,24 +352,19 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     """
     Return a RasterTile queryset of tiles for the given indices.
     """
-    bounds = tile_bounds(tilex, tiley, tilez)
-    # Get tile bounding box as ewkt.
-    bounds = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds).wkt)
-    # Get mgrs tiles that overlap with this tile boundaries.
-    mgrs = MGRSTile.objects.filter(
-        geom__bboverlaps=bounds,
-    ).exclude(
-        utm_zone__in=[1, 60],
-    ).values_list('id', flat=True)
-    # Filter sentinel scenes for this tile, ordered by cloud cover and limited to a maximum number.
-    data = sentineltiles.filter(mgrstile_id__in=mgrs).distinct()
+    if tilez == const.ZOOM_LEVEL_60M:
+        bnds = const.BANDS_60M
+    elif tilez == const.ZOOM_LEVEL_20M:
+        bnds = const.BANDS_20M
+    else:
+        bnds = const.BANDS_10M
     # Return data as tuples of scene, band number and pixel values.
     tiles = []
-    for sentineltile in data.iterator():
-        for band in sentineltile.sentineltileband_set.all():
+    for sentineltile in sentineltiles:
+        for band in SentinelTileBand.objects.filter(tile_id=sentineltile, band__in=bnds):
             tile = RasterTile.objects.filter(rasterlayer_id=band.layer_id, tilez=tilez, tilex=tilex, tiley=tiley).first()
             if tile:
-                tiles.append((sentineltile.id, band.band, tile.rast.bands[0].data()))
+                tiles.append((sentineltile, band.band, tile.rast.bands[0].data()))
     return tiles
 
 
@@ -403,7 +398,14 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
     # Loop through tiles at 60m that intersect with bounding box.
     for tilex60 in range(indexrange[0], indexrange[2] + 1):
         for tiley60 in range(indexrange[1], indexrange[3] + 1):
-            tiles60 = get_range_tiles(sentineltiles, tilex60, tiley60, const.ZOOM_LEVEL_60M)
+            # Limit sentineltiles to those overlapping with the 60m tile.
+            bounds60 = tile_bounds(tilex60, tiley60, const.ZOOM_LEVEL_60M)
+            # Get tile bounding box as ewkt.
+            bounds60 = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds60).wkt)
+            # Filter sentinel scenes fthat overlap with this tile boundaries.
+            sentineltiles60 = list(sentineltiles.filter(tile_data_geom__bboverlaps=bounds60).distinct().values_list('id', flat=True))
+
+            tiles60 = get_range_tiles(sentineltiles60, tilex60, tiley60, const.ZOOM_LEVEL_60M)
             if not len(tiles60):
                 continue
 
@@ -411,7 +413,7 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
             for tilex20 in range(tilex60 * const.M26, (tilex60 + 1) * const.M26):
                 for tiley20 in range(tiley60 * const.M26, (tiley60 + 1) * const.M26):
 
-                    tiles20 = get_range_tiles(sentineltiles, tilex20, tiley20, const.ZOOM_LEVEL_20M)
+                    tiles20 = get_range_tiles(sentineltiles60, tilex20, tiley20, const.ZOOM_LEVEL_20M)
                     if not len(tiles20):
                         continue
 
@@ -419,7 +421,7 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
                     for tilex10 in range(tilex20 * const.M12, (tilex20 + 1) * const.M12):
                         for tiley10 in range(tiley20 * const.M12, (tiley20 + 1) * const.M12):
 
-                            tiles10 = get_range_tiles(sentineltiles, tilex10, tiley10, const.ZOOM_LEVEL_10M)
+                            tiles10 = get_range_tiles(sentineltiles60, tilex10, tiley10, const.ZOOM_LEVEL_10M)
                             if not len(tiles10):
                                 continue
 
@@ -480,7 +482,6 @@ def drive_world_layers(world_ids=None):
 
             for tilex in range(indexrange[0], indexrange[2] + 1):
                 for tiley in range(indexrange[1], indexrange[3] + 1):
-                    print(world, zone, tilex, tiley)
 
                     # Check if the zone is currently building.
                     processing = WorldParseProcess.objects.filter(
