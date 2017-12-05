@@ -1,5 +1,7 @@
+import datetime
 import os
 import urllib
+from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 import numpy
@@ -10,8 +12,9 @@ from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import cohen_kappa_score
+from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, RandomForestClassifier
+from sklearn.metrics import accuracy_score, cohen_kappa_score
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 
 from django.conf import settings
@@ -50,6 +53,31 @@ CELPA_CLASSES = {
     "Urze": "Other Trees",
 }
 
+TYPE_DICT = OrderedDict(sorted({
+    'Eucaliptus 0': 1,
+    'Eucaliptus 3': 2,
+    'Eucaliptus >3': 3,
+    'Pine': 4,
+    'Cork': 5,
+    'Other Trees': 6,
+    'Shrub': 7,
+    'Arable Crops': 8,
+    'Buildings': 9,
+    'Water': 10,
+}.items(), key=lambda t: t[1]))
+
+
+def qgis_style():
+    fl = '# Python Generated QGis Color Map File\nINTERPOLATION:INTERPOLATED'
+    colors = ['158,1,66', '213,62,79', '244,109,67', '253,174,97', '254,224,139', '230,245,152', '171,221,164', '102,194,165', '50,136,189', '94,79,162']
+    for key,val in TYPE_DICT.items():
+        fl += '\n{val},{col},255,{key}'.format(
+            val=val,
+            col=colors[val - 1],
+            key=key
+        )
+    print(fl)
+
 
 class Tesselo(object):
 
@@ -63,6 +91,8 @@ class Tesselo(object):
 
     raster_datatype = 'float32'
     raster_datatype_gdal = 6
+
+    type_dict = TYPE_DICT
 
     def __init__(self, token):
         # Initiate session with token.
@@ -292,25 +322,23 @@ class Tesselo(object):
             agg_area = self.get('aggregationarea/{}'.format(agg))
 
             # Standardize agg types.
-            agg_type = CELPA_CLASSES[agg_area['name']]
+            agg_type = None
+            for key, val in CELPA_CLASSES.items():
+                if key in agg_area['name']:
+                    agg_type = val
 
-            # Construct classification class name.
-            agg_type = agg_area['name'].split(' ')
-
-            if '-' in agg_type[-1]:
-                agg_type = ' '.join(agg_type[1:-1])
-            else:
-                agg_type = ' '.join(agg_type[1:])
+            if not agg_type:
+                raise ValueError('Could not standardize class for {}.'.format(agg_area['name']))
 
             # Differenciate Eucaliptus by age.
-            if agg_type == 'Eucalipto globulus':
+            if agg_type == 'Eucaliptus':
                 yr = int(agg_area['attributes']['year'])
                 if yr == 2017:
-                    agg_type += ' 2017'
+                    agg_type += ' 0'
                 elif yr > 2012:
-                    agg_type += ' 2013 - 2016'
+                    agg_type += ' 3'
                 else:
-                    agg_type += ' <= 2012'
+                    agg_type += ' >3'
 
             # Construct the aggregationarea geom object in web mercator projection.
             geom = wkt.dumps(agg_area['geom'])
@@ -318,19 +346,19 @@ class Tesselo(object):
             geom.srid = 4326
             geom.transform(WEB_MERCATOR_SRID)
 
-            yield agg_type, geom
+            yield agg_type, geom, agg_area['attributes']
 
     def _get_geoms_from_shapefile(self, shapefile):
 
         ds = DataSource(shapefile)
         lyr = ds[0]
         for feat in lyr:
-            yield feat.get('name'), feat.geom.geos
+            yield feat.get('name'), feat.geom.geos, {}
 
-    def construct_training_data(self, targets, aggregationlayer, buffer=-30):
+
+    def construct_training_data(self, targets, aggregationlayer, buffer_radius=-30, forest_mask=None, time=False):
 
         type_count = 0
-        type_dict = {}
 
         train_x = numpy.empty((len(targets), 0))
         train_y = numpy.empty((0, ))
@@ -340,35 +368,53 @@ class Tesselo(object):
         else:
             iterator = self._get_geoms_from_ggregationlayer
 
-        for agg_type, geom in iterator(aggregationlayer):
-
-            # Check if class exists, otherwise add to dictionary.
-            if agg_type not in type_dict:
-                type_count += 1
-                type_dict[agg_type] = type_count
+        old_count = 0
+        for agg_type, geom, attributes in iterator(aggregationlayer):
+            if time and not 'Eucaliptus' in agg_type:
+                continue
 
             # Use a negative buffer to avoid mixed boundary pixels.
-            buff = geom.buffer(buffer)
+            if buffer_radius:
+                buff = geom.buffer(buffer_radius)
+            else:
+                buff = geom
 
             # Create a mask array for the geometry over the target areas.
             mask = rasterize(buff, next(iter(targets.values()))).bands[0].data().ravel().astype('bool')
 
+            # Mask out non-forest areas if mask is provided.
+            if forest_mask is not None:
+                mask = mask * forest_mask
+
             # Extract pixel values for all bands using geometry mask.
             vals = [rst.bands[0].data().ravel()[mask] for rst in targets.values()]
 
-            # Construct array with the category class.
-            type_array = numpy.ones(len(vals[0])).astype('float32') * type_dict[agg_type]
+            if time:
+                # For timeseries, set the y values to the observation time.
+                try:
+                    year = int(attributes['year'])
+                    if year < 2006:
+                        old_count += len(vals[0])
+                        continue
+                    #type_array = numpy.array([datetime.datetime.strptime(attributes['DATA_REF'], '%d-%m-%Y')] * len(vals[0]))
+                    type_array = numpy.array([year] * len(vals[0]))
+                except:
+                    print('Could not convert timestamp', attributes['DATA_REF'])
+                    continue
+            else:
+                # Construct array with the category class.
+                type_array = numpy.ones(len(vals[0])).astype('float32') * self.type_dict[agg_type]
 
             # Stack the additional training data into the final matrix.
             train_x = numpy.hstack((train_x, vals))
             train_y = numpy.hstack((train_y, type_array))
 
+        if old_count > 0:
+            print('Skipped {} pixels from before 2006.'.format(old_count))
+
         # Transpose training matrix for use with classifiers.
         self.train_x = train_x.T
         self.train_y = train_y
-        self.type_dict = type_dict
-
-        print(type_dict, train_x.shape, train_y.shape)
 
     _selector = None
 
@@ -389,7 +435,14 @@ class Tesselo(object):
         elif clf_name == 'svm':
             self.clf = svm.SVC(kernel='linear', C=0.01)
         elif clf_name == 'nn':
-            self.clf = MLPClassifier()  # solver='adam', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+            #self.clf = MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(200, 100, 100, 100), learning_rate_init= 0.095, learning_rate='adaptive', max_iter=500)
+            self.clf = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(200, 100, 100), max_iter=500)
+        elif clf_name == 'bag':
+            self.clf = BaggingClassifier(KNeighborsClassifier(), max_samples=0.05, max_features=0.75)
+        elif clf_name == 'ada':
+            self.clf = AdaBoostClassifier(n_estimators=100)
+        else:
+            raise ValueError('Could not find classifier {}'.format(clf_name))
 
         # Fit classifier.
         self.clf.fit(train_x_s, train_y_s)
@@ -401,17 +454,17 @@ class Tesselo(object):
         predicted = self.clf.predict(self.train_x[numpy.logical_not(self._selector), :])
         control = self.train_y[numpy.logical_not(self._selector)]
 
-        lookup = {val: '_'.join(key.split(' ')) for key, val in self.type_dict.items()}
         lookup = {val: key for key, val in self.type_dict.items()}
 
         y_pred = pandas.Series([lookup[key] for key in predicted])
         y_true = pandas.Series([lookup[key] for key in control])
 
-        print('Kappa', cohen_kappa_score(predicted, control))
+        print('Accuracy score:', accuracy_score(predicted, control))
+        print('Cohen Kappa:   ', cohen_kappa_score(predicted, control))
 
-        return pandas.crosstab(y_true, y_pred, rownames=['True'], colnames=['Predicted'], margins=True)
+        return pandas.crosstab(y_true, y_pred, rownames=['True'], colnames=['Predicted'], margins=True)#, normalize='columns')
 
-    def predict_raster(self, targets, bbox, clf_name, region_key=None, plot=False):
+    def predict_raster(self, targets, bbox, clf_name, region_key=None, plot=False, forest_mask=None, datatype='uint8'):
         """
         Export predicted raster.
         """
@@ -423,7 +476,7 @@ class Tesselo(object):
         predicted_raster = GDALRaster({
             'name': os.path.join(os.getcwd(), '{}-predicted-{}.tif'.format(name, clf_name)),
             'driver': 'tif',
-            'datatype': 1,
+            'datatype': 1 if datatype == 'uint8' else 6,
             'origin': origin,
             'width': width,
             'height': height,
@@ -444,8 +497,13 @@ class Tesselo(object):
         # Predict values based on tile data.
         result = self.clf.predict(predictors.T)
 
+        # Mask non-forest areas.
+        if forest_mask is not None:
+            result[numpy.logical_not(forest_mask)] = 0
+
         # Set data on predicted raster.
-        predicted_raster.bands[0].data(result.reshape(predicted_raster.width, predicted_raster.height).astype('uint8'))
+        result = result.reshape(predicted_raster.width, predicted_raster.height).astype('uint8' if datatype == 'uint8' else 'float')
+        predicted_raster.bands[0].data(result)
 
         print(predicted_raster.name)
 

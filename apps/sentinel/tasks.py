@@ -496,12 +496,13 @@ def drive_world_layers(world_ids=None):
                         continue
 
                     # Register parse effort.
-                    WorldParseProcess.objects.create(
+                    wpp = WorldParseProcess.objects.create(
                         worldlayergroup=world,
                         tilex=tilex,
                         tiley=tiley,
                         tilez=const.ZOOM_LEVEL_WORLDLAYER,
                     )
+                    wpp.write('Scheduled world builder, waiting for worker availability.')
 
                     # Sleep to not put too many heavy tasks on the DB at once.
                     time.sleep(1)
@@ -523,15 +524,16 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     world = WorldLayerGroup.objects.get(id=world_id)
 
     # Update world parse process.
-    WorldParseProcess.objects.filter(
+    wpp = WorldParseProcess.objects.filter(
         worldlayergroup=world,
         tilex=tilex,
         tiley=tiley,
         tilez=tilez,
         end__isnull=True,
-    ).update(
-        start=timezone.now()
-    )
+    ).first()
+
+    wpp.start = timezone.now()
+    wpp.write('Starting to build worldlayer.')
 
     # Get the list of master layers for all 13 bands.
     kahunas = world.kahunas
@@ -608,12 +610,17 @@ def build_world_pyramids(world, tilex, tiley, tilez):
     """
     Build pyramids for the global layer of each band.
     """
-    kahunas = world.kahunas.values()
+    # Get world parse process logger.
+    wpp = WorldParseProcess.objects.filter(
+        worldlayergroup=world,
+        tilex=tilex,
+        tiley=tiley,
+        tilez=tilez,
+        end__isnull=True,
+    ).first()
 
-    # Get index range at 60m.
-    tilex_in = tilex
-    tiley_in = tiley
-    tilez_in = tilez
+    # Get kahuna layers.
+    kahunas = world.kahunas.values()
 
     bounds = tile_bounds(tilex, tiley, tilez)
     indexrange60 = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
@@ -636,10 +643,13 @@ def build_world_pyramids(world, tilex, tiley, tilez):
         if indexrange[1] % 2 == 1:
             indexrange[1] -= 1
 
-        logger.info('Creating World Pyramid at Zoom {0} for Index Range {1}.'.format(
+        msg = 'Creating World Pyramid at Zoom {0} for Index Range {1}.'.format(
             zoom - 1,
             [idx // 2 for idx in indexrange],
-        ))
+        )
+
+        logger.info(msg)
+        wpp.write(msg)
 
         # Loop over kahuna tiles in blocks of four.
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
@@ -748,16 +758,8 @@ def build_world_pyramids(world, tilex, tiley, tilez):
                             rast=dest,
                         )
 
-    # Update world parse process.
-    WorldParseProcess.objects.filter(
-        worldlayergroup=world,
-        tilex=tilex_in,
-        tiley=tiley_in,
-        tilez=tilez_in,
-        end__isnull=True,
-    ).update(
-        end=timezone.now()
-    )
+    wpp.end = timezone.now()
+    wpp.write('Finished building pyramid.')
 
 
 def aggregate_tile(tile):

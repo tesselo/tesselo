@@ -259,6 +259,7 @@ class WorldParseProcess(models.Model):
     end = models.DateTimeField(null=True, blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
+    log = models.TextField(default='')
 
     def __str__(self):
         return '{0} - {1}/{2}/{3} - {4}'.format(
@@ -268,3 +269,8 @@ class WorldParseProcess(models.Model):
             self.tiley,
             get_duration(self),
         )
+
+    def write(self, data):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        self.save()

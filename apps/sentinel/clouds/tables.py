@@ -6,7 +6,7 @@ from sentinel import const
 
 
 def clouds(stack):
-    # Aggressive cutoff for thick clouds.
+    # Minimum sum of thick cloud and cirrus cloud bands.
     index = stack[const.BD1] + stack[const.BD10]
     index[stack[const.BD2] == const.SENTINEL_NODATA_VALUE] = 6e4
     return index
