@@ -333,9 +333,9 @@ class Tesselo(object):
             # Differenciate Eucaliptus by age.
             if agg_type == 'Eucaliptus':
                 yr = int(agg_area['attributes']['year'])
-                if yr == 2017:
+                if yr >= 2016:
                     agg_type += ' 0'
-                elif yr > 2012:
+                elif yr >= 2012:
                     agg_type += ' 3'
                 else:
                     agg_type += ' >3'
@@ -511,3 +511,54 @@ class Tesselo(object):
         if plot:
             plt.imshow(predicted_raster.bands[0].data())
             plt.show()
+
+
+    def accuracy_by_geom(self, aggregationlayer, clf_name, region_keys):
+
+        ref_cat = []
+        pred_cat = []
+
+        for region_key in region_keys:
+
+            name = self._get_raster_name(region_key)
+            predicted_raster = GDALRaster(os.path.join(os.getcwd(), '{}-predicted-{}.tif'.format(name, clf_name)))
+
+            for agg_type, geom, attributes in self._get_geoms_from_ggregationlayer(aggregationlayer):
+
+                # Compute equivalent class from celpa.
+                ref = TYPE_DICT[agg_type]
+                if ref not in [2, 3, 4, 5]:
+                    ref = 0
+
+                # Create a mask array for the geometry over the target areas.
+                mask = rasterize(geom, predicted_raster).bands[0].data().ravel().astype('bool')
+
+                # Extract pixel values for all bands using geometry mask.
+                vals = predicted_raster.bands[0].data().ravel()[mask]
+
+                # Remove nodata pixels.
+                vals = vals[vals != 0]
+
+                if not len(vals):
+                    majority = 0
+                else:
+                    # Compute majority class in this geom.
+                    values, counts = numpy.unique(vals, return_counts=True)
+                    index = numpy.argmax(counts)
+                    majority = values[index]
+
+                # Simplify categories.
+                if ref == 2:
+                    ref = 3
+                if majority == 2:
+                    majority = 3
+
+                pred_cat.append(majority)
+                ref_cat.append(ref)
+
+        ref_cat = numpy.array(ref_cat)
+        pred_cat = numpy.array(pred_cat)
+
+        print('Accuracy score:', accuracy_score(pred_cat, ref_cat))
+        print('Cohen Kappa:   ', cohen_kappa_score(pred_cat, ref_cat))
+        print(pandas.crosstab(ref_cat, pred_cat, rownames=['True'], colnames=['Predicted'], margins=True))
