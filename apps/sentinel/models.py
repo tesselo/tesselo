@@ -72,6 +72,8 @@ class SentinelTile(models.Model):
         """
         Return true if all sentinel tiles were parsed successfuly.
         """
+        if not self.has_rasters:
+            return False
         qs = self.sentineltileband_set.all()
         all_finished = (band.layer.parsestatus.status == RasterLayerParseStatus.FINISHED for band in qs)
         return sum(all_finished) == len(const.BAND_CHOICES)

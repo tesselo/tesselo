@@ -4,12 +4,34 @@ from PIL import Image
 from raster.tiles.lookup import get_raster_tile
 from raster.views import RasterView
 from rest_framework import viewsets
+from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from sentinel.clouds.tables import clouds
+from sentinel.filters import SentinelTileFilter
 from sentinel.models import SentinelTile, WorldLayerGroup
-from sentinel.serializers import WorldLayerGroupSerializer
+from sentinel.serializers import SentinelTileSerializer, WorldLayerGroupSerializer
+
+
+class SentinelTilePageNumberPagination(PageNumberPagination):
+    page_size = 100
+
+
+class SentinelTileViewSet(ReadOnlyModelViewSet):
+
+    permission_classes = (IsAuthenticated, )
+    serializer_class = SentinelTileSerializer
+    filter_backends = (SearchFilter, DjangoFilterBackend, )
+    pagination_class = SentinelTilePageNumberPagination
+    search_fields = ('prefix', )
+    filter_class = SentinelTileFilter
+
+    def get_queryset(self):
+        return SentinelTile.objects.all().order_by('id')
 
 
 class WorldLayerGroupViewSet(viewsets.ReadOnlyModelViewSet):
