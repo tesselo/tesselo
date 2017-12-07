@@ -501,6 +501,7 @@ def drive_world_layers(world_ids=None):
                         tilex=tilex,
                         tiley=tiley,
                         tilez=const.ZOOM_LEVEL_WORLDLAYER,
+                        log='',
                     )
                     wpp.write('Scheduled world builder, waiting for worker availability.')
 
