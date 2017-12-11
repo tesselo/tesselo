@@ -38,8 +38,7 @@ for region, dat in regions.items():
 
 # Classify and predict.
 clsf = {}
-#for algo in ('nn', 'svm', 'rf'):
-for algo in ('svm', ):
+for algo in ('nn', 'svm', 'rf'):
     print('Classifying', algo)
 
     tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
@@ -66,52 +65,52 @@ for algo in ('svm', ):
 
 # Per geometry analysis
 #for algo in ('nn', 'svm', 'rf'):
-for algo in ('svm', ):
-
-    tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
-    tess.type_dict = OrderedDict([('eu', 3), ('euy', 2), ('pi', 4), ('sob', 5)])
-    tess.clf = clsf[algo]
-
-    # Predict.
-    for region, dat in regions.items():
-        region_key = '-'.join(region.split(' ')[1:]).lower()
-        print('Per geom accuracy for', algo, region_key)
-        tess.accuracy_by_geom(dat['agglayer'], algo, [region_key])
-
-#global_train_x_celpa = numpy.empty((len(tesselate.Tesselo('').bands_to_include), 0)).T
-#global_train_y_celpa = numpy.empty((0, ))
-
-#for region, dat in regions.items():
-
-    #region_key = '-'.join(region.split(' ')[1:]).lower()
-    #print('Opening data for', region_key)
-
-    ## Get targets from disk.
-    #tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
-    #dat['targets'] = tess.read_target_rasters_from_disk(region_key)
-    #dat['mask'] = GDALRaster(os.path.join(os.getcwd(), 'sentinel-{}-fonfo-predicted-svm.tif'.format(region_key)))
-    #tess.construct_training_data(dat['targets'], dat['agglayer'], -30, dat['mask'].bands[0].data().ravel() == 2)
-
-    ## Stack the additional training data into the final matrix.
-    #global_train_x_celpa = numpy.vstack((global_train_x_celpa, tess.train_x))
-    #global_train_y_celpa = numpy.hstack((global_train_y_celpa, tess.train_y))
-
-#for algo in ('nn', 'svm', 'rf'):
-
-    #print('Classifying', algo)
+#for algo in ('svm', ):
 
     #tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
     #tess.type_dict = OrderedDict([('eu', 3), ('euy', 2), ('pi', 4), ('sob', 5)])
     #tess.clf = clsf[algo]
 
-    ## Change type to simpler scheme.
-    #print('Before filter', numpy.unique(global_train_y_celpa), global_train_x_celpa.shape)
+    ## Predict.
+    #for region, dat in regions.items():
+        #region_key = '-'.join(region.split(' ')[1:]).lower()
+        #print('Per geom accuracy for', algo, region_key)
+        #tess.accuracy_by_geom(dat['agglayer'], algo, [region_key])
 
-    #del_index = numpy.in1d(global_train_y_celpa, numpy.array([2, 3, 4, 5]))
+#global_train_x_celpa = numpy.empty((len(tesselate.Tesselo('').bands_to_include), 0)).T
+#global_train_y_celpa = numpy.empty((0, ))
 
-    #tess.train_x = global_train_x_celpa[del_index]
-    #tess.train_y = global_train_y_celpa[del_index]
+for region, dat in regions.items():
 
-    #tess._selector = [False] * len(tess.train_y)
+    region_key = '-'.join(region.split(' ')[1:]).lower()
+    print('Opening data for', region_key)
 
-    #print(tess.accuracy())
+    # Get targets from disk.
+    tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
+    dat['targets'] = tess.read_target_rasters_from_disk(region_key)
+    dat['mask'] = GDALRaster(os.path.join(os.getcwd(), 'sentinel-{}-fonfo-predicted-svm.tif'.format(region_key)))
+    tess.construct_training_data(dat['targets'], dat['agglayer'], -20)#, dat['mask'].bands[0].data().ravel() == 2)
+
+    # Stack the additional training data into the final matrix.
+    global_train_x_celpa = numpy.vstack((global_train_x_celpa, tess.train_x))
+    global_train_y_celpa = numpy.hstack((global_train_y_celpa, tess.train_y))
+
+for algo in ('nn', 'svm', 'rf'):
+
+    print('Classifying', algo)
+
+    tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
+    tess.type_dict = OrderedDict([('eu', 3), ('euy', 2), ('pi', 4), ('sob', 5)])
+    tess.clf = clsf[algo]
+
+    # Change type to simpler scheme.
+    print('Before filter', numpy.unique(global_train_y_celpa), global_train_x_celpa.shape)
+
+    del_index = numpy.in1d(global_train_y_celpa, numpy.array([2, 3, 4, 5]))
+
+    tess.train_x = global_train_x_celpa[del_index]
+    tess.train_y = global_train_y_celpa[del_index]
+
+    tess._selector = [False] * len(tess.train_y)
+
+    print(tess.accuracy())

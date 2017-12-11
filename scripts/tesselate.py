@@ -12,7 +12,7 @@ from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 from sklearn import svm
-from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, cohen_kappa_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
@@ -183,7 +183,9 @@ class Tesselo(object):
         """
         Compute geotransform parameters for target rasters based on bbox and zoom.
         """
-        tile_range = tile_index_range(bbox.extent, self.zoom)
+        if not isinstance(bbox, (tuple, list)):
+            bbox = bbox.extent
+        tile_range = tile_index_range(bbox, self.zoom)
         scale = tile_scale(self.zoom)
         bnds = tile_bounds(tile_range[0], tile_range[1], self.zoom)
         origin = (bnds[0], bnds[3])
@@ -392,15 +394,15 @@ class Tesselo(object):
             if time:
                 # For timeseries, set the y values to the observation time.
                 try:
-                    year = int(attributes['year'])
-                    if year < 2006:
+                    year = datetime.datetime.strptime(attributes['DATA_REF'], '%d-%m-%Y').date()
+                    if year < datetime.date(2006, 1, 1):
                         old_count += len(vals[0])
                         continue
                     #type_array = numpy.array([datetime.datetime.strptime(attributes['DATA_REF'], '%d-%m-%Y')] * len(vals[0]))
                     type_array = numpy.array([year] * len(vals[0]))
                 except:
                     print('Could not convert timestamp', attributes['DATA_REF'])
-                    continue
+                    raise
             else:
                 # Construct array with the category class.
                 type_array = numpy.ones(len(vals[0])).astype('float32') * self.type_dict[agg_type]
@@ -432,8 +434,12 @@ class Tesselo(object):
         # Instantiate classifier.
         if clf_name == 'rf':
             self.clf = RandomForestClassifier(n_estimators=10, max_depth=None, min_samples_split=2, random_state=0)
-        elif clf_name == 'svm':
+        elif clf_name == 'rfr':
+            self.clf = RandomForestRegressor()
+        elif clf_name == 'svmc':
             self.clf = svm.SVC(kernel='linear', C=0.01)
+        elif clf_name == 'svm':
+            self.clf = svm.LinearSVC(C=0.01)
         elif clf_name == 'nn':
             #self.clf = MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(200, 100, 100, 100), learning_rate_init= 0.095, learning_rate='adaptive', max_iter=500)
             self.clf = MLPClassifier(solver='adam', alpha=1e-5, hidden_layer_sizes=(200, 100, 100), max_iter=500)
@@ -502,7 +508,7 @@ class Tesselo(object):
             result[numpy.logical_not(forest_mask)] = 0
 
         # Set data on predicted raster.
-        result = result.reshape(predicted_raster.width, predicted_raster.height).astype('uint8' if datatype == 'uint8' else 'float')
+        result = result.reshape(predicted_raster.width, predicted_raster.height).astype('uint8' if datatype == 'uint8' else 'float32')
         predicted_raster.bands[0].data(result)
 
         print(predicted_raster.name)
@@ -529,6 +535,12 @@ class Tesselo(object):
                 ref = TYPE_DICT[agg_type]
                 if ref not in [2, 3, 4, 5]:
                     ref = 0
+
+                # Use a negative buffer to avoid mixed boundary pixels.
+                buffer_radius = -30
+                geom = geom.buffer(buffer_radius)
+                if geom.empty:
+                    continue
 
                 # Create a mask array for the geometry over the target areas.
                 mask = rasterize(geom, predicted_raster).bands[0].data().ravel().astype('bool')
