@@ -7,7 +7,7 @@ type_dict = {
     2: 'Eucaliptus young',
     3: 'Eucaliptus old',
     4: 'Pine',
-    5: 'Sobreiro',
+    5: 'Other trees',
 }
 
 with dbf.Table(consolidated_file) as db:

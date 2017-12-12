@@ -51,39 +51,39 @@ for algo in ('nn', 'svm', 'rf'):
 
     clsf[algo] = tess.clf
 
-    ## Predict.
-    #for region, dat in regions.items():
-        #region_key = '-'.join(region.split(' ')[1:]).lower()
-        #print('Predicting', algo, region_key)
-        ## Get targets from disk.
-        #dat['targets'] = tess.read_target_rasters_from_disk(region_key)
-        ## Mask with forest area.
-        #dat['mask'] = GDALRaster(os.path.join(os.getcwd(), 'sentinel-{}-fonfo-predicted-svm.tif'.format(region_key)))
-        #tess.predict_raster(dat['targets'], dat['bbox'], algo, region_key, forest_mask=dat['mask'].bands[0].data().ravel() == 2)
+    # Predict.
+    for region, dat in regions.items():
+        region_key = '-'.join(region.split(' ')[1:]).lower()
+        print('Predicting', algo, region_key)
+        # Get targets from disk.
+        dat['targets'] = tess.read_target_rasters_from_disk(region_key)
+        # Mask with forest area.
+        dat['mask'] = GDALRaster(os.path.join(os.getcwd(), 'sentinel-{}-fonfo-predicted-svm.tif'.format(region_key)))
+        tess.predict_raster(dat['targets'], dat['bbox'], algo, region_key, forest_mask=dat['mask'].bands[0].data().ravel() == 2)
 
-### Accuracy statistics towards Celpa original data.
+print('### Accuracy statistics towards Celpa original data.')
 
 # Per geometry analysis
-#for algo in ('nn', 'svm', 'rf'):
-#for algo in ('svm', ):
+for algo in ('nn', 'svm', 'rf'):
 
-    #tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
-    #tess.type_dict = OrderedDict([('eu', 3), ('euy', 2), ('pi', 4), ('sob', 5)])
-    #tess.clf = clsf[algo]
+    tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
+    tess.type_dict = OrderedDict([('eu', 3), ('euy', 2), ('pi', 4), ('sob', 5)])
+    tess.clf = clsf[algo]
 
-    ## Predict.
-    #for region, dat in regions.items():
-        #region_key = '-'.join(region.split(' ')[1:]).lower()
-        #print('Per geom accuracy for', algo, region_key)
-        #tess.accuracy_by_geom(dat['agglayer'], algo, [region_key])
+    # Predict.
+    for region, dat in regions.items():
+        region_key = '-'.join(region.split(' ')[1:]).lower()
+        print('Per geom accuracy for', algo, region_key)
+        tess.accuracy_by_geom(dat['agglayer'], algo, [region_key])
 
-#global_train_x_celpa = numpy.empty((len(tesselate.Tesselo('').bands_to_include), 0)).T
-#global_train_y_celpa = numpy.empty((0, ))
+
+global_train_x_celpa = numpy.empty((len(tesselate.Tesselo('').bands_to_include), 0)).T
+global_train_y_celpa = numpy.empty((0, ))
 
 for region, dat in regions.items():
 
     region_key = '-'.join(region.split(' ')[1:]).lower()
-    print('Opening data for', region_key)
+    print('Constructing Celpa pixels for', region_key)
 
     # Get targets from disk.
     tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
@@ -95,21 +95,27 @@ for region, dat in regions.items():
     global_train_x_celpa = numpy.vstack((global_train_x_celpa, tess.train_x))
     global_train_y_celpa = numpy.hstack((global_train_y_celpa, tess.train_y))
 
+# Change type to simpler scheme.
+print('Filtering celpa classes to match manual sample classes.')
+print('Classes before filter', numpy.unique(global_train_y_celpa), global_train_x_celpa.shape)
+
+del_index = numpy.in1d(global_train_y_celpa, numpy.array([2, 3, 4, 5]))
+
+global_train_x_celpa_filtered = global_train_x_celpa[del_index]
+global_train_y_celpa_filtered = global_train_y_celpa[del_index]
+
+print('Classes after filter', numpy.unique(global_train_y_celpa_filtered), global_train_x_celpa_filtered.shape)
+
 for algo in ('nn', 'svm', 'rf'):
 
-    print('Classifying', algo)
+    print('Classifier', algo, 'over Celpa pixels.')
 
     tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')
     tess.type_dict = OrderedDict([('eu', 3), ('euy', 2), ('pi', 4), ('sob', 5)])
     tess.clf = clsf[algo]
 
-    # Change type to simpler scheme.
-    print('Before filter', numpy.unique(global_train_y_celpa), global_train_x_celpa.shape)
-
-    del_index = numpy.in1d(global_train_y_celpa, numpy.array([2, 3, 4, 5]))
-
-    tess.train_x = global_train_x_celpa[del_index]
-    tess.train_y = global_train_y_celpa[del_index]
+    tess.train_x = global_train_x_celpa_filtered
+    tess.train_y = global_train_y_celpa_filtered
 
     tess._selector = [False] * len(tess.train_y)
 

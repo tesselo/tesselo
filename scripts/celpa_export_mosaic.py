@@ -4,10 +4,11 @@ import os
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 from raster.tiles.const import WEB_MERCATOR_TILESIZE
 import numpy
+import datetime
 
 tess = tesselate.Tesselo('e76280dd3a75e523e3986f3c0a40c879b98ac065')  # Daniel
 #tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')  # Celpa
-tess.zoom = 10
+tess.zoom = 12
 
 bbox = (-1071952.884671312, 4410322.392731305, -676314.8262672396, 5203974.322189415)
 
@@ -60,8 +61,6 @@ worldlayers = {
             "B08.jp2": 170989,
             "B07.jp2": 170988
         },
-    #target = GDALRaster(raster_name, write=True)
-
     }
 }
 
@@ -77,7 +76,7 @@ for period, worldlayer in worldlayers.items():
     target = GDALRaster({
         'name': raster_name,
         'driver': 'tif',
-        'datatype': 6,  # Float32
+        'datatype': 3,  # int16
         'origin': origin,
         'width': width,
         'height': height,
@@ -86,6 +85,7 @@ for period, worldlayer in worldlayers.items():
         'bands': [{'data': [0], 'size': (1, 1), 'nodata_value': 0}],
         'papsz_options': {
             'compress': 'deflate',
+            'bigtiff': 'yes',
         }
     })
     counter = 0
@@ -93,7 +93,8 @@ for period, worldlayer in worldlayers.items():
         for tiley in range(tile_range[1], tile_range[3] + 1):
 
             if counter % 100 == 0:
-                print('Processed {} tiles in {} ({}/{}).'.format(100.0 * counter / nr_of_tiles, period, counter, nr_of_tiles))
+                now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+                print('{}Processed {}% of tiles in {} ({}/{}).'.format(now, round(100.0 * counter / nr_of_tiles), period, counter, nr_of_tiles))
             counter += 1
 
             url = 'algebra/{z}/{x}/{y}.tif?layers={layers}&formula={formula}'.format(
@@ -113,8 +114,10 @@ for period, worldlayer in worldlayers.items():
             xoffset = (tilex - tile_range[0]) * WEB_MERCATOR_TILESIZE
             yoffset = (tiley - tile_range[1]) * WEB_MERCATOR_TILESIZE
 
+            result = (rst.bands[0].data() * 1e4).astype('int16')
+
             target.bands[0].data(
-                rst.bands[0].data().astype('float32'),
+                result,
                 size=(WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE),
                 offset=(xoffset, yoffset),
             )
@@ -126,7 +129,7 @@ after = GDALRaster(os.path.join(os.getcwd(), 'portugal-nbr-november-zl{}.tif'.fo
 target = GDALRaster({
     'name': 'portugal-nbr-diff-zl{}.tif'.format(tess.zoom),
     'driver': 'tif',
-    'datatype': 6,
+    'datatype': 3,
     'origin': origin,
     'width': width,
     'height': height,
@@ -135,6 +138,7 @@ target = GDALRaster({
     'bands': [{'data': [0], 'size': (1, 1), 'nodata_value': 0}],
     'papsz_options': {
         'compress': 'deflate',
+        'bigtiff': 'yes',
     }
 })
 
@@ -143,7 +147,8 @@ for tilex in range(tile_range[0], tile_range[2] + 1):
     for tiley in range(tile_range[1], tile_range[3] + 1):
 
         if counter % 100 == 0:
-            print('Processed {} tiles ({}/{}).'.format(100.0 * counter / nr_of_tiles, counter, nr_of_tiles))
+            now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+            print('{}Processed {}% of tiles ({}/{}).'.format(now, round(100.0 * counter / nr_of_tiles), counter, nr_of_tiles))
         counter += 1
 
 
@@ -159,7 +164,7 @@ for tilex in range(tile_range[0], tile_range[2] + 1):
             size=(WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE),
             offset=(xoffset, yoffset),
         )
-        diff = (after_tile - before_tile).astype('float32')
+        diff = after_tile - before_tile
         # We need to apply the thresholding proposed by the USGS FireMon program
         # < -0.25	High post-fire regrowth
         # -0.25 to -0.1	Low post-fire regrowth
