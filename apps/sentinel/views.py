@@ -3,7 +3,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from PIL import Image
 from raster.tiles.lookup import get_raster_tile
 from raster.views import RasterView
-from rest_framework import viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -13,8 +12,8 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from sentinel.clouds.tables import clouds
 from sentinel.filters import SentinelTileFilter
-from sentinel.models import SentinelTile, WorldLayerGroup
-from sentinel.serializers import SentinelTileSerializer, WorldLayerGroupSerializer
+from sentinel.models import SentinelTile
+from sentinel.serializers import SentinelTileSerializer
 
 
 class SentinelTilePageNumberPagination(PageNumberPagination):
@@ -32,13 +31,6 @@ class SentinelTileViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return SentinelTile.objects.all().order_by('id')
-
-
-class WorldLayerGroupViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = WorldLayerGroup.objects.all().order_by('id')
-    serializer_class = WorldLayerGroupSerializer
-    filter_backends = (DjangoFilterBackend, )
-    filter_fields = ('active', )
 
 
 class CloudView(RasterView):

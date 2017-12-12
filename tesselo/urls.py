@@ -13,25 +13,20 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.documentation import include_docs_urls
 
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.views.generic.base import TemplateView
-from formulary.wmts import WMTSAPIView
-from tesselo.apilogout import remove_auth_token
-from tesselo.apiurls import router
+from tesselo.apiurls import apiurlpatterns
 
 urlpatterns = [
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs')),
-    url(r'^api/', include(router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
     url(r'^sentinel/', include('sentinel.urls')),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^$', TemplateView.as_view(template_name='index.html')),
-    url(r'^api-token-auth/', obtain_auth_token),
-    url(r'^api-token-logout/', remove_auth_token),
-    url(r'^wmts$', WMTSAPIView.as_view()),
 ]
+
+urlpatterns += apiurlpatterns
