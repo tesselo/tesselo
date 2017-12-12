@@ -37,15 +37,17 @@ from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneO
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
-
     permission_classes = (IsAuthenticated, RasterTilePermission, )
     renderer_classes = (BinaryRenderer, )
+    pagination_class = None
     queryset = RasterTile.objects.all()
 
 
 class AlgebraAPIView(AlgebraView, RasterAPIView):
     """
     A view to calculate map algebra on raster layers.
+
+    The format can be either png, jpg or tif.
     """
 
     def list(self, *args, **kwargs):
