@@ -51,6 +51,10 @@ class GroupObjectPermissionSerializer(Serializer):
 
 
 class PermissionsModelSerializer(ModelSerializer):
+    pass
+
+
+class PermissionsModelSerializerVerbose(ModelSerializer):
 
     permissions = SerializerMethodField()
     users = SerializerMethodField()
