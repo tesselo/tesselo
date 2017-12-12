@@ -1,10 +1,12 @@
+import datetime
+import os
+
+import numpy
+from raster.tiles.const import WEB_MERCATOR_TILESIZE
+from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+
 import tesselate
 from django.contrib.gis.gdal import GDALRaster
-import os
-from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
-from raster.tiles.const import WEB_MERCATOR_TILESIZE
-import numpy
-import datetime
 
 tess = tesselate.Tesselo('e76280dd3a75e523e3986f3c0a40c879b98ac065')  # Daniel
 #tess = tesselate.Tesselo('570d10aec18ae6e72ddbe3a9b3a5b9345cbc53b9')  # Celpa

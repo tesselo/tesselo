@@ -2,12 +2,11 @@ import os
 import pickle
 from collections import OrderedDict
 
+import matplotlib.pyplot as plt
 import numpy
 import statsmodels
 import statsmodels.api as sm
-
 from matplotlib.colors import LogNorm
-import matplotlib.pyplot as plt
 
 import tesselate
 from django.contrib.gis.gdal import GDALRaster
