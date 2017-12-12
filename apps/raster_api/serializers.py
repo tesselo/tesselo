@@ -51,15 +51,6 @@ class GroupObjectPermissionSerializer(Serializer):
 
 
 class PermissionsModelSerializer(ModelSerializer):
-    pass
-
-
-class PermissionsModelSerializerVerbose(ModelSerializer):
-
-    permissions = SerializerMethodField()
-    users = SerializerMethodField()
-    groups = SerializerMethodField()
-    public = SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         if hasattr(self.Meta, 'fields'):
