@@ -52,19 +52,6 @@ class GroupObjectPermissionSerializer(Serializer):
 
 class PermissionsModelSerializer(ModelSerializer):
 
-    def __init__(self, *args, **kwargs):
-        if hasattr(self.Meta, 'fields'):
-            if 'permissions' not in self.Meta.fields:
-                self.Meta.fields += ('permissions', )
-            if 'public' not in self.Meta.fields:
-                self.Meta.fields += ('public', )
-            if 'users' not in self.Meta.fields:
-                self.Meta.fields += ('users', )
-            if 'groups' not in self.Meta.fields:
-                self.Meta.fields += ('groups', )
-
-        super(PermissionsModelSerializer, self).__init__(*args, **kwargs)
-
     def get_permissions(self, obj):
         return get_perms(self.context['request'].user, obj)
 
