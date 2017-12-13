@@ -12,6 +12,10 @@ class RasterTilePermission(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
+        # If no layers were requested, grant access.
+        if not view.request.GET.get('layers', None):
+            return True
+
         # Check user permissions only on non-public rasterlayers.
         qs = RasterLayer.objects.exclude(
             publicrasterlayer__public=True
@@ -41,7 +45,11 @@ class ValueCountResultCreatePermission(permissions.BasePermission):
         qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
         view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
         # Check for permission on aggregation area through aggregationlayer.
-        agglyr = AggregationLayer.objects.get(aggregationarea=view.request.data['aggregationarea'])
+        aggarea_id = view.request.data.get('aggregationarea', None)
+        # If not aggarea was provided, grant access (aggregation package will raise error later).
+        if aggarea_id is None:
+            return True
+        agglyr = AggregationLayer.objects.get(aggregationarea=aggarea_id)
         view_agg = request.user.has_perm('view_aggregationlayer', agglyr)
         return view_all_rasters and view_agg
 
