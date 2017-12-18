@@ -4,8 +4,8 @@ consolidated_file = "/media/tam/rhino/work/projects/tesselo/celpa/analysis/senti
 
 type_dict = {
     0: 'Non forest',
-    2: 'Eucaliptus young',
-    3: 'Eucaliptus old',
+    2: 'Eucalyptus',
+    3: 'Eucalyptus',
     4: 'Pine',
     5: 'Other trees',
 }
