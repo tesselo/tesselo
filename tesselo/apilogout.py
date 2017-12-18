@@ -6,17 +6,14 @@ from rest_framework.views import APIView
 
 
 class RemoveAuthToken(APIView):
+    """
+    Destroy auth token of the user by sending a POST request to this url.
+    """
     renderer_classes = (renderers.JSONRenderer,)
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         Token.objects.filter(user=request.user).delete()
         return Response({'logout': 'Successfully logged out.'})
-
-    def post(self, request, *args, **kwargs):
-        """
-        Logout may be done via POST.
-        """
-        return self.get(request, *args, **kwargs)
 
 
 remove_auth_token = RemoveAuthToken.as_view()
