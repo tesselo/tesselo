@@ -1,16 +1,15 @@
 from rest_framework import routers
-from rest_framework.authtoken.views import obtain_auth_token
 
 from django.conf.urls import include, url
 from formulary.views import FormulaViewSet, WMTSLayerViewSet
 from formulary.wmts import WMTSAPIView
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView,
-    LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet, RasterLayerViewSet, SentinelTileAggregationLayerViewSet,
-    ValueCountResultViewSet, WorldLayerGroupViewSet, ZoneOfInterestViewSet
+    LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet,
+    RemoveAuthToken, SentinelTileAggregationLayerViewSet, ValueCountResultViewSet, WorldLayerGroupViewSet,
+    ZoneOfInterestViewSet
 )
 from sentinel.views import SentinelTileViewSet
-from tesselo.apilogout import remove_auth_token
 
 router = routers.DefaultRouter(trailing_slash=False)
 
@@ -59,8 +58,8 @@ router.register(r'wmtslayer', WMTSLayerViewSet, base_name='wmtslayer')
 
 
 apiurlpatterns = [
-    url(r'^api/token-auth/', obtain_auth_token),
-    url(r'^api/token-logout/', remove_auth_token),
+    url(r'^api/token-auth/', ObtainExpiringAuthToken.as_view()),
+    url(r'^api/token-logout/', RemoveAuthToken.as_view()),
     url(r'^api/wmts$', WMTSAPIView.as_view()),
     url(r'^api/', include(router.urls)),
 ]
