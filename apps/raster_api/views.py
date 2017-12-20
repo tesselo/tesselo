@@ -316,7 +316,9 @@ class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
 
 class ObtainExpiringAuthToken(ObtainAuthToken):
     """
-    Obtain expiring auth token.
+    Obtain a fresh auth token by sending a unauthenticated POST request to this
+    url with a username and password field. The tokens will be valid for 14
+    days. Returns the token and its expiry date.
     """
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data,
@@ -325,8 +327,8 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
         user = serializer.validated_data['user']
         token, created = Token.objects.get_or_create(user=user)
 
-        # Replace the token with a new one if its expired.
-        if not created and expired(token):
+        # Replace the token with a new one if there is an existing one.
+        if not created:
             token.delete()
             token = Token.objects.create(user=user)
 
