@@ -6,9 +6,12 @@ from sentinel import const
 
 
 def clouds(stack):
-    # Minimum sum of thick cloud and cirrus cloud bands.
+    # Select minimum sum of thick cloud and cirrus cloud bands.
     index = stack[const.BD1] + stack[const.BD10]
-    index[stack[const.BD2] == const.SENTINEL_NODATA_VALUE] = 6e4
+    # Add nodata mask as maximum possible values to prevent selection.
+    max_val_dtype = numpy.iinfo(stack[const.BD1].dtype).max
+    index[stack[const.BD1] == const.SENTINEL_NODATA_VALUE] = max_val_dtype
+
     return index
 
 
