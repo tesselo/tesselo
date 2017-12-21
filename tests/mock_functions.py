@@ -12,6 +12,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID
 from raster.tiles.utils import tile_scale
 
 from django.contrib.gis.gdal import GDALRaster
+from django.utils import timezone
 from sentinel import const
 
 
@@ -30,7 +31,7 @@ def client_get_object(*args, **kwargs):
 
     response1 = {
         "AcceptRanges": "bytes",
-        "LastModified": datetime.datetime(2016, 3, 30, 3, 10, 13),
+        "LastModified": timezone.datetime(2016, 3, 30, 3, 10, 13),
         "Metadata": {},
         "ResponseMetadata": {
             "HTTPStatusCode": 200,
@@ -47,7 +48,7 @@ def client_get_object(*args, **kwargs):
 
     response2 = {
         "AcceptRanges": "bytes",
-        "LastModified": datetime.datetime(2016, 3, 30, 3, 10, 13),
+        "LastModified": timezone.datetime(2016, 3, 30, 3, 10, 13),
         "Metadata": {},
         "ResponseMetadata": {
             "HTTPStatusCode": 200,
@@ -64,7 +65,7 @@ def client_get_object(*args, **kwargs):
 
     response2A = {
         "AcceptRanges": "bytes",
-        "LastModified": datetime.datetime(2015, 3, 30, 3, 10, 13),
+        "LastModified": timezone.datetime(2015, 3, 30, 3, 10, 13),
         "Metadata": {},
         "ResponseMetadata": {
             "HTTPStatusCode": 200,
@@ -81,7 +82,7 @@ def client_get_object(*args, **kwargs):
 
     response3 = {
         "AcceptRanges": "bytes",
-        "LastModified": datetime.datetime(2015, 3, 30, 3, 10, 13),
+        "LastModified": timezone.datetime(2015, 3, 30, 3, 10, 13),
         "Metadata": {},
         "ResponseMetadata": {
             "HTTPStatusCode": 200,

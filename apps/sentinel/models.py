@@ -108,6 +108,10 @@ class SentinelTile(models.Model):
             band.layer.source_url = self.get_source_url(band.band)
             band.layer.save()
 
+    @property
+    def kahunas(self):
+        return {band.band: band.layer_id for band in self.sentineltileband_set.all()}
+
 
 class SentinelTileBand(models.Model):
     """

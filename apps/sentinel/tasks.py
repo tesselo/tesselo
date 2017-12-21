@@ -16,7 +16,7 @@ from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
 
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
@@ -34,6 +34,7 @@ from sentinel.models import (
     BucketParseLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, WorldLayerGroup,
     WorldParseProcess, ZoneOfInterest
 )
+from sentinel.utils import aggregate_tile, disaggregate_tile, get_world_tile_indices, write_raster_tile
 
 logger = get_task_logger(__name__)
 
@@ -469,46 +470,33 @@ def drive_world_layers(world_ids=None):
         worlds = worlds.filter(id__in=world_ids)
 
     for world in worlds:
-        # Get all active zones of interest for this world layer.
-        if world.all_zones:
-            zones = ZoneOfInterest.objects.filter(active=True)
-        else:
-            zones = world.zonesofinterest.filter(active=True)
+        for tilex, tiley, tilez in get_world_tile_indices(world):
+            # Check if the tile is currently building.
+            processing = WorldParseProcess.objects.filter(
+                worldlayergroup=world,
+                tilex=tilex,
+                tiley=tiley,
+                tilez=tilez,
+                end__isnull=True,
+            ).exists()
 
-        # Build world layer tiles for each zone.
-        for zone in zones:
-            # Compute index range for this zone of interest.
-            indexrange = zone.index_range(const.ZOOM_LEVEL_WORLDLAYER)
+            if processing:
+                continue
 
-            for tilex in range(indexrange[0], indexrange[2] + 1):
-                for tiley in range(indexrange[1], indexrange[3] + 1):
+            # Register parse effort.
+            wpp = WorldParseProcess.objects.create(
+                worldlayergroup=world,
+                tilex=tilex,
+                tiley=tiley,
+                tilez=tilez,
+                log='',
+            )
+            wpp.write('Scheduled world builder, waiting for worker availability.')
 
-                    # Check if the zone is currently building.
-                    processing = WorldParseProcess.objects.filter(
-                        worldlayergroup=world,
-                        tilex=tilex,
-                        tiley=tiley,
-                        tilez=const.ZOOM_LEVEL_WORLDLAYER,
-                        end__isnull=True,
-                    ).exists()
+            # Sleep to not put too many heavy tasks on the DB at once.
+            time.sleep(1)
 
-                    if processing:
-                        continue
-
-                    # Register parse effort.
-                    wpp = WorldParseProcess.objects.create(
-                        worldlayergroup=world,
-                        tilex=tilex,
-                        tiley=tiley,
-                        tilez=const.ZOOM_LEVEL_WORLDLAYER,
-                        log='',
-                    )
-                    wpp.write('Scheduled world builder, waiting for worker availability.')
-
-                    # Sleep to not put too many heavy tasks on the DB at once.
-                    time.sleep(1)
-
-                    build_world_layers.delay(world.id, tilex, tiley, const.ZOOM_LEVEL_WORLDLAYER)
+            build_world_layers.delay(world.id, tilex, tiley, tilez)
 
     return 'Started world layers for layers {0}.'.format([world.pk for world in worlds])
 
@@ -685,109 +673,8 @@ def build_world_pyramids(world, tilex, tiley, tilez):
                     lower = numpy.append(result[2], result[3], axis=1)
                     result = numpy.append(upper, lower, axis=0)
 
-                    # Compute bounds and scale for the target tile.
-                    bounds = tile_bounds(tilex // 2, tiley // 2, zoom - 1)
-                    scale = tile_scale(zoom - 1)
-
-                    # Instantiate target GDALRaster dict.
-                    result_dict = {
-                        'name': '/vsimem/{}'.format(uuid.uuid4()),
-                        'driver': 'tif',
-                        'origin': (bounds[0], bounds[3]),
-                        'width': WEB_MERCATOR_TILESIZE,
-                        'height': WEB_MERCATOR_TILESIZE,
-                        'scale': [scale, -scale],
-                        'srid': WEB_MERCATOR_SRID,
-                        'datatype': 2,
-                        'bands': [{'nodata_value': 0, }],
-                        'papsz_options': {
-                            'compress': 'deflate',
-                            'predictor': 2,
-                        },
-                    }
-
-                    # Write tile to database, update if tile already exists.
-                    tile = RasterTile.objects.filter(
-                        rasterlayer_id=kahuna,
-                        tilez=zoom - 1,
-                        tilex=tilex // 2,
-                        tiley=tiley // 2,
-                    ).first()
-
-                    if tile:
-                        try:
-                            # Get current array for this tile.
-                            current = tile.rast.bands[0].data()
-                            # Add values from current array to result for pixels
-                            # where result is nodata. This ensures that areas
-                            # not covered by this zone stay present in the upper
-                            # pyramid levels, i.e. it unifies zone level pyramids.
-                            result_nodata = result == const.SENTINEL_NODATA_VALUE
-                            result[result_nodata] = current[result_nodata]
-                        except:
-                            # Different storage backends might raise different errors. So
-                            # this has to be a catch-all.
-                            pass
-
-                        # Store result in raster.
-                        result_dict['bands'][0]['data'] = result
-
-                        # Convert gdalraster to file like object, and set
-                        # the file object.
-                        dest = GDALRaster(result_dict)
-                        dest = io.BytesIO(dest.vsi_buffer)
-                        dest = File(dest, name='tile.tif')
-                        tile.rast = dest
-
-                        # Write the tile update to db and storage.
-                        tile.save()
-                    else:
-                        # Add result to GDALRaster dictionary.
-                        result_dict['bands'][0]['data'] = result
-
-                        # Convert gdalraster to file like object.
-                        dest = GDALRaster(result_dict)
-                        dest = io.BytesIO(dest.vsi_buffer)
-                        dest = File(dest, name='tile.tif')
-
-                        # Create a new tile if the world tile does not exist yet.
-                        RasterTile.objects.create(
-                            rasterlayer_id=kahuna,
-                            tilez=zoom - 1,
-                            tilex=tilex // 2,
-                            tiley=tiley // 2,
-                            rast=dest,
-                        )
+                    # Commit raster to DB.
+                    write_raster_tile(kahuna, result, zoom - 1, tilex // 2, tiley // 2)
 
     wpp.end = timezone.now()
     wpp.write('Finished building pyramid.')
-
-
-def aggregate_tile(tile):
-    """
-    Aggregate a tile array to the next zoom level using movin average. Create
-    a 1-D array of half the size of the input data.
-
-    Inspired by:
-    https://stackoverflow.com/questions/16856788/slice-2d-array-into-smaller-2d-arrays
-    """
-    tile.shape = (const.AGG_TILE_SIZE, const.AGG_FACTOR, const.AGG_TILE_SIZE, const.AGG_FACTOR)
-    tile = tile.swapaxes(1, 2)
-    tile = tile.reshape(const.AGG_TILE_SIZE_SQ, const.AGG_FACTOR, const.AGG_FACTOR)
-    tile = numpy.mean(tile, axis=(1, 2), dtype=numpy.int16)
-    tile.shape = (const.AGG_TILE_SIZE, const.AGG_TILE_SIZE)
-    return tile
-
-
-def disaggregate_tile(tile, factor, offsetx, offsety):
-    """
-    Expand the tile array to a higher zoom level.
-    """
-    # Reshape data into a matrix.
-    tile = tile.reshape(WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)
-    # Compute size of data block to be extracted.
-    size = WEB_MERCATOR_TILESIZE // factor
-    # Get data block for this offset. The numpy indexing order is (y, x).
-    data = tile[int(offsety):int(offsety + size), int(offsetx):int(offsetx + size)]
-    # Expand data repeating values by the factor to get back to the original size.
-    return data.repeat(factor, axis=0).repeat(factor, axis=1)

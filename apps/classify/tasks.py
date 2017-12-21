@@ -9,22 +9,16 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
-from classify.models import Classifier
+from classify.models import Classifier, PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
+from sentinel.utils import get_sentinel_tile_indices, get_world_tile_indices, write_raster_tile
 
 ZOOM = 14
 
 SCALE = tile_scale(ZOOM)
 
 PIXELTYPE = 2
-
-tile_list = [
-    # ('tiles/29/S/PB/2017/3/23/0/', 7835, 6308),
-    # ('tiles/29/S/NC/2017/3/6/1/', 7835, 6308),
-    # ('tiles/29/S/PC/2017/3/16/0/', 7835, 6308),
-    # ('tiles/29/S/NB/2017/3/6/1/', 7835, 6308),
-]
 
 BAND_NAMES = (
     'B01.jp2', 'B02.jp2', 'B03.jp2', 'B04.jp2', 'B05.jp2', 'B06.jp2',
@@ -33,37 +27,37 @@ BAND_NAMES = (
 )
 
 
-def get_training_data(sentineltile, tilez, tilex, tiley):
+def get_classifier_data(kahunas, tilez, tilex, tiley):
     """
     Builds the 13 band training tile file for a training tile instance.
     """
     # Get data for a tile of this scene.
     result = []
     for band in BAND_NAMES:
-        band = sentineltile.sentineltileband_set.get(band=band)
+        layer_id = kahunas.get(band)
         tile = RasterTile.objects.filter(
             tilex=tilex,
             tiley=tiley,
             tilez=tilez,
-            rasterlayer_id=band.layer_id,
+            rasterlayer_id=layer_id,
         )
-        tile = get_raster_tile(band.layer_id, tilez=tilez, tilex=tilex, tiley=tiley)
+        tile = get_raster_tile(layer_id, tilez=tilez, tilex=tilex, tiley=tiley)
         if not tile:
             return
         result.append(tile.bands[0].data().ravel())
 
-    return numpy.array(result)
+    return numpy.array(result).T
 
 
 @task
-def train_cloud_classifier(classifier_id):
+def train_sentinel_classifier(classifier_id):
     """
     Trains a classifier based on the registered tiles and sample data.
     """
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
     # Create numpy arrays holding training data.
-    X = numpy.empty(shape=(13, 0))
+    X = numpy.empty(shape=(0, 13))
     Y = numpy.empty(shape=(0,))
     # Dictionary for categories.
     categories = {}
@@ -79,8 +73,12 @@ def train_cloud_classifier(classifier_id):
         idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
         for tilex in range(idx[0], idx[2] + 1):
             for tiley in range(idx[1], idx[3] + 1):
+                if sample.worldlayergroup:
+                    kahunas = sample.worldlayergroup.kahunas
+                else:
+                    kahunas = sample.sentineltile.kahunas
                 # Get stacked tile data for this tile.
-                data = get_training_data(sample.sentineltile, ZOOM, tilex, tiley)
+                data = get_classifier_data(kahunas, ZOOM, tilex, tiley)
                 if data is None:
                     continue
                 # Create a target raster for the rasterization.
@@ -105,14 +103,11 @@ def train_cloud_classifier(classifier_id):
                 sample_values = numpy.array([sample.value] * sum(selector))
                 # Add sample values to dependent variable.
                 Y = numpy.hstack([sample_values, Y])
-                # Use selector to pick independent sample pixels.
-                data = data[:, selector]
+                # Use selector to pick sample pixels over geom.
+                data = data[selector]
                 # Add explanatory variables to stack.
-                X = numpy.hstack([data, X])
+                X = numpy.vstack([data, X])
 
-    # Reshape the data to fit the classifier input needs.
-    X = X.T
-    Y = Y.T.ravel()
     # Instanciate and fit the classifier.
     clf = classifier.ALGORITHM_CLASSES[classifier.algorithm]()
     clf.fit(X, Y)
@@ -120,3 +115,27 @@ def train_cloud_classifier(classifier_id):
     classifier.legend = categories
     classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name='trained')
     classifier.save()
+
+
+@task
+def predict_sentinel_layer(predicted_layer_id):
+    """
+    Use a classifier to predict data onto a rasterlayer. The PredictedLayer
+    model is the mediator.
+    """
+    pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    # Get tile range for worldlayer or sentineltile for this prediction.
+    if pred.worldlayergroup:
+        tiles = get_world_tile_indices(pred.worldlayergroup)
+        kahunas = pred.worldlayergroup.kahunas
+    else:
+        tiles = get_sentinel_tile_indices(pred.sentineltile)
+        kahunas = pred.sentineltile.kahunas
+
+    for tilex, tiley, tilez in tiles:
+        # Get data from tiles for prediction.
+        data = get_classifier_data(kahunas, tilez, tilex, tiley)
+        # Predict classes.
+        predicted = pred.classifier.clf.predict(data)
+        # Write predicted pixels into a tile and store in DB.
+        write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)

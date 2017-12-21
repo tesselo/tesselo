@@ -148,6 +148,14 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Cache settings.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+    }
+}
+
 # S3 Settings
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
@@ -245,6 +253,7 @@ RASTER_USE_CELERY = True
 RASTER_PARSE_SINGLE_TASK = True
 RASTER_WORKDIR = os.environ.get('RASTER_WORKDIR', None)
 
+# Logger settings.
 if not DEBUG:
     LOGGING = {
         'version': 1,

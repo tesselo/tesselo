@@ -7,11 +7,8 @@ import mock
 from raster.models import RasterTile
 from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
 
-from classify.models import Classifier, TrainingSample
-from classify.tasks import train_cloud_classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
-from django.core.urlresolvers import reverse
 from django.db.models import Count
 from django.test import TestCase, override_settings
 from sentinel import const
@@ -39,28 +36,6 @@ class SentinelBucketParserTest(TestCase):
         self.world.zonesofinterest.add(self.zone)
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
-
-        self.cloud = TrainingSample.objects.create(
-            geom='SRID=3857;POLYGON((11844687 -459865, 11844697 -459865, 11844697 -459805, 11844687 -459805, 11844687 -459865))',
-            category='Cloud',
-            value=2,
-        )
-        self.shadow = TrainingSample.objects.create(
-            geom='SRID=3857;POLYGON((11844787 -459865, 11844797 -459865, 11844797 -459805, 11844787 -459805, 11844787 -459865))',
-            category='Shadow',
-            value=1
-        )
-        self.cloudfree = TrainingSample.objects.create(
-            geom='SRID=3857;POLYGON((11844887 -459865, 11844897 -459865, 11844897 -459805, 11844887 -459805, 11844887 -459865))',
-            category='Cloud free',
-            value=0,
-        )
-        self.clf = Classifier.objects.create(name='Clouds', algorithm='svm')
-
-        # (11843687.0, -460775.1108485553, 11846010.110848555, -458452.0)
-        self.clf.trainingsamples.add(self.cloud)
-        self.clf.trainingsamples.add(self.shadow)
-        self.clf.trainingsamples.add(self.cloudfree)
 
     def tearDown(self):
         shutil.rmtree(settings.MEDIA_ROOT)
@@ -105,29 +80,6 @@ class SentinelBucketParserTest(TestCase):
             ],
         )
 
-    def _assign_sentineltile(self):
-        sent = SentinelTile.objects.first()
-
-        self.cloud.sentineltile = sent
-        self.cloud.save()
-        self.shadow.sentineltile = sent
-        self.shadow.save()
-        self.cloudfree.sentineltile = sent
-        self.cloudfree.save()
-
-    def test_cloud_training(self):
-        # Worldlayer objects have been created.
-        sync_sentinel_bucket_utm_zone(1)
-        drive_sentinel_queue()
-
-        self._assign_sentineltile()
-
-        train_cloud_classifier(self.clf.id)
-
-        self.clf.refresh_from_db()
-
-        self.assertTrue(self.clf.trained is not None)
-
     def test_world_layer(self):
         sync_sentinel_bucket_utm_zone(1)
         self.assertEqual(self.world.worldlayers.count(), len(const.BAND_CHOICES))
@@ -138,9 +90,6 @@ class SentinelBucketParserTest(TestCase):
 
         drive_sentinel_queue()
         drive_sentinel_queue()
-
-        self._assign_sentineltile()
-        train_cloud_classifier(self.clf.id)
 
         drive_world_layers()
 
@@ -185,20 +134,6 @@ class SentinelBucketParserTest(TestCase):
             scene.sentineltileband_set.count(),
             const.NR_OF_BANDS,
         )
-
-    def test_cloud_view(self):
-        sync_sentinel_bucket_utm_zone(1)
-        drive_sentinel_queue()
-        drive_sentinel_queue()
-        scene = SentinelTile.objects.filter(sentineltileband__isnull=False).first()
-        band = scene.sentineltileband_set.get(band='B02.jp2')
-        tile = band.layer.rastertile_set.first()
-        url = reverse('clouds', kwargs={
-            'z': tile.tilez, 'y': tile.tiley, 'x': tile.tilex,
-            'stile': scene.id, 'frmt': 'png'
-        })
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
 
     def test_public_rasterlayer(self):
         """

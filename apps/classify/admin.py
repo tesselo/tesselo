@@ -1,5 +1,5 @@
 from classify.models import Classifier, TrainingSample
-from classify.tasks import train_cloud_classifier
+from classify.tasks import train_sentinel_classifier
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const
@@ -42,7 +42,7 @@ class ClassifierAdmin(admin.ModelAdmin):
         Admin action to train classifiers.
         """
         for clf in queryset:
-            train_cloud_classifier.delay(clf.id)
+            train_sentinel_classifier.delay(clf.id)
         self.message_user(request, 'Started training classifiers.')
 
 

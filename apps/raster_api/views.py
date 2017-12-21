@@ -37,7 +37,7 @@ from raster_api.serializers import (
     GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer, RasterLayerSerializer,
     SentinelTileAggregationLayerSerializer, UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
 )
-from raster_api.utils import EXPIRING_TOKEN_LIFESPAN, expired
+from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
 
 
