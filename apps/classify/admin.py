@@ -1,4 +1,4 @@
-from classify.models import Classifier, TrainingSample
+from classify.models import Classifier, PredictedLayer, TrainingSample
 from classify.tasks import train_sentinel_classifier
 from django import forms
 from django.contrib.gis import admin
@@ -46,5 +46,10 @@ class ClassifierAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started training classifiers.')
 
 
+class PredictedLayerAdmin(admin.ModelAdmin):
+    raw_id_fields = ('worldlayergroup', 'sentineltile', 'rasterlayer', )
+
+
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
+admin.site.register(PredictedLayer, PredictedLayerAdmin)
