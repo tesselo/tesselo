@@ -8,9 +8,15 @@ from sentinel import const
 def clouds(stack):
     # Select minimum sum of thick cloud and cirrus cloud bands.
     index = stack[const.BD1] + stack[const.BD10]
-    # Add nodata mask as maximum possible values to prevent selection.
+    # Get max value for the datatype.
     max_val_dtype = numpy.iinfo(stack[const.BD1].dtype).max
-    index[stack[const.BD1] == const.SENTINEL_NODATA_VALUE] = max_val_dtype
+    # Add nodata mask to maximum to prevent nodata pixel selection.
+    mask = numpy.any([
+        stack[const.BD2] == const.SENTINEL_NODATA_VALUE,  # 10m
+        stack[const.BD12] == const.SENTINEL_NODATA_VALUE,  # 20m
+        stack[const.BD1] == const.SENTINEL_NODATA_VALUE,  # 60m
+    ], axis=0)
+    index[mask] = max_val_dtype
 
     return index
 
