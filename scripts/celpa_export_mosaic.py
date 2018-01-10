@@ -30,7 +30,7 @@ os.chdir('/media/tam/rhino/work/projects/tesselo/celpa/analysis/sentinel_exports
 compositebands = {
     'november': {
         "name": "November 2017",
-        "kahunas": {
+        "rasterlayer_lookup": {
             "B09.jp2": 45991,
             "B02.jp2": 45983,
             "B03.jp2": 45984,
@@ -48,7 +48,7 @@ compositebands = {
     },
     'june': {
         "name": "June 2017",
-        "kahunas": {
+        "rasterlayer_lookup": {
             "B09.jp2": 170991,
             "B02.jp2": 170983,
             "B03.jp2": 170984,
@@ -70,7 +70,7 @@ compositebands = {
 formula='(B8-B12)/(B8%2BB12)'  # Normalized Burn Ratio
 
 for period, compositeband in compositebands.items():
-    layers = 'B8={},B12={}'.format(compositeband['kahunas']['B08.jp2'], compositeband['kahunas']['B12.jp2'])
+    layers = 'B8={},B12={}'.format(compositeband['rasterlayer_lookup']['B08.jp2'], compositeband['rasterlayer_lookup']['B12.jp2'])
     # Create or open raster
     print('Processing period', period)
     raster_name = os.path.join(os.getcwd(), 'portugal-nbr-{}-zl{}.tif'.format(period, tess.zoom))

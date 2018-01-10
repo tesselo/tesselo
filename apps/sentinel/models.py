@@ -109,7 +109,7 @@ class SentinelTile(models.Model):
             band.layer.save()
 
     @property
-    def kahunas(self):
+    def rasterlayer_lookup(self):
         return {band.band: band.layer_id for band in self.sentineltileband_set.all()}
 
 
@@ -180,7 +180,7 @@ class ZoneOfInterest(models.Model):
 
 class CompositeBand(models.Model):
     """
-    Register RasterLayers as big kahunas.
+    Register RasterLayers as rasterlayer_lookup.
     """
     band = models.CharField(max_length=7, choices=const.BAND_CHOICES)
     rasterlayer = models.ForeignKey(RasterLayer)
@@ -212,7 +212,7 @@ class Composite(models.Model):
         return self.name
 
     @property
-    def kahunas(self):
+    def rasterlayer_lookup(self):
         return {lyr.band: lyr.rasterlayer_id for lyr in self.compositebands.all()}
 
 

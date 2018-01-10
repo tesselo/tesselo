@@ -251,13 +251,13 @@ class Tesselo(object):
         for bnd, rast in targets.items():
 
             if bnd == 'NDVI.jp2':
-                layers = 'B8={},B4={}'.format(scene['kahunas']['B08.jp2'], scene['kahunas']['B04.jp2'])
+                layers = 'B8={},B4={}'.format(scene['rasterlayer_lookup']['B08.jp2'], scene['rasterlayer_lookup']['B04.jp2'])
                 formula = urllib.parse.quote('(B8-B4)/(B8+B4)', safe='()/')
             elif bnd == 'EVI.jp2':
-                layers = 'B8={},B4={}'.format(scene['kahunas']['B08.jp2'], scene['kahunas']['B04.jp2'])
+                layers = 'B8={},B4={}'.format(scene['rasterlayer_lookup']['B08.jp2'], scene['rasterlayer_lookup']['B04.jp2'])
                 formula = urllib.parse.quote('(2.5*(B8-B4)/(B8+2.4*B4+1))', safe='()/*')
             else:
-                layers = 'x={}'.format(scene['kahunas'][bnd])
+                layers = 'x={}'.format(scene['rasterlayer_lookup'][bnd])
                 formula = 'x'
 
             print('Getting tiles for', layers, formula)

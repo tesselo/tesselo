@@ -99,7 +99,7 @@ define([
         },
 
         setLayerDict: function(model){
-            this.layer_dict = model.get('kahunas');
+            this.layer_dict = model.get('rasterlayer_lookup');
             this.composite_id = model.id;
             this.refresh();
         },

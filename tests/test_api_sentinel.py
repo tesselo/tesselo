@@ -43,7 +43,7 @@ class SentinelViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         result = json.loads(response.content.decode())
         self.assertEqual(result['name'], 'Sentinel')
-        self.assertEqual(len(result['kahunas']), 13)
+        self.assertEqual(len(result['rasterlayer_lookup']), 13)
         # The user has permission to see the newly created rasterlayers.
         url = reverse('rasterlayer-list')
         response = self.client.get(url)

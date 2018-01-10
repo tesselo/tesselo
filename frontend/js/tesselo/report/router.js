@@ -40,7 +40,7 @@ define([
 
                 $.get('/api/formula/' + formula).done(function(formula){
                     var ids = {};
-                    _.each(scene.kahunas, function(val, key){
+                    _.each(scene.rasterlayer_lookup, function(val, key){
                         // Remove jp2 from band names.
                         var name = key.split('.jp2')[0];
                         // Remove zero in band names.

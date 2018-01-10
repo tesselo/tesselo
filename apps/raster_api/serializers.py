@@ -231,11 +231,11 @@ class CompositeSerializer(PermissionsModelSerializer):
     class Meta:
         model = Composite
         fields = (
-            'id', 'name', 'kahunas', 'zonesofinterest', 'all_zones',
+            'id', 'name', 'rasterlayer_lookup', 'zonesofinterest', 'all_zones',
             'compositebands', 'min_date', 'max_date',
             'max_cloudy_pixel_percentage', 'active',
         )
-        read_only_fields = ('kahunas', 'compositebands', )
+        read_only_fields = ('rasterlayer_lookup', 'compositebands', )
 
 
 class ZoneOfInterestSerializer(PermissionsModelSerializer):
@@ -247,12 +247,12 @@ class ZoneOfInterestSerializer(PermissionsModelSerializer):
 
 class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
 
-    kahunas = SerializerMethodField()
+    rasterlayer_lookup = SerializerMethodField()
     name = CharField(source='sentineltile.prefix')
 
     class Meta:
         model = SentinelTileAggregationLayer
-        fields = ('id', 'name', 'kahunas', 'active', )
+        fields = ('id', 'name', 'rasterlayer_lookup', 'active', )
 
-    def get_kahunas(self, obj):
+    def get_rasterlayer_lookup(self, obj):
         return {band.band: band.layer_id for band in obj.sentineltile.sentineltileband_set.all()}

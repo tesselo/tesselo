@@ -27,14 +27,14 @@ BAND_NAMES = (
 )
 
 
-def get_classifier_data(kahunas, tilez, tilex, tiley):
+def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     """
     Builds the 13 band training tile file for a training tile instance.
     """
     # Get data for a tile of this scene.
     result = []
     for band in BAND_NAMES:
-        layer_id = kahunas.get(band)
+        layer_id = rasterlayer_lookup.get(band)
         tile = RasterTile.objects.filter(
             tilex=tilex,
             tiley=tiley,
@@ -74,11 +74,11 @@ def train_sentinel_classifier(classifier_id):
         for tilex in range(idx[0], idx[2] + 1):
             for tiley in range(idx[1], idx[3] + 1):
                 if sample.composite:
-                    kahunas = sample.composite.kahunas
+                    rasterlayer_lookup = sample.composite.rasterlayer_lookup
                 else:
-                    kahunas = sample.sentineltile.kahunas
+                    rasterlayer_lookup = sample.sentineltile.rasterlayer_lookup
                 # Get stacked tile data for this tile.
-                data = get_classifier_data(kahunas, ZOOM, tilex, tiley)
+                data = get_classifier_data(rasterlayer_lookup, ZOOM, tilex, tiley)
                 if data is None:
                     continue
                 # Create a target raster for the rasterization.
@@ -127,14 +127,14 @@ def predict_sentinel_layer(predicted_layer_id):
     # Get tile range for compositeband or sentineltile for this prediction.
     if pred.composite:
         tiles = get_world_tile_indices(pred.composite)
-        kahunas = pred.composite.kahunas
+        rasterlayer_lookup = pred.composite.rasterlayer_lookup
     else:
         tiles = get_sentinel_tile_indices(pred.sentineltile)
-        kahunas = pred.sentineltile.kahunas
+        rasterlayer_lookup = pred.sentineltile.rasterlayer_lookup
 
     for tilex, tiley, tilez in tiles:
         # Get data from tiles for prediction.
-        data = get_classifier_data(kahunas, tilez, tilex, tiley)
+        data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
         # Predict classes.
         predicted = pred.classifier.clf.predict(data)
         # Write predicted pixels into a tile and store in DB.

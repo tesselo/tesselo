@@ -523,7 +523,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     wpp.write('Starting to build compositeband.')
 
     # Get the list of master layers for all 13 bands.
-    kahunas = world.kahunas
+    rasterlayer_lookup = world.rasterlayer_lookup
 
     # Loop over all TMS tiles in a given zone and get band stacks for available
     # scenes in that tile.
@@ -562,7 +562,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
 
             # Get current tile if it already exists.
             tile = RasterTile.objects.filter(
-                rasterlayer_id=kahunas[key],
+                rasterlayer_id=rasterlayer_lookup[key],
                 tilex=x,
                 tiley=y,
                 tilez=const.ZOOM_LEVEL_10M,
@@ -575,7 +575,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
             else:
                 # Register a new tile in database.
                 RasterTile.objects.create(
-                    rasterlayer_id=kahunas[key],
+                    rasterlayer_id=rasterlayer_lookup[key],
                     tilex=x,
                     tiley=y,
                     tilez=const.ZOOM_LEVEL_10M,
@@ -606,8 +606,8 @@ def build_world_pyramids(world, tilex, tiley, tilez):
         end__isnull=True,
     ).first()
 
-    # Get kahuna layers.
-    kahunas = world.kahunas.values()
+    # Get rasterlayers.
+    rasterlayer_lookup = world.rasterlayer_lookup.values()
 
     bounds = tile_bounds(tilex, tiley, tilez)
     indexrange60 = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
@@ -638,18 +638,18 @@ def build_world_pyramids(world, tilex, tiley, tilez):
         logger.info(msg)
         wpp.write(msg)
 
-        # Loop over kahuna tiles in blocks of four.
+        # Loop over composite band tiles in blocks of four.
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
 
-                # Aggregate tiles for each kahuna band.
-                for kahuna in kahunas:
+                # Aggregate tiles for each composite band.
+                for rasterlayer_id in rasterlayer_lookup:
                     result = []
                     none_found = True
                     # Aggregate each tile in the block of 2x2.
                     for idx, dat in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                         tile = RasterTile.objects.filter(
-                            rasterlayer_id=kahuna,
+                            rasterlayer_id=rasterlayer_id,
                             tilez=zoom,
                             tilex=tilex + dat[0],
                             tiley=tiley + dat[1],
@@ -672,7 +672,7 @@ def build_world_pyramids(world, tilex, tiley, tilez):
                     result = numpy.append(upper, lower, axis=0)
 
                     # Commit raster to DB.
-                    write_raster_tile(kahuna, result, zoom - 1, tilex // 2, tiley // 2)
+                    write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
 
     wpp.end = timezone.now()
     wpp.write('Finished building pyramid.')
