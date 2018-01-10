@@ -9,12 +9,5 @@ class SentinelTileSerializer(ModelSerializer):
         model = SentinelTile
         fields = (
             'id', 'prefix', 'kahunas', 'collected', 'cloudy_pixel_percentage',
-            'data_coverage_percentage', 'angle_azimuth', 'angle_altitude'
+            'data_coverage_percentage', 'angle_azimuth', 'angle_altitude',
         )
-
-
-class WorldLayerGroupSerializer(ModelSerializer):
-
-    class Meta:
-        model = WorldLayerGroup
-        fields = ('id', 'name', 'kahunas')
