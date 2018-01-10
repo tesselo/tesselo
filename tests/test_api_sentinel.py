@@ -104,7 +104,7 @@ class SentinelViewsTests(TestCase):
         self.assertEqual(result['count'], 0)
 
     def test_create_valuecountresult(self):
-        # Create a world layer group.
+        # Create a composite.
         url = reverse('composite-list')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         agglyr = AggregationLayer.objects.create(name='test')

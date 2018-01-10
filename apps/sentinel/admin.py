@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.gis import admin
 from sentinel.models import (
-    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, CompositeBand,
+    BucketParseLog, Composite, CompositeBand, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand,
     WorldParseProcess, ZoneOfInterest
 )
 from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers

@@ -217,9 +217,9 @@ class Composite(models.Model):
 
 
 @receiver(post_save, sender=Composite)
-def create_compositeband_group_layers(sender, instance, created, **kwargs):
+def create_compositeband_layers(sender, instance, created, **kwargs):
     """
-    Creates a world layer for each Sentinel band.
+    Creates a composite for each Sentinel band.
     """
     if not created:
         return

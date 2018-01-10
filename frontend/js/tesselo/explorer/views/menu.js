@@ -54,10 +54,10 @@ define([
 
         buildWorldPicker: function(){
             var _this = this;
-            // Create collection and list view for world layer groups.
+            // Create collection and list view for composites.
             var collection = new WLGCollection();
             var world = new WorldView({collection: collection});
-            // Show world layer group view.
+            // Show composite view.
             this.showChildView('worldRegion', world);
             // Limit composites to active layers.
             var params = {data: $.param({active: true})};
@@ -83,7 +83,7 @@ define([
 
         buildAggLayerPicker: function(){
             var _this = this;
-            // Create collection and list view for world layer groups.
+            // Create collection and list view for composites.
             var collection = new AggLayerCollection();
             var aggs = new AggLayerView({collection: collection});
             // Show agg layer view.
@@ -175,7 +175,7 @@ define([
             }
 
             if(this.ui.rgb_btn.hasClass('btn-primary')){
-                // Extract rgb channels from current world layer.
+                // Extract rgb channels from current composite.
                 var red = _.filter(this.layer_dict, function(val, key){ return key == 'B04.jp2' })[0];
                 var green = _.filter(this.layer_dict, function(val, key){ return key == 'B03.jp2' })[0];
                 var blue = _.filter(this.layer_dict, function(val, key){ return key == 'B02.jp2' })[0];
@@ -186,7 +186,7 @@ define([
             } else {
                 // Show formula container.
                 this.ui.formula_wrap.show();
-                // Construct ids array from current world layer.
+                // Construct ids array from current composite.
                 var ids = [];
                 var _this = this;
                 _.each(this.layer_dict, function(val, key){

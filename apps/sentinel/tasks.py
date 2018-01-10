@@ -225,8 +225,6 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
     # being processed.
     layers_processing = RasterLayer.objects.filter(
         parsestatus__status__in=in_process_codes
-    ).exclude(
-        name__icontains='Big Kahuna'
     ).count()
 
     # If number of layers is below a threshold, add more to queue
@@ -237,7 +235,7 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
 
     worlds = Composite.objects.filter(active=True)
     for world in worlds:
-        # Get all active zones of interest for this world layer.
+        # Get all active zones of interest for this composite.
         if world.all_zones:
             zones = ZoneOfInterest.objects.filter(active=True)
         else:
@@ -463,7 +461,7 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
 @task
 def drive_world_layers(world_ids=None):
     """
-    Schedule world layer creation based on zones of interest.
+    Schedule composite creation based on zones of interest.
     """
     worlds = Composite.objects.filter(active=True)
     if world_ids:
@@ -498,7 +496,7 @@ def drive_world_layers(world_ids=None):
 
             build_world_layers.delay(world.id, tilex, tiley, tilez)
 
-    return 'Started world layers for layers {0}.'.format([world.pk for world in worlds])
+    return 'Started composites for layers {0}.'.format([world.pk for world in worlds])
 
 
 @task

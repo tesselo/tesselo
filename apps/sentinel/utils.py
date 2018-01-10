@@ -47,13 +47,13 @@ def get_world_tile_indices(world):
     Get x-y-z tile indexes for all tiles intersecting over this compositeband's
     zones of interest.
     """
-    # Get all active zones of interest for this world layer.
+    # Get all active zones of interest for this composite.
     if world.all_zones:
         zones = ZoneOfInterest.objects.filter(active=True)
     else:
         zones = world.zonesofinterest.filter(active=True)
 
-    # Build world layer tiles for each zone.
+    # Build composite tiles for each zone.
     for zone in zones:
         # Compute index range for this zone of interest.
         indexrange = zone.index_range(const.ZOOM_LEVEL_WORLDLAYER)
