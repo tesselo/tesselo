@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.gis import admin
 from sentinel.models import (
-    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, WorldLayer,
+    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, CompositeBand,
     WorldParseProcess, ZoneOfInterest
 )
 from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers
@@ -59,15 +59,15 @@ class MGRSTileAdmin(PatchedOSMGeoAdmin):
 class CompositeAdmin(admin.ModelAdmin):
     list_filter = ('active', )
     model = Composite
-    readonly_fields = ('worldlayers', )
-    actions = ['build_worldlayers', ]
+    readonly_fields = ('compositebands', )
+    actions = ['build_compositebands', ]
 
-    def build_worldlayers(self, request, queryset):
+    def build_compositebands(self, request, queryset):
         """
-        Admin action to build selected worldlayers.
+        Admin action to build selected compositebands.
         """
         drive_world_layers.delay([lyr.id for lyr in queryset])
-        self.message_user(request, 'Started building worldlayers.')
+        self.message_user(request, 'Started building compositebands.')
 
 
 class ZoneOfInterestAdmin(PatchedOSMGeoAdmin):
@@ -83,7 +83,7 @@ admin.site.register(SentinelTileBand, SentinelTileBandAdmin)
 admin.site.register(SentinelTile, SentinelTileAdmin)
 admin.site.register(MGRSTile, MGRSTileAdmin)
 admin.site.register(ZoneOfInterest, ZoneOfInterestAdmin)
-admin.site.register(WorldLayer)
+admin.site.register(CompositeBand)
 admin.site.register(WorldParseProcess)
 admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)

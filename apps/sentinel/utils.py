@@ -44,7 +44,7 @@ def disaggregate_tile(tile, factor, offsetx, offsety):
 
 def get_world_tile_indices(world):
     """
-    Get x-y-z tile indexes for all tiles intersecting over this worldlayer's
+    Get x-y-z tile indexes for all tiles intersecting over this compositeband's
     zones of interest.
     """
     # Get all active zones of interest for this world layer.

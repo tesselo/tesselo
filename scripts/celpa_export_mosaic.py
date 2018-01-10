@@ -27,7 +27,7 @@ print('Nr of Tiles', nr_of_tiles)
 
 os.chdir('/media/tam/rhino/work/projects/tesselo/celpa/analysis/sentinel_exports')
 
-worldlayers = {
+compositebands = {
     'november': {
         "name": "November 2017",
         "kahunas": {
@@ -69,8 +69,8 @@ worldlayers = {
 
 formula='(B8-B12)/(B8%2BB12)'  # Normalized Burn Ratio
 
-for period, worldlayer in worldlayers.items():
-    layers = 'B8={},B12={}'.format(worldlayer['kahunas']['B08.jp2'], worldlayer['kahunas']['B12.jp2'])
+for period, compositeband in compositebands.items():
+    layers = 'B8={},B12={}'.format(compositeband['kahunas']['B08.jp2'], compositeband['kahunas']['B12.jp2'])
     # Create or open raster
     print('Processing period', period)
     raster_name = os.path.join(os.getcwd(), 'portugal-nbr-{}-zl{}.tif'.format(period, tess.zoom))

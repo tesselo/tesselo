@@ -82,9 +82,9 @@ class SentinelBucketParserTest(TestCase):
 
     def test_world_layer(self):
         sync_sentinel_bucket_utm_zone(1)
-        self.assertEqual(self.world.worldlayers.count(), len(const.BAND_CHOICES))
+        self.assertEqual(self.world.compositebands.count(), len(const.BAND_CHOICES))
 
-        lyr = self.world.worldlayers.filter(rasterlayer__name='The World - B02.jp2').first().rasterlayer
+        lyr = self.world.compositebands.filter(rasterlayer__name='The World - B02.jp2').first().rasterlayer
 
         self.assertEqual(lyr.rastertile_set.count(), 0)
 

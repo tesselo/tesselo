@@ -94,17 +94,17 @@ define([
             // Fetch agglayer data and set first layer.
             collection.fetch().done(function(){
                 aggs.children.first().toggle();
-                _this.filterWorldLayers();
+                _this.filterCompositeBands();
             });
             // Hook agglayer selector into map renderer.
             aggs.on('childview:agglayer-changed', function(model){
                 _this.agglayer_id = model.id;
                 _this.triggerMethod('agglayer:changed', model);
-                _this.filterWorldLayers();
+                _this.filterCompositeBands();
             });
         },
 
-        filterWorldLayers: function(){
+        filterCompositeBands: function(){
             var _this = this;
             var world = this.getChildView('worldRegion');
             if(typeof this.agglayer_id == 'undefined'){

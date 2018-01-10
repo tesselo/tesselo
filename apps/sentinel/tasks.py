@@ -509,7 +509,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
 
     If reset is activated, the files are deleted and re-created from scratch.
     """
-    # Get worldlayer and zone from db.
+    # Get compositeband and zone from db.
     world = Composite.objects.get(id=world_id)
 
     # Update world parse process.
@@ -522,7 +522,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     ).first()
 
     wpp.start = timezone.now()
-    wpp.write('Starting to build worldlayer.')
+    wpp.write('Starting to build compositeband.')
 
     # Get the list of master layers for all 13 bands.
     kahunas = world.kahunas
@@ -592,7 +592,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     # Build pyramid for this zone.
     build_world_pyramids(world, tilex, tiley, tilez)
 
-    return 'Successfully built worldlayer {0} at (x={1}, y={2}, z={3})'.format(world_id, tilex, tiley, tilez)
+    return 'Successfully built compositeband {0} at (x={1}, y={2}, z={3})'.format(world_id, tilex, tiley, tilez)
 
 
 def build_world_pyramids(world, tilex, tiley, tilez):

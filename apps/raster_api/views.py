@@ -131,9 +131,9 @@ class PermissionsModelViewSet(ModelViewSet):
 
         funk('{perm}_{model}'.format(perm=permission, model=self._model), invitee, obj)
 
-        # Handle worldlayer case.
+        # Handle compositeband case.
         if self._model == 'composite':
-            for wlayer in obj.worldlayers.all():
+            for wlayer in obj.compositebands.all():
                 funk('{perm}_rasterlayer'.format(perm=permission), invitee, wlayer.rasterlayer)
 
         return Response(status=HTTP_204_NO_CONTENT)
@@ -148,9 +148,9 @@ class PermissionsModelViewSet(ModelViewSet):
         child.public = not child.public
         child.save()
 
-        # Handle worldlayer case.
+        # Handle compositeband case.
         if self._model == 'composite':
-            for wlayer in obj.worldlayers.all():
+            for wlayer in obj.compositebands.all():
                 child = wlayer.rasterlayer.publicrasterlayer
                 child.public = not child.public
                 child.save()
@@ -274,10 +274,10 @@ class CompositeViewSet(PermissionsModelViewSet):
     _model = 'composite'
 
     def _assign_perms(self, obj):
-        # Create permissions for the worldlayer itself.
+        # Create permissions for the compositeband itself.
         super(CompositeViewSet, self)._assign_perms(obj)
         # Assign permissions to the dependent rasterlayers.
-        for wlayer in obj.worldlayers.all():
+        for wlayer in obj.compositebands.all():
             super(CompositeViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
 
 

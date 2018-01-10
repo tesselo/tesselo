@@ -331,7 +331,7 @@ class PermissionsTests(TestCase):
         self.client.login(username='michael', password='bananastand')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         self.world = Composite.objects.get(id=response.data['id'])
-        self.layer = self.world.worldlayers.first().rasterlayer
+        self.layer = self.world.compositebands.first().rasterlayer
         url = reverse(
             'composite-invite',
             kwargs={'pk': self.world, 'action': 'invite', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},

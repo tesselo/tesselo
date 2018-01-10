@@ -124,7 +124,7 @@ def predict_sentinel_layer(predicted_layer_id):
     model is the mediator.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
-    # Get tile range for worldlayer or sentineltile for this prediction.
+    # Get tile range for compositeband or sentineltile for this prediction.
     if pred.composite:
         tiles = get_world_tile_indices(pred.composite)
         kahunas = pred.composite.kahunas

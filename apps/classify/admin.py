@@ -11,9 +11,9 @@ class TrainingSmapleForm(forms.ModelForm):
         super(TrainingSmapleForm, self).__init__(*args, **kwargs)
         if hasattr(self, 'instance'):
             if self.instance.composite:
-                red = self.instance.composite.worldlayers.get(band=const.BD4).rasterlayer_id
-                green = self.instance.composite.worldlayers.get(band=const.BD3).rasterlayer_id
-                blue = self.instance.composite.worldlayers.get(band=const.BD2).rasterlayer_id
+                red = self.instance.composite.compositebands.get(band=const.BD4).rasterlayer_id
+                green = self.instance.composite.compositebands.get(band=const.BD3).rasterlayer_id
+                blue = self.instance.composite.compositebands.get(band=const.BD2).rasterlayer_id
             elif self.instance.sentineltile:
                 red = self.instance.sentineltile.sentineltileband_set.get(band=const.BD4).layer_id
                 green = self.instance.sentineltile.sentineltileband_set.get(band=const.BD3).layer_id

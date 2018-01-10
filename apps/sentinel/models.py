@@ -178,7 +178,7 @@ class ZoneOfInterest(models.Model):
         return tile_index_range(geom.extent, zoom, tolerance=1e-3)
 
 
-class WorldLayer(models.Model):
+class CompositeBand(models.Model):
     """
     Register RasterLayers as big kahunas.
     """
@@ -200,7 +200,7 @@ class Composite(models.Model):
     aggregationlayers = models.ManyToManyField(AggregationLayer, blank=True, help_text='What aggregation layers should this layer be built for?')
     all_zones = models.BooleanField(default=False, help_text='If checked, this layer will be built for all zones of interest.')
     # One raster layer for each band.
-    worldlayers = models.ManyToManyField(WorldLayer, editable=False)
+    compositebands = models.ManyToManyField(CompositeBand, editable=False)
     # Defining parameters of the layer group.
     min_date = models.DateField()
     max_date = models.DateField()
@@ -213,11 +213,11 @@ class Composite(models.Model):
 
     @property
     def kahunas(self):
-        return {lyr.band: lyr.rasterlayer_id for lyr in self.worldlayers.all()}
+        return {lyr.band: lyr.rasterlayer_id for lyr in self.compositebands.all()}
 
 
 @receiver(post_save, sender=Composite)
-def create_worldlayer_group_layers(sender, instance, created, **kwargs):
+def create_compositeband_group_layers(sender, instance, created, **kwargs):
     """
     Creates a world layer for each Sentinel band.
     """
@@ -246,9 +246,9 @@ def create_worldlayer_group_layers(sender, instance, created, **kwargs):
         # Update parse status to parsed.
         raster.parsestatus.status = RasterLayerParseStatus.FINISHED
         raster.parsestatus.save()
-        # Create worldlayer for this band.
-        world = WorldLayer.objects.create(band=band, rasterlayer=raster)
-        instance.worldlayers.add(world)
+        # Create compositeband for this band.
+        world = CompositeBand.objects.create(band=band, rasterlayer=raster)
+        instance.compositebands.add(world)
 
 
 class WorldParseProcess(models.Model):

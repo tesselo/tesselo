@@ -232,10 +232,10 @@ class CompositeSerializer(PermissionsModelSerializer):
         model = Composite
         fields = (
             'id', 'name', 'kahunas', 'zonesofinterest', 'all_zones',
-            'worldlayers', 'min_date', 'max_date',
+            'compositebands', 'min_date', 'max_date',
             'max_cloudy_pixel_percentage', 'active',
         )
-        read_only_fields = ('kahunas', 'worldlayers', )
+        read_only_fields = ('kahunas', 'compositebands', )
 
 
 class ZoneOfInterestSerializer(PermissionsModelSerializer):
