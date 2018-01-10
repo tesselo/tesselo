@@ -10,10 +10,10 @@ class TrainingSmapleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(TrainingSmapleForm, self).__init__(*args, **kwargs)
         if hasattr(self, 'instance'):
-            if self.instance.worldlayergroup:
-                red = self.instance.worldlayergroup.worldlayers.get(band=const.BD4).rasterlayer_id
-                green = self.instance.worldlayergroup.worldlayers.get(band=const.BD3).rasterlayer_id
-                blue = self.instance.worldlayergroup.worldlayers.get(band=const.BD2).rasterlayer_id
+            if self.instance.composite:
+                red = self.instance.composite.worldlayers.get(band=const.BD4).rasterlayer_id
+                green = self.instance.composite.worldlayers.get(band=const.BD3).rasterlayer_id
+                blue = self.instance.composite.worldlayers.get(band=const.BD2).rasterlayer_id
             elif self.instance.sentineltile:
                 red = self.instance.sentineltile.sentineltileband_set.get(band=const.BD4).layer_id
                 green = self.instance.sentineltile.sentineltileband_set.get(band=const.BD3).layer_id
@@ -29,7 +29,7 @@ class TrainingSmapleForm(forms.ModelForm):
 
 class TrainingSampleAdmin(admin.OSMGeoAdmin):
     map_template = 'classify/osm.html'
-    raw_id_fields = ('worldlayergroup', 'sentineltile', )
+    raw_id_fields = ('composite', 'sentineltile', )
     form = TrainingSmapleForm
 
 
@@ -47,7 +47,7 @@ class ClassifierAdmin(admin.ModelAdmin):
 
 
 class PredictedLayerAdmin(admin.ModelAdmin):
-    raw_id_fields = ('worldlayergroup', 'sentineltile', 'rasterlayer', )
+    raw_id_fields = ('composite', 'sentineltile', 'rasterlayer', )
 
 
 admin.site.register(Classifier, ClassifierAdmin)

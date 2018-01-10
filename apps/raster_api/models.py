@@ -7,7 +7,7 @@ from raster_aggregation.models import AggregationLayer, ValueCountResult
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
+from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):
@@ -170,36 +170,36 @@ def create_valuecountresult_public_object(sender, instance, created, **kwargs):
         PublicValueCountResult.objects.create(valuecountresult=instance)
 
 
-class WorldLayerGroupUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(WorldLayerGroup, on_delete=models.CASCADE)
+class CompositeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Composite, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
 
 
-class WorldLayerGroupGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(WorldLayerGroup, on_delete=models.CASCADE)
+class CompositeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Composite, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
 
 
-class PublicWorldLayerGroup(models.Model):
+class PublicComposite(models.Model):
 
-    worldlayergroup = models.OneToOneField(WorldLayerGroup, on_delete=models.CASCADE)
+    composite = models.OneToOneField(Composite, on_delete=models.CASCADE)
     public = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.worldlayergroup, 'public' if self.public else 'private')
+        return '{0} | {1}'.format(self.composite, 'public' if self.public else 'private')
 
 
-@receiver(post_save, sender=WorldLayerGroup, weak=False, dispatch_uid="create_worldlayergroup_public_object")
-def create_worldlayergroup_public_object(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Composite, weak=False, dispatch_uid="create_composite_public_object")
+def create_composite_public_object(sender, instance, created, **kwargs):
     """
-    Automatically create the public worldlayergroup object.
+    Automatically create the public composite object.
     """
     if created:
-        PublicWorldLayerGroup.objects.create(worldlayergroup=instance)
+        PublicComposite.objects.create(composite=instance)
 
 
 class ZoneOfInterestUserObjectPermission(UserObjectPermissionBase):
@@ -222,7 +222,7 @@ class PublicZoneOfInterest(models.Model):
     public = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{0} | {1}'.format(self.worldlayergroup, 'public' if self.public else 'private')
+        return '{0} | {1}'.format(self.composite, 'public' if self.public else 'private')
 
 
 @receiver(post_save, sender=ZoneOfInterest, weak=False, dispatch_uid="create_zoneofinterest_public_object")

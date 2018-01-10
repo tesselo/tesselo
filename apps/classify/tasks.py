@@ -73,8 +73,8 @@ def train_sentinel_classifier(classifier_id):
         idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
         for tilex in range(idx[0], idx[2] + 1):
             for tiley in range(idx[1], idx[3] + 1):
-                if sample.worldlayergroup:
-                    kahunas = sample.worldlayergroup.kahunas
+                if sample.composite:
+                    kahunas = sample.composite.kahunas
                 else:
                     kahunas = sample.sentineltile.kahunas
                 # Get stacked tile data for this tile.
@@ -125,9 +125,9 @@ def predict_sentinel_layer(predicted_layer_id):
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
     # Get tile range for worldlayer or sentineltile for this prediction.
-    if pred.worldlayergroup:
-        tiles = get_world_tile_indices(pred.worldlayergroup)
-        kahunas = pred.worldlayergroup.kahunas
+    if pred.composite:
+        tiles = get_world_tile_indices(pred.composite)
+        kahunas = pred.composite.kahunas
     else:
         tiles = get_sentinel_tile_indices(pred.sentineltile)
         kahunas = pred.sentineltile.kahunas

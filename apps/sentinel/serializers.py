@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from sentinel.models import SentinelTile, WorldLayerGroup
+from sentinel.models import SentinelTile
 
 
 class SentinelTileSerializer(ModelSerializer):

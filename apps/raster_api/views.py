@@ -34,11 +34,11 @@ from raster_api.permissions import (
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
-    GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer, RasterLayerSerializer,
-    SentinelTileAggregationLayerSerializer, UserSerializer, WorldLayerGroupSerializer, ZoneOfInterestSerializer
+    CompositeSerializer, GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer, LegendSerializer,
+    RasterLayerSerializer, SentinelTileAggregationLayerSerializer, UserSerializer, ZoneOfInterestSerializer
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
-from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
+from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -132,7 +132,7 @@ class PermissionsModelViewSet(ModelViewSet):
         funk('{perm}_{model}'.format(perm=permission, model=self._model), invitee, obj)
 
         # Handle worldlayer case.
-        if self._model == 'worldlayergroup':
+        if self._model == 'composite':
             for wlayer in obj.worldlayers.all():
                 funk('{perm}_rasterlayer'.format(perm=permission), invitee, wlayer.rasterlayer)
 
@@ -149,7 +149,7 @@ class PermissionsModelViewSet(ModelViewSet):
         child.save()
 
         # Handle worldlayer case.
-        if self._model == 'worldlayergroup':
+        if self._model == 'composite':
             for wlayer in obj.worldlayers.all():
                 child = wlayer.rasterlayer.publicrasterlayer
                 child.public = not child.public
@@ -263,22 +263,22 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
         return self.request.data.get('layer_names', {})
 
 
-class WorldLayerGroupViewSet(PermissionsModelViewSet):
+class CompositeViewSet(PermissionsModelViewSet):
 
-    queryset = WorldLayerGroup.objects.all().order_by('id')
-    serializer_class = WorldLayerGroupSerializer
+    queryset = Composite.objects.all().order_by('id')
+    serializer_class = CompositeSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     filter_fields = ('active', )
     search_fields = ('name', 'description', )
 
-    _model = 'worldlayergroup'
+    _model = 'composite'
 
     def _assign_perms(self, obj):
         # Create permissions for the worldlayer itself.
-        super(WorldLayerGroupViewSet, self)._assign_perms(obj)
+        super(CompositeViewSet, self)._assign_perms(obj)
         # Assign permissions to the dependent rasterlayers.
         for wlayer in obj.worldlayers.all():
-            super(WorldLayerGroupViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
+            super(CompositeViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
 
 
 class ZoneOfInterestViewSet(PermissionsModelViewSet):
@@ -286,7 +286,7 @@ class ZoneOfInterestViewSet(PermissionsModelViewSet):
     queryset = ZoneOfInterest.objects.all().order_by('id')
     serializer_class = ZoneOfInterestSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
-    filter_fields = ('active', 'worldlayergroup')
+    filter_fields = ('active', 'composite')
     search_fields = ('name', )
 
     _model = 'zoneofinterest'

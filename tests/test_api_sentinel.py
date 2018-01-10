@@ -10,7 +10,7 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
-from sentinel.models import WorldLayerGroup, ZoneOfInterest
+from sentinel.models import Composite, ZoneOfInterest
 
 
 class SentinelViewsTests(TestCase):
@@ -36,8 +36,8 @@ class SentinelViewsTests(TestCase):
             'zonesofinterest': [self.zone.id],
         }
 
-    def test_create_worldlayergroup(self):
-        url = reverse('worldlayergroup-list')
+    def test_create_composite(self):
+        url = reverse('composite-list')
 
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -91,21 +91,21 @@ class SentinelViewsTests(TestCase):
         self.assertEqual(result['count'], 1)
 
         self.world.pop('zonesofinterest')
-        world = WorldLayerGroup.objects.create(**self.world)
+        world = Composite.objects.create(**self.world)
         world.zonesofinterest.add(result['results'][0]['id'])
-        response = self.client.get(url + '?worldlayergroup=' + str(world.id))
+        response = self.client.get(url + '?composite=' + str(world.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         result = json.loads(response.content.decode())
         self.assertEqual(result['count'], 1)
 
-        response = self.client.get(url + '?worldlayergroup=23')
+        response = self.client.get(url + '?composite=23')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         result = json.loads(response.content.decode())
         self.assertEqual(result['count'], 0)
 
     def test_create_valuecountresult(self):
         # Create a world layer group.
-        url = reverse('worldlayergroup-list')
+        url = reverse('composite-list')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         agglyr = AggregationLayer.objects.create(name='test')
         assign_perm('view_aggregationlayer', self.usr, agglyr)

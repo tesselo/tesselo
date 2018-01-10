@@ -11,7 +11,7 @@ from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from raster_api.views import LegendEntryViewSet, LegendViewSet
-from sentinel.models import WorldLayerGroup
+from sentinel.models import Composite
 
 
 class PermissionsTests(TestCase):
@@ -319,7 +319,7 @@ class PermissionsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.legend_michael.legendentry_set.first().id)
 
-    def test_worldlayergroup_invite(self):
+    def test_composite_invite(self):
         self.world = {
             'name': 'Sentinel',
             'all_zones': False,
@@ -327,64 +327,64 @@ class PermissionsTests(TestCase):
             'max_date': '2001-01-01',
             'zonesofinterest': [],
         }
-        url = reverse('worldlayergroup-list')
+        url = reverse('composite-list')
         self.client.login(username='michael', password='bananastand')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
-        self.world = WorldLayerGroup.objects.get(id=response.data['id'])
+        self.world = Composite.objects.get(id=response.data['id'])
         self.layer = self.world.worldlayers.first().rasterlayer
         url = reverse(
-            'worldlayergroup-invite',
+            'composite-invite',
             kwargs={'pk': self.world, 'action': 'invite', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
         )
         response = self.client.post(url)
 
-        # Michael can invite and exclude users or groups to his worldlayergroup after
+        # Michael can invite and exclude users or groups to his composite after
         # getting the delete permission. To invite people, one needs to have the
         # delete permission.
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        assign_perm('delete_worldlayergroup', self.michael, self.world)
+        assign_perm('delete_composite', self.michael, self.world)
 
         # Test endpoint for
         for perm in ('view', 'change', 'delete'):
-            self.assertFalse(self.lucille.has_perm('{0}_worldlayergroup'.format(perm), self.world))
+            self.assertFalse(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertFalse(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
             # Check permissions manage endpoint for users.
             url = reverse(
-                'worldlayergroup-invite',
+                'composite-invite',
                 kwargs={'pk': self.world.id, 'action': 'invite', 'model': 'user', 'permission': perm, 'invitee': self.lucille.id},
             )
             response = self.client.post(url)
             # Invite User
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-            self.assertTrue(self.lucille.has_perm('{0}_worldlayergroup'.format(perm), self.world))
+            self.assertTrue(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertTrue(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
             # Exclude User
             url = reverse(
-                'worldlayergroup-invite',
+                'composite-invite',
                 kwargs={'pk': self.world.id, 'action': 'exclude', 'model': 'user', 'permission': perm, 'invitee': self.lucille.id},
             )
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-            self.assertFalse(self.lucille.has_perm('{0}_worldlayergroup'.format(perm), self.world))
+            self.assertFalse(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertFalse(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
 
             # Check permissions manage endpoint for groups.
             # Invite group
             url = reverse(
-                'worldlayergroup-invite',
+                'composite-invite',
                 kwargs={'pk': self.world.id, 'action': 'invite', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
             )
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-            self.assertTrue(self.lucille.has_perm('{0}_worldlayergroup'.format(perm), self.world))
+            self.assertTrue(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertTrue(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
             # Exclude group
             url = reverse(
-                'worldlayergroup-invite',
+                'composite-invite',
                 kwargs={'pk': self.world.id, 'action': 'exclude', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
             )
             response = self.client.post(url)
             self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-            self.assertFalse(self.lucille.has_perm('{0}_worldlayergroup'.format(perm), self.world))
+            self.assertFalse(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertFalse(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))

@@ -4,10 +4,10 @@ from django.conf.urls import include, url
 from formulary.views import FormulaViewSet, WMTSLayerViewSet
 from formulary.wmts import WMTSAPIView
 from raster_api.views import (
-    AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView, ExportAPIView,
-    LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet,
-    RemoveAuthToken, SentinelTileAggregationLayerViewSet, ValueCountResultViewSet, WorldLayerGroupViewSet,
-    ZoneOfInterestViewSet
+    AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
+    CompositeViewSet, ExportAPIView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
+    ObtainExpiringAuthToken, RasterLayerViewSet, RemoveAuthToken, SentinelTileAggregationLayerViewSet,
+    ValueCountResultViewSet, ZoneOfInterestViewSet
 )
 from sentinel.views import SentinelTileViewSet
 
@@ -48,7 +48,7 @@ router.register(r'aggregationlayer', AggregationLayerViewSet)
 router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
 
-router.register(r'worldlayergroup', WorldLayerGroupViewSet, base_name='worldlayergroup')
+router.register(r'composite', CompositeViewSet, base_name='composite')
 router.register(r'zoneofinterest', ZoneOfInterestViewSet, base_name='zoneofinterest')
 router.register(r'sentineltileaggregationlayer', SentinelTileAggregationLayerViewSet, base_name='sentineltileaggregationlayer')
 router.register(r'sentineltile', SentinelTileViewSet, base_name='sentineltile')

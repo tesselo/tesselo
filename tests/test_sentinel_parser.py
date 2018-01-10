@@ -13,7 +13,7 @@ from django.db.models import Count
 from django.test import TestCase, override_settings
 from sentinel import const
 from sentinel.models import (
-    BucketParseLog, MGRSTile, SentinelTile, SentinelTileBand, WorldLayerGroup, WorldParseProcess, ZoneOfInterest
+    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileBand, WorldParseProcess, ZoneOfInterest
 )
 from sentinel.tasks import (
     drive_sentinel_queue, drive_world_layers, repair_incomplete_scenes, sync_sentinel_bucket_utm_zone
@@ -32,7 +32,7 @@ class SentinelBucketParserTest(TestCase):
         bbox.srid = 3857
         self.zone = ZoneOfInterest.objects.create(name='A zone', geom=bbox.ewkt)
         bbox.transform(4326)
-        self.world = WorldLayerGroup.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
+        self.world = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
         self.world.zonesofinterest.add(self.zone)
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
@@ -99,14 +99,14 @@ class SentinelBucketParserTest(TestCase):
         self.world.refresh_from_db()
         indexrange = self.zone.index_range(const.ZOOM_LEVEL_WORLDLAYER)
         processed = WorldParseProcess.objects.filter(
-            worldlayergroup=self.world,
+            composite=self.world,
             tilex=indexrange[0],
             tiley=indexrange[1],
             tilez=const.ZOOM_LEVEL_WORLDLAYER,
             end__isnull=False,
         )
         processing = WorldParseProcess.objects.filter(
-            worldlayergroup=self.world,
+            composite=self.world,
             end__isnull=True,
         )
         self.assertTrue(processed.exists())

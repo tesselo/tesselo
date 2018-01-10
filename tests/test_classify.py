@@ -16,7 +16,7 @@ from django.contrib.gis.gdal import OGRGeometry
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.test import TestCase, override_settings
-from sentinel.models import SentinelTile, WorldLayerGroup, ZoneOfInterest
+from sentinel.models import Composite, SentinelTile, ZoneOfInterest
 from sentinel.tasks import drive_sentinel_queue, drive_world_layers, sync_sentinel_bucket_utm_zone
 
 
@@ -32,7 +32,7 @@ class SentinelClassifierTest(TestCase):
         bbox.srid = 3857
         self.zone = ZoneOfInterest.objects.create(name='A zone', geom=bbox.ewkt)
         bbox.transform(4326)
-        self.world = WorldLayerGroup.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
+        self.world = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
         self.world.zonesofinterest.add(self.zone)
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
@@ -115,13 +115,13 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
         cache.clear()
 
-    def test_classifier_prediction_worldlayergroup(self):
+    def test_classifier_prediction_composite(self):
         self._get_data()
         drive_world_layers()
         train_sentinel_classifier(self.clf.id)
 
         pred = PredictedLayer.objects.create(
-            worldlayergroup=self.world,
+            composite=self.world,
             classifier=self.clf,
         )
         predict_sentinel_layer(pred.id)

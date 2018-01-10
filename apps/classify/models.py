@@ -8,7 +8,7 @@ from sklearn.svm import LinearSVC
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import HStoreField
 from django.core.cache import cache
-from sentinel.models import SentinelTile, WorldLayerGroup
+from sentinel.models import Composite, SentinelTile
 
 
 class TrainingSample(models.Model):
@@ -16,13 +16,13 @@ class TrainingSample(models.Model):
     Training Data for cloud classifiers.
     """
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.CASCADE)
-    worldlayergroup = models.ForeignKey(WorldLayerGroup, null=True, blank=True, on_delete=models.CASCADE)
+    composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.CASCADE)
     geom = models.PolygonField()
     category = models.CharField(max_length=100)
     value = models.IntegerField()
 
     def __str__(self):
-        return '{0} - {1}'.format(self.category, self.worldlayergroup if self.worldlayergroup else self.sentineltile)
+        return '{0} - {1}'.format(self.category, self.composite if self.composite else self.sentineltile)
 
 
 class Classifier(models.Model):
@@ -73,7 +73,7 @@ class PredictedLayer(models.Model):
     """
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
-    worldlayergroup = models.ForeignKey(WorldLayerGroup, null=True, blank=True, on_delete=models.SET_NULL)
+    composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='')
     created = models.DateTimeField(auto_now_add=True)
@@ -81,7 +81,7 @@ class PredictedLayer(models.Model):
     def __str__(self):
         return 'Layer for {0} over {1}.'.format(
             self.classifier.name,
-            self.worldlayergroup if self.worldlayergroup else self.sentineltile
+            self.composite if self.composite else self.sentineltile
         )
 
     def save(self, *args, **kwargs):
@@ -90,8 +90,8 @@ class PredictedLayer(models.Model):
             self.rasterlayer = RasterLayer.objects.create(
                 name='Predicted layer CLF {0} {1} {2}'.format(
                     self.classifier_id,
-                    'WL' if self.worldlayergroup else 'ST',
-                    self.worldlayergroup_id if self.worldlayergroup else self.sentineltile_id,
+                    'WL' if self.composite else 'ST',
+                    self.composite_id if self.composite else self.sentineltile_id,
                 ),
                 datatype=RasterLayer.CATEGORICAL,
             )

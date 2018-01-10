@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 from django.contrib.gis import admin
 from sentinel.models import (
-    BucketParseLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, WorldLayer,
-    WorldLayerGroup, WorldParseProcess, ZoneOfInterest
+    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, WorldLayer,
+    WorldParseProcess, ZoneOfInterest
 )
 from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers
 
@@ -56,9 +56,9 @@ class MGRSTileAdmin(PatchedOSMGeoAdmin):
     list_filter = ('utm_zone', 'latitude_band', )
 
 
-class WorldLayerGroupAdmin(admin.ModelAdmin):
+class CompositeAdmin(admin.ModelAdmin):
     list_filter = ('active', )
-    model = WorldLayerGroup
+    model = Composite
     readonly_fields = ('worldlayers', )
     actions = ['build_worldlayers', ]
 
@@ -85,5 +85,5 @@ admin.site.register(MGRSTile, MGRSTileAdmin)
 admin.site.register(ZoneOfInterest, ZoneOfInterestAdmin)
 admin.site.register(WorldLayer)
 admin.site.register(WorldParseProcess)
-admin.site.register(WorldLayerGroup, WorldLayerGroupAdmin)
+admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)

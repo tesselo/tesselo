@@ -189,7 +189,7 @@ class WorldLayer(models.Model):
         return '{} - {}'.format(self.band, self.rasterlayer.name)
 
 
-class WorldLayerGroup(models.Model):
+class Composite(models.Model):
     """
     A set of rasterlayers containing composits of sentinel scenes.
     """
@@ -216,7 +216,7 @@ class WorldLayerGroup(models.Model):
         return {lyr.band: lyr.rasterlayer_id for lyr in self.worldlayers.all()}
 
 
-@receiver(post_save, sender=WorldLayerGroup)
+@receiver(post_save, sender=Composite)
 def create_worldlayer_group_layers(sender, instance, created, **kwargs):
     """
     Creates a world layer for each Sentinel band.
@@ -255,7 +255,7 @@ class WorldParseProcess(models.Model):
     """
     Track parsing processes to prevent duplication.
     """
-    worldlayergroup = models.ForeignKey(WorldLayerGroup)
+    composite = models.ForeignKey(Composite)
 
     tilex = models.IntegerField()
     tiley = models.IntegerField()
@@ -269,7 +269,7 @@ class WorldParseProcess(models.Model):
 
     def __str__(self):
         return '{0} - {1}/{2}/{3} - {4}'.format(
-            self.worldlayergroup.name,
+            self.composite.name,
             self.tilez,
             self.tilex,
             self.tiley,

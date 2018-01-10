@@ -130,7 +130,7 @@ define([
 
         buildMenu: function(){
             var menu = new MenuView({
-                worldlayergroup: this.options.worldlayergroup,
+                composite: this.options.composite,
                 formula: this.options.formula,
                 scale_min: this.options.scale_min,
                 scale_max: this.options.scale_max,

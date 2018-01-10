@@ -8,9 +8,9 @@ define([
 
     // Define Router
     var MapController = {
-        actionMap: function(worldlayergroup, formula, scale_min, scale_max, scale_breaks, color, lat, lon, zoom){
+        actionMap: function(composite, formula, scale_min, scale_max, scale_breaks, color, lat, lon, zoom){
             var map = new MapView({
-                worldlayergroup: worldlayergroup,
+                composite: composite,
                 lat: lat,
                 lon: lon,
                 zoom: zoom,
@@ -28,7 +28,7 @@ define([
         controller: MapController,
         appRoutes: {
             'mosaic': 'actionMap',
-            '(/)(:worldlayergroup)(/)(:formula)(/)(:scale_min)(/)(:scale_max)(/)(:scale_breaks)(/)(:color)(/)@:lat,:lon,:zoom': 'actionMap'
+            '(/)(:composite)(/)(:formula)(/)(:scale_min)(/)(:scale_max)(/)(:scale_breaks)(/)(:color)(/)@:lat,:lon,:zoom': 'actionMap'
         },
         initialize: function(root){
             this.controller.root = root;

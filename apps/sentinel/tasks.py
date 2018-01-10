@@ -31,7 +31,7 @@ from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
-    BucketParseLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, WorldLayerGroup,
+    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand,
     WorldParseProcess, ZoneOfInterest
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, get_world_tile_indices, write_raster_tile
@@ -235,7 +235,7 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
         logger.info(msg.format(layers_processing))
         return
 
-    worlds = WorldLayerGroup.objects.filter(active=True)
+    worlds = Composite.objects.filter(active=True)
     for world in worlds:
         # Get all active zones of interest for this world layer.
         if world.all_zones:
@@ -465,7 +465,7 @@ def drive_world_layers(world_ids=None):
     """
     Schedule world layer creation based on zones of interest.
     """
-    worlds = WorldLayerGroup.objects.filter(active=True)
+    worlds = Composite.objects.filter(active=True)
     if world_ids:
         worlds = worlds.filter(id__in=world_ids)
 
@@ -473,7 +473,7 @@ def drive_world_layers(world_ids=None):
         for tilex, tiley, tilez in get_world_tile_indices(world):
             # Check if the tile is currently building.
             processing = WorldParseProcess.objects.filter(
-                worldlayergroup=world,
+                composite=world,
                 tilex=tilex,
                 tiley=tiley,
                 tilez=tilez,
@@ -485,7 +485,7 @@ def drive_world_layers(world_ids=None):
 
             # Register parse effort.
             wpp = WorldParseProcess.objects.create(
-                worldlayergroup=world,
+                composite=world,
                 tilex=tilex,
                 tiley=tiley,
                 tilez=tilez,
@@ -510,11 +510,11 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     If reset is activated, the files are deleted and re-created from scratch.
     """
     # Get worldlayer and zone from db.
-    world = WorldLayerGroup.objects.get(id=world_id)
+    world = Composite.objects.get(id=world_id)
 
     # Update world parse process.
     wpp = WorldParseProcess.objects.filter(
-        worldlayergroup=world,
+        composite=world,
         tilex=tilex,
         tiley=tiley,
         tilez=tilez,
@@ -601,7 +601,7 @@ def build_world_pyramids(world, tilex, tiley, tilez):
     """
     # Get world parse process logger.
     wpp = WorldParseProcess.objects.filter(
-        worldlayergroup=world,
+        composite=world,
         tilex=tilex,
         tiley=tiley,
         tilez=tilez,

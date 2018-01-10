@@ -11,7 +11,7 @@ from rest_framework.serializers import (
 
 from django.contrib.auth.models import Group, User
 from django.shortcuts import get_object_or_404
-from sentinel.models import SentinelTileAggregationLayer, WorldLayerGroup, ZoneOfInterest
+from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
 
 class UserSerializer(ModelSerializer):
@@ -226,10 +226,10 @@ class RasterLayerSerializer(PermissionsModelSerializer):
         return self.check_legend_public_status(instance)
 
 
-class WorldLayerGroupSerializer(PermissionsModelSerializer):
+class CompositeSerializer(PermissionsModelSerializer):
 
     class Meta:
-        model = WorldLayerGroup
+        model = Composite
         fields = (
             'id', 'name', 'kahunas', 'zonesofinterest', 'all_zones',
             'worldlayers', 'min_date', 'max_date',

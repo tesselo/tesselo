@@ -1,7 +1,7 @@
 define([
         'marionette',
         'd3-scale-chromatic',
-        '../collections/worldlayergroups',
+        '../collections/composites',
         '../collections/aggregationlayers',
         './picker',
         './world',
@@ -59,14 +59,14 @@ define([
             var world = new WorldView({collection: collection});
             // Show world layer group view.
             this.showChildView('worldRegion', world);
-            // Limit worldlayergroups to active layers.
+            // Limit composites to active layers.
             var params = {data: $.param({active: true})};
-            // Fetch worldlayergroup data and set first layer.
+            // Fetch composite data and set first layer.
             collection.fetch(params).done(function(){
                 _this.setLayerDict(collection.models[0]);
-                // Fetch child view for selected worldlayergroup, or the first one if not specified.
-                if(_this.options.worldlayergroup){
-                    var worldview = world.children.filter(function(view){  return view.model.id == _this.options.worldlayergroup; })[0];
+                // Fetch child view for selected composite, or the first one if not specified.
+                if(_this.options.composite){
+                    var worldview = world.children.filter(function(view){  return view.model.id == _this.options.composite; })[0];
                     // Fallback to first layer if id is not found.
                     if(!worldview){
                         var worldview = world.children.first();
@@ -77,7 +77,7 @@ define([
                 _this.setLayerDict(worldview.model);
                 worldview.toggle();
             });
-            // Hook worldlayergroup selector into map renderer.
+            // Hook composite selector into map renderer.
             world.on('childview:world-changed', this.setLayerDict);
         },
 
@@ -100,7 +100,7 @@ define([
 
         setLayerDict: function(model){
             this.layer_dict = model.get('kahunas');
-            this.worldlayergroup_id = model.id;
+            this.composite_id = model.id;
             this.refresh();
         },
 
@@ -182,7 +182,7 @@ define([
 
                 this.ui.formula_wrap.hide();
                 var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=3,3e3&alpha';
-                var nav_base = this.worldlayergroup_id + '/';
+                var nav_base = this.composite_id + '/';
             } else {
                 // Show formula container.
                 this.ui.formula_wrap.show();
@@ -217,7 +217,7 @@ define([
                 var brk = parseFloat(this.ui.scale_breaks.val());
                 var colorview = this.getChildView('pickerRegion').children.filter(function(view){ return view.$el.hasClass('selected')})[0];
                 var color = colorview.model.get('name');
-                var nav_base = this.worldlayergroup_id + '/' + formula + '/' + min + '/' + max + '/' + (brk ? brk : '0') + '/' + color + '/';
+                var nav_base = this.composite_id + '/' + formula + '/' + min + '/' + max + '/' + (brk ? brk : '0') + '/' + color + '/';
 
             }
 
