@@ -5,7 +5,7 @@ from formulary.views import FormulaViewSet, WMTSLayerViewSet
 from formulary.wmts import WMTSAPIView
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
-    CompositeViewSet, ExportAPIView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
+    CompositeViewSet, ExportAPIView, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
     ObtainExpiringAuthToken, RasterLayerViewSet, RemoveAuthToken, SentinelTileAggregationLayerViewSet,
     ValueCountResultViewSet, ZoneOfInterestViewSet
 )
@@ -42,6 +42,11 @@ router.register(
     r'vtiles/(?P<aggregationlayer>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>json|pbf)',
     AggregationLayerVectorTilesViewSet,
     base_name='vectortiles'
+)
+router.register(
+    r'lambda/tiles/(?P<utm_zone>[^/]+)/(?P<lat_band>[^/]+)/(?P<grid_id>[^/]+)/(?P<year>[^/]+)/(?P<month>[^/]+)/(?P<day>[^/]+)/(?P<scene_nr>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    LambdaView,
+    base_name='lambda',
 )
 
 router.register(r'aggregationlayer', AggregationLayerViewSet)

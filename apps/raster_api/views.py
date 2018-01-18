@@ -1,8 +1,14 @@
 from __future__ import unicode_literals
 
+from multiprocessing import Pool
+
+import numpy
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
+from PIL import Image
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
+from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
+from raster.tiles.utils import tile_bounds, tile_scale
 from raster.views import AlgebraView, ExportView, RasterView
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
 from raster_aggregation.serializers import (
@@ -26,6 +32,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from django.contrib.auth.models import Group, User
+from django.contrib.gis.gdal import GDALRaster
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from raster_api.permissions import (
@@ -348,3 +355,81 @@ class RemoveAuthToken(APIView):
     def post(self, request, *args, **kwargs):
         Token.objects.filter(user=request.user).delete()
         return Response({'logout': 'Successfully logged out.'})
+
+
+def get_tile(prefix, tilez, tilex, tiley):
+    """
+    Returns a tile for rendering. If the tile does not exists, higher
+    level tiles are searched and warped to lower level if found.
+    """
+    # Compute bounds, scale and size of tile
+    bounds = tile_bounds(int(tilex), int(tiley), int(tilez))
+    tilescale = tile_scale(int(tilez))
+
+    # Open raster on s3
+    path = '/vsis3/sentinel-s2-l1c/{}'.format(prefix)
+    rst = GDALRaster(path)
+
+    # Warp parent tile to child tile in memory.
+    return rst.warp({
+        'driver': 'MEM',
+        'srid': WEB_MERCATOR_SRID,
+        'width': WEB_MERCATOR_TILESIZE,
+        'height': WEB_MERCATOR_TILESIZE,
+        'scale': [tilescale, -tilescale],
+        'origin': [bounds[0], bounds[3]],
+    }).bands[0].data()
+
+
+class LambdaView(RasterAPIView):
+
+    def list(self, request, utm_zone, lat_band, grid_id, year, month, day, scene_nr, z, x, y, **kwargs):
+
+        stile = 'tiles/{utm_zone}/{lat_band}/{grid_id}/{year}/{month}/{day}/{scene_nr}/'.format(
+            utm_zone=utm_zone,
+            lat_band=lat_band,
+            grid_id=grid_id,
+            year=year,
+            month=month,
+            day=day,
+            scene_nr=scene_nr
+        )
+
+        with Pool(3) as pool:
+            red, green, blue = pool.starmap(get_tile, [
+                (stile + 'B04.jp2', z, x, y),
+                (stile + 'B03.jp2', z, x, y),
+                (stile + 'B02.jp2', z, x, y),
+            ])
+
+        scale_min = 0.0
+        scale_max = 3000.0
+
+        # Clip the image minimum.
+        red[red < scale_min] = scale_min
+        green[green < scale_min] = scale_min
+        blue[blue < scale_min] = scale_min
+
+        # Clip the image maximum.
+        red[red > scale_max] = scale_max
+        green[green > scale_max] = scale_max
+        blue[blue > scale_max] = scale_max
+
+        # Scale the image.
+        red = 255 * (red - scale_min) / scale_max
+        green = 255 * (green - scale_min) / scale_max
+        blue = 255 * (blue - scale_min) / scale_max
+
+        mode = 'RGB'
+        reshape = 3
+        img_array = numpy.array((red.ravel(), green.ravel(), blue.ravel()))
+
+        # Reshape array into tile size.
+        img_array = img_array.T.reshape(WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE, reshape).astype('uint8')
+
+        # Create image from array
+        img = Image.fromarray(img_array, mode=mode)
+        stats = {}
+
+        # Return rendered image
+        return self.write_img_to_response(img, stats)
