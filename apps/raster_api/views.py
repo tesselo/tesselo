@@ -359,8 +359,7 @@ class RemoveAuthToken(APIView):
 
 def get_tile(prefix, tilez, tilex, tiley):
     """
-    Returns a tile for rendering. If the tile does not exists, higher
-    level tiles are searched and warped to lower level if found.
+    Returns tile data for the given Sentinel-2 scene over the input TMS tile.
     """
     # Compute bounds, scale and size of tile
     bounds = tile_bounds(int(tilex), int(tiley), int(tilez))
@@ -395,12 +394,16 @@ class LambdaView(RasterAPIView):
             scene_nr=scene_nr
         )
 
-        with Pool(3) as pool:
-            red, green, blue = pool.starmap(get_tile, [
-                (stile + 'B04.jp2', z, x, y),
-                (stile + 'B03.jp2', z, x, y),
-                (stile + 'B02.jp2', z, x, y),
-            ])
+        red = get_tile(stile + 'B04.jp2', z, x, y)
+        green = get_tile(stile + 'B03.jp2', z, x, y)
+        blue = get_tile(stile + 'B02.jp2', z, x, y)
+
+        # with Pool(3) as pool:
+        #     red, green, blue = pool.starmap(get_tile, [
+        #         (stile + 'B04.jp2', z, x, y),
+        #         (stile + 'B03.jp2', z, x, y),
+        #         (stile + 'B02.jp2', z, x, y),
+        #     ])
 
         scale_min = 0.0
         scale_max = 3000.0
