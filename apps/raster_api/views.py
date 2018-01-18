@@ -382,6 +382,8 @@ def get_tile(prefix, tilez, tilex, tiley):
 
 class LambdaView(RasterAPIView):
 
+    permission_classes = (IsAuthenticated, )
+
     def list(self, request, utm_zone, lat_band, grid_id, year, month, day, scene_nr, z, x, y, **kwargs):
 
         stile = 'tiles/{utm_zone}/{lat_band}/{grid_id}/{year}/{month}/{day}/{scene_nr}/'.format(
