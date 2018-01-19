@@ -5,6 +5,7 @@ from raster.models import (
     Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerBandMetadata, RasterLayerMetadata,
     RasterLayerParseStatus
 )
+from raster.tiles.const import WEB_MERCATOR_SRID
 from raster_aggregation.models import AggregationLayer
 from raster_aggregation.serializers import AggregationLayerSerializer as AggregationLayerSerializerOriginal
 from rest_framework.serializers import (
@@ -278,4 +279,9 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
         read_only_fields = ('nr_of_areas', )
 
     def get_extent(self, obj):
-        return obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
+        from django.contrib.gis.geos import Polygon
+        extent = obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
+        extent = Polygon.from_bbox(extent)
+        extent.srid = WEB_MERCATOR_SRID
+        extent.transform(4326)
+        return extent.extent

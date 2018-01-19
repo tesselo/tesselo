@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-# from multiprocessing import Pool
-
 import numpy
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
@@ -45,6 +43,10 @@ from raster_api.serializers import (
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
+
+# from multiprocessing import Pool
+
+
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
