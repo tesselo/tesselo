@@ -5,11 +5,14 @@ from raster.models import (
     Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerBandMetadata, RasterLayerMetadata,
     RasterLayerParseStatus
 )
+from raster_aggregation.models import AggregationLayer
+from raster_aggregation.serializers import AggregationLayerSerializer as AggregationLayerSerializerOriginal
 from rest_framework.serializers import (
-    CharField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
+    CharField, FileField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
 )
 
 from django.contrib.auth.models import Group, User
+from django.contrib.gis.db.models import Extent
 from django.shortcuts import get_object_or_404
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
@@ -256,3 +259,23 @@ class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
 
     def get_rasterlayer_lookup(self, obj):
         return {band.band: band.layer_id for band in obj.sentineltile.sentineltileband_set.all()}
+
+
+class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
+
+    extent = SerializerMethodField()
+    shapefile = FileField(write_only=True)
+    name_column = CharField(write_only=True)
+    simplification_tolerance = FloatField(write_only=True)
+
+    class Meta:
+        model = AggregationLayer
+        fields = (
+            'id', 'name', 'description', 'min_zoom_level', 'max_zoom_level',
+            'nr_of_areas', 'simplification_tolerance', 'aggregationareas',
+            'extent', 'shapefile', 'name_column', 'simplification_tolerance',
+        )
+        read_only_fields = ('nr_of_areas', )
+
+    def get_extent(self, obj):
+        return obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
