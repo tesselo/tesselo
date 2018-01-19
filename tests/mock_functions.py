@@ -134,3 +134,7 @@ def point_to_test_file(source_url, filepath):
             {'nodata_value': 0, 'data': data},
         ],
     })
+
+
+def get_numpy_tile(prefix, tilez, tilex, tiley):
+    return numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')

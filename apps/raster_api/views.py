@@ -47,8 +47,6 @@ from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInter
 # from multiprocessing import Pool
 
 
-
-
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
     permission_classes = (IsAuthenticated, RasterTilePermission, )
     renderer_classes = (BinaryRenderer, )

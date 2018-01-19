@@ -5,7 +5,7 @@ import tempfile
 
 import mock
 from raster.models import RasterTile
-from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
+from tests.mock_functions import client_get_object, get_numpy_tile, iterator_search, point_to_test_file
 
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
@@ -22,6 +22,7 @@ from sentinel.tasks import (
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
+@mock.patch('sentinel.tasks.get_tile', get_numpy_tile)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 class SentinelBucketParserTest(TestCase):
@@ -112,7 +113,7 @@ class SentinelBucketParserTest(TestCase):
         self.assertTrue(processed.exists())
         self.assertFalse(processing.exists())
 
-        self.assertEqual(lyr.rastertile_set.count(), 20)
+        self.assertEqual(lyr.rastertile_set.count(), 522)
 
     def test_scene_completness_repair(self):
         sync_sentinel_bucket_utm_zone(1)

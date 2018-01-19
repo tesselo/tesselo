@@ -26,6 +26,7 @@ from django.db.models import Count, F, Func
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from raster_api.views import get_tile
 from sentinel import const
 from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
@@ -357,13 +358,13 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
         bnds = const.BANDS_20M
     else:
         bnds = const.BANDS_10M
+
     # Return data as tuples of scene, band number and pixel values.
     tiles = []
     for sentineltile in sentineltiles:
-        for band in SentinelTileBand.objects.filter(tile_id=sentineltile, band__in=bnds):
-            tile = RasterTile.objects.filter(rasterlayer_id=band.layer_id, tilez=tilez, tilex=tilex, tiley=tiley).first()
-            if tile:
-                tiles.append((sentineltile, band.band, tile.rast.bands[0].data()))
+        for band in bnds:
+            tile = get_tile(sentineltile + band, tilez, tilex, tiley)
+            tiles.append((sentineltile, band, tile))
     return tiles
 
 
@@ -402,7 +403,7 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
             # Get tile bounding box as ewkt.
             bounds60 = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds60).wkt)
             # Filter sentinel scenes fthat overlap with this tile boundaries.
-            sentineltiles60 = list(sentineltiles.filter(tile_data_geom__bboverlaps=bounds60).distinct().values_list('id', flat=True))
+            sentineltiles60 = list(sentineltiles.filter(tile_data_geom__bboverlaps=bounds60).distinct().values_list('prefix', flat=True))
 
             tiles60 = get_range_tiles(sentineltiles60, tilex60, tiley60, const.ZOOM_LEVEL_60M)
             if not len(tiles60):
