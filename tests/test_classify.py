@@ -7,7 +7,7 @@ import mock
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import LinearSVC
-from tests.mock_functions import client_get_object, iterator_search, point_to_test_file
+from tests.mock_functions import client_get_object, get_numpy_tile, iterator_search, point_to_test_file
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
 from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
@@ -23,6 +23,7 @@ from sentinel.tasks import drive_sentinel_queue, drive_world_layers, sync_sentin
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
+@mock.patch('sentinel.tasks.get_tile', get_numpy_tile)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 class SentinelClassifierTest(TestCase):
 
