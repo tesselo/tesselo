@@ -382,9 +382,7 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
 
     # Preload tiles that are populated on the bands based on the world
     # layer group settings.
-    sentineltiles = SentinelTile.objects.exclude(
-        sentineltileband=None,
-    ).filter(
+    sentineltiles = SentinelTile.objects.filter(
         collected__gte=world.min_date,
         collected__lte=world.max_date,
     ).order_by(
