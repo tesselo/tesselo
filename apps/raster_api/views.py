@@ -365,7 +365,7 @@ def get_tile(prefix, tilez, tilex, tiley):
     tilescale = tile_scale(int(tilez))
 
     # Open raster on s3
-    path = '/vsis3/sentinel-s2-l1c/{}'.format(prefix)
+    path = '/vsis3/{}'.format(prefix)
     rst = GDALRaster(path)
 
     # Warp parent tile to child tile in memory.
@@ -376,10 +376,125 @@ def get_tile(prefix, tilez, tilex, tiley):
         'height': WEB_MERCATOR_TILESIZE,
         'scale': [tilescale, -tilescale],
         'origin': [bounds[0], bounds[3]],
-    }).bands[0].data()
+    })
 
 
-class LambdaView(RasterAPIView):
+class LambdaView(AlgebraView, RasterAPIView):
+    """
+    A view to calculate map algebra on raster layers.
+
+    The format can be either png, jpg or tif.
+
+    https://tesselo.com/api/sentinel/17/M/PT/2018/1/7/0/14/4554/8293.png?layers=r=1,b=2,g=3&scale=3,3e3&alpha
+
+    https://tesselo.com/api/sentinel/17/M/PT/2018/1/7/0/14/4554/8293.png?layers=r=1,b=2,g=3&formula=(B04-B08)/(B04%2BB08)&colormap={"continuous":true,"range":[-1,1],"from":[165,0,38],"to":[0,104,55],"over":[249,247,174]}
+
+    https://tesselo.com/api/landsat/c1/L8/011/062/LC08_L1TP_011062_20171013_20171024_01_T1/14/4554/8293.png?layers=r=1,b=2,g=3&scale=7e3,22e3&alpha
+
+    https://tesselo.com/api/landsat/c1/L8/011/062/LC08_L1TP_011062_20171013_20171024_01_T1/14/4554/8293.png?layers=r=1,b=2,g=3&formula=(B4-B5)/(B4%2BB5)&colormap={"continuous":true,"range":[-1,1],"from":[165,0,38],"to":[0,104,55],"over":[249,247,174]}
+
+    https://tesselo.com/api/naip/al/2015/1m/rgbir/30085/m_3008501_ne_16_1_20151014/17/34246/53654.png?layers=r=1,b=2,g=3&scale=0,255&alpha
+
+    https://tesselo.com/api/naip/al/2015/1m/rgbir/30085/m_3008501_ne_16_1_20151014/17/34246/53654.png?layers=r=1,b=2&formula=(B4-B1)/(B1%2BB4)&colormap={"continuous":true,"range":[-1,1],"from":[165,0,38],"to":[0,104,55],"over":[249,247,174]}
+    """
+    permission_classes = (IsAuthenticated, )
+
+    def get_ids(self):
+        if 'sentinel' in self.kwargs:
+            from sentinel.const import BAND_RESOLUTIONS
+            bands = [bnd.split('.')[0] for bnd in BAND_RESOLUTIONS]
+            if 'formula' in self.request.GET:
+                return {band: band for band in bands if band in self.request.GET.get('formula')}
+            else:
+                return {
+                    'r': 'B04',
+                    'g': 'B03',
+                    'b': 'B02',
+                }
+        elif 'landsat' in self.kwargs:
+            if 'formula' in self.request.GET:
+                bands = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B11']
+                return {band: band for band in bands if band in self.request.GET.get('formula')}
+            else:
+                return {
+                    'r': 'B4',
+                    'g': 'B3',
+                    'b': 'B2',
+                }
+        elif 'naip' in self.kwargs:
+            if 'formula' in self.request.GET:
+                bands = ['B1', 'B2', 'B3', 'B4']
+                band_keys = {
+                    'B1': 'B1:0',
+                    'B2': 'B2:1',
+                    'B3': 'B3:2',
+                    'B4': 'B4:3',
+                }
+                return {band_keys[band]: 'RGBIR' for band in bands if band in self.request.GET.get('formula')}
+            else:
+                return {
+                    'r:0': 'RGB',
+                    'g:1': 'RGB',
+                    'b:2': 'RGB',
+
+                }
+
+    def get_tile(self, band_name):
+        # Get tile indices from the request url parameters.
+        tilez = int(self.kwargs.get('z'))
+        tilex = int(self.kwargs.get('x'))
+        tiley = int(self.kwargs.get('y'))
+
+        if 'sentinel' in self.kwargs:
+            vsis3path = 'sentinel-s2-l1c/tiles/{utm_zone}/{lat_band}/{grid_id}/{year}/{month}/{day}/{scene_nr}/{band}.jp2'.format(
+                utm_zone=self.kwargs.get('utm_zone'),
+                lat_band=self.kwargs.get('lat_band'),
+                grid_id=self.kwargs.get('grid_id'),
+                year=self.kwargs.get('year'),
+                month=self.kwargs.get('month'),
+                day=self.kwargs.get('day'),
+                scene_nr=self.kwargs.get('scene_nr'),
+                band=band_name,
+            )
+        elif 'landsat' in self.kwargs:
+            if 'collection' in self.kwargs:
+                vsis3path = 'landsat-pds/{collection}/{sensor}/{row}/{column}/{scene}/{scene}_{band}.TIF'.format(
+                    collection=self.kwargs.get('collection'),
+                    sensor=self.kwargs.get('sensor'),
+                    row=self.kwargs.get('row'),
+                    column=self.kwargs.get('column'),
+                    scene=self.kwargs.get('scene'),
+                    band=band_name,
+                )
+            else:
+                vsis3path = 'landsat-pds/{sensor}/{row}/{column}/{scene}/{scene}_{band}.TIF'.format(
+                    collection=self.kwargs.get('collection'),
+                    sensor=self.kwargs.get('sensor'),
+                    row=self.kwargs.get('row'),
+                    column=self.kwargs.get('column'),
+                    scene=self.kwargs.get('scene'),
+                    band=band_name,
+                )
+        elif 'naip' in self.kwargs:
+                vsis3path = 'aws-naip/{state}/{year}/{resolution}/{img_src}/{quadrangle}/{scene}.tif'.format(
+                    state=self.kwargs.get('state'),
+                    year=self.kwargs.get('year'),
+                    resolution=self.kwargs.get('resolution'),
+                    img_src=self.kwargs.get('img_src'),
+                    quadrangle=self.kwargs.get('quadrangle'),
+                    scene=self.kwargs.get('scene'),
+                    band=band_name,
+                )
+
+        print(vsis3path)
+
+        return get_tile(vsis3path, tilez, tilex, tiley)
+
+    def list(self, *args, **kwargs):
+        return super(LambdaView, self).get(*args, **kwargs)
+
+
+class LambdaViewV1(RasterAPIView):
 
     permission_classes = (IsAuthenticated, )
 
@@ -392,7 +507,7 @@ class LambdaView(RasterAPIView):
             year=year,
             month=month,
             day=day,
-            scene_nr=scene_nr
+            scene_nr=scene_nr,
         )
 
         red = get_tile(stile + 'B04.jp2', z, x, y)

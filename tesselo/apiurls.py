@@ -44,9 +44,24 @@ router.register(
     base_name='vectortiles'
 )
 router.register(
-    r'lambda/tiles/(?P<utm_zone>[^/]+)/(?P<lat_band>[^/]+)/(?P<grid_id>[^/]+)/(?P<year>[^/]+)/(?P<month>[^/]+)/(?P<day>[^/]+)/(?P<scene_nr>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    r'(?P<sentinel>sentinel)/(?P<utm_zone>[^/]+)/(?P<lat_band>[^/]+)/(?P<grid_id>[^/]+)/(?P<year>[^/]+)/(?P<month>[^/]+)/(?P<day>[^/]+)/(?P<scene_nr>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
     LambdaView,
-    base_name='lambda',
+    base_name='sentinel',
+)
+router.register(
+    r'(?P<landsat>landsat)/(?P<collection>[^/]+)/(?P<sensor>[^/]+)/(?P<row>[^/]+)/(?P<column>[^/]+)/(?P<scene>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    LambdaView,
+    base_name='landsat',
+)
+router.register(
+    r'(?P<landsat>landsat)/(?P<sensor>[^/]+)/(?P<row>[^/]+)/(?P<column>[^/]+)/(?P<scene>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    LambdaView,
+    base_name='landsat',
+)
+router.register(
+    r'(?P<naip>naip)/(?P<state>[^/]+)/(?P<year>[^/]+)/(?P<resolution>[^/]+)/(?P<img_src>rgb|rgbir)/(?P<quadrangle>[^/]+)/(?P<scene>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    LambdaView,
+    base_name='naip',
 )
 
 router.register(r'aggregationlayer', AggregationLayerViewSet)
