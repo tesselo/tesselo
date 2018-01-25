@@ -251,7 +251,7 @@ def create_compositeband_layers(sender, instance, created, **kwargs):
         instance.compositebands.add(world)
 
 
-class WorldParseProcess(models.Model):
+class CompositeBuildLog(models.Model):
     """
     Track parsing processes to prevent duplication.
     """

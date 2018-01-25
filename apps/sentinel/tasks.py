@@ -32,8 +32,8 @@ from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
-    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileAggregationLayer, SentinelTileBand,
-    WorldParseProcess, ZoneOfInterest
+    BucketParseLog, Composite, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
+    SentinelTileBand, ZoneOfInterest
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, get_world_tile_indices, write_raster_tile
 
@@ -469,7 +469,7 @@ def drive_world_layers(world_ids=None):
     for world in worlds:
         for tilex, tiley, tilez in get_world_tile_indices(world):
             # Check if the tile is currently building.
-            processing = WorldParseProcess.objects.filter(
+            processing = CompositeBuildLog.objects.filter(
                 composite=world,
                 tilex=tilex,
                 tiley=tiley,
@@ -481,7 +481,7 @@ def drive_world_layers(world_ids=None):
                 continue
 
             # Register parse effort.
-            wpp = WorldParseProcess.objects.create(
+            wpp = CompositeBuildLog.objects.create(
                 composite=world,
                 tilex=tilex,
                 tiley=tiley,
@@ -510,7 +510,7 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     world = Composite.objects.get(id=world_id)
 
     # Update world parse process.
-    wpp = WorldParseProcess.objects.filter(
+    wpp = CompositeBuildLog.objects.filter(
         composite=world,
         tilex=tilex,
         tiley=tiley,
@@ -597,7 +597,7 @@ def build_world_pyramids(world, tilex, tiley, tilez):
     Build pyramids for the global layer of each band.
     """
     # Get world parse process logger.
-    wpp = WorldParseProcess.objects.filter(
+    wpp = CompositeBuildLog.objects.filter(
         composite=world,
         tilex=tilex,
         tiley=tiley,

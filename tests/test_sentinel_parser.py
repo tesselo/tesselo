@@ -13,7 +13,7 @@ from django.db.models import Count
 from django.test import TestCase, override_settings
 from sentinel import const
 from sentinel.models import (
-    BucketParseLog, Composite, MGRSTile, SentinelTile, SentinelTileBand, WorldParseProcess, ZoneOfInterest
+    BucketParseLog, Composite, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileBand, ZoneOfInterest
 )
 from sentinel.tasks import (
     drive_sentinel_queue, drive_world_layers, repair_incomplete_scenes, sync_sentinel_bucket_utm_zone
@@ -99,14 +99,14 @@ class SentinelBucketParserTest(TestCase):
 
         self.world.refresh_from_db()
         indexrange = self.zone.index_range(const.ZOOM_LEVEL_WORLDLAYER)
-        processed = WorldParseProcess.objects.filter(
+        processed = CompositeBuildLog.objects.filter(
             composite=self.world,
             tilex=indexrange[0],
             tiley=indexrange[1],
             tilez=const.ZOOM_LEVEL_WORLDLAYER,
             end__isnull=False,
         )
-        processing = WorldParseProcess.objects.filter(
+        processing = CompositeBuildLog.objects.filter(
             composite=self.world,
             end__isnull=True,
         )
