@@ -1,3 +1,4 @@
+import calendar
 import json
 
 from guardian.shortcuts import assign_perm, get_perms
@@ -232,14 +233,28 @@ class RasterLayerSerializer(PermissionsModelSerializer):
 
 class CompositeSerializer(PermissionsModelSerializer):
 
+    interval = SerializerMethodField()
+    start_week = SerializerMethodField()
+
     class Meta:
         model = Composite
         fields = (
             'id', 'name', 'rasterlayer_lookup', 'zonesofinterest', 'all_zones',
-            'compositebands', 'min_date', 'max_date',
-            'max_cloudy_pixel_percentage', 'active',
+            'compositebands', 'min_date', 'max_date', 'interval',
+            'max_cloudy_pixel_percentage', 'active', 'start_week',
         )
         read_only_fields = ('rasterlayer_lookup', 'compositebands', )
+
+    def get_interval(self, obj):
+        if obj.min_date.day == 1 and obj.max_date.day ==  calendar.monthrange(obj.max_date.year, obj.max_date.month)[1]:
+            return 'Monthly'
+        elif calendar.weekday(obj.min_date.year, obj.min_date.month, obj.min_date.day) == calendar.MONDAY and calendar.weekday(obj.max_date.year, obj.max_date.month, obj.max_date.day) == calendar.SUNDAY:
+            return 'Weekly'
+        else:
+            return 'Custom'
+
+    def get_start_week(self, obj):
+        return obj.min_date.isocalendar()[1]
 
 
 class ZoneOfInterestSerializer(PermissionsModelSerializer):
