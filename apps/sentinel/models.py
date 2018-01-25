@@ -207,6 +207,7 @@ class Composite(models.Model):
     max_cloudy_pixel_percentage = models.FloatField(default=100)
     # Parse related data.
     active = models.BooleanField(default=True, help_text='If unchecked, this area will not be included in the parsing.')
+    official = models.BooleanField(default=False, editable=False)
 
     def __str__(self):
         return self.name

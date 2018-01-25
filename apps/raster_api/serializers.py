@@ -240,10 +240,10 @@ class CompositeSerializer(PermissionsModelSerializer):
         model = Composite
         fields = (
             'id', 'name', 'rasterlayer_lookup', 'zonesofinterest', 'all_zones',
-            'compositebands', 'min_date', 'max_date', 'interval',
+            'compositebands', 'min_date', 'max_date', 'interval', 'official',
             'max_cloudy_pixel_percentage', 'active', 'start_week',
         )
-        read_only_fields = ('rasterlayer_lookup', 'compositebands', )
+        read_only_fields = ('rasterlayer_lookup', 'compositebands', 'official', )
 
     def get_interval(self, obj):
         if obj.min_date.day == 1 and obj.max_date.day ==  calendar.monthrange(obj.max_date.year, obj.max_date.month)[1]:

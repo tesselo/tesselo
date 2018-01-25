@@ -269,13 +269,20 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
         return self.request.data.get('layer_names', {})
 
 
+class LargeResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 500
+
+
 class CompositeViewSet(PermissionsModelViewSet):
 
     queryset = Composite.objects.all().order_by('id')
     serializer_class = CompositeSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
-    filter_fields = ('active', )
+    filter_fields = ('active', 'official', )
     search_fields = ('name', 'description', )
+    pagination_class = LargeResultsSetPagination
 
     _model = 'composite'
 
@@ -298,13 +305,9 @@ class ZoneOfInterestViewSet(PermissionsModelViewSet):
     _model = 'zoneofinterest'
 
 
-class STALPageNumberPagination(PageNumberPagination):
-    page_size = 100
-
-
 class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
     serializer_class = SentinelTileAggregationLayerSerializer
-    pagination_class = STALPageNumberPagination
+    pagination_class = LargeResultsSetPagination
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     filter_fields = ('active', )
