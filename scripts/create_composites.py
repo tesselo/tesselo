@@ -32,8 +32,19 @@ for year in range(2014, 2019):
                 official=True,
             )
 
+"""
+Invite or exclude users and groups from having view, change, or delete
+permissions on this object.
+"""
+from sentinel.models import Composite
+from django.contrib.auth.models import User
+from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 
-
-# s.post(api + composite, json={
-#
-# })
+invitee = 22
+invitee = User.objects.get(id=invitee)
+for composite in Composite.objects.all():
+    assign_perm('{perm}_{model}'.format(perm='view', model='composite'), invitee, composite)
+    assign_perm('{perm}_{model}'.format(perm='change', model='composite'), invitee, composite)
+    for wlayer in composite.compositebands.all():
+        assign_perm('{perm}_rasterlayer'.format(perm='view'), invitee, wlayer.rasterlayer)
+        assign_perm('{perm}_rasterlayer'.format(perm='change'), invitee, wlayer.rasterlayer)
