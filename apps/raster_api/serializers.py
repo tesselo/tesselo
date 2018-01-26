@@ -1,4 +1,3 @@
-import calendar
 import json
 
 from guardian.shortcuts import assign_perm, get_perms
@@ -233,7 +232,6 @@ class RasterLayerSerializer(PermissionsModelSerializer):
 
 class CompositeSerializer(PermissionsModelSerializer):
 
-    interval = SerializerMethodField()
     start_week = SerializerMethodField()
 
     class Meta:
@@ -241,17 +239,9 @@ class CompositeSerializer(PermissionsModelSerializer):
         fields = (
             'id', 'name', 'rasterlayer_lookup', 'zonesofinterest', 'all_zones',
             'compositebands', 'min_date', 'max_date', 'interval', 'official',
-            'max_cloudy_pixel_percentage', 'active', 'start_week',
+            'max_cloudy_pixel_percentage', 'active', 'start_week', 'interval',
         )
-        read_only_fields = ('rasterlayer_lookup', 'compositebands', 'official', )
-
-    def get_interval(self, obj):
-        if obj.min_date.day == 1 and obj.max_date.day ==  calendar.monthrange(obj.max_date.year, obj.max_date.month)[1]:
-            return 'Monthly'
-        elif calendar.weekday(obj.min_date.year, obj.min_date.month, obj.min_date.day) == calendar.MONDAY and calendar.weekday(obj.max_date.year, obj.max_date.month, obj.max_date.day) == calendar.SUNDAY:
-            return 'Weekly'
-        else:
-            return 'Custom'
+        read_only_fields = ('rasterlayer_lookup', 'compositebands', 'official', 'interval', )
 
     def get_start_week(self, obj):
         return obj.min_date.isocalendar()[1]
@@ -268,13 +258,17 @@ class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
 
     rasterlayer_lookup = SerializerMethodField()
     name = CharField(source='sentineltile.prefix')
+    date = SerializerMethodField()
 
     class Meta:
         model = SentinelTileAggregationLayer
-        fields = ('id', 'name', 'rasterlayer_lookup', 'active', )
+        fields = ('id', 'name', 'rasterlayer_lookup', 'active', 'date', )
 
     def get_rasterlayer_lookup(self, obj):
         return {band.band: band.layer_id for band in obj.sentineltile.sentineltileband_set.all()}
+
+    def get_date(self, obj):
+        return obj.sentineltile.collected.date()
 
 
 class AggregationLayerSerializer(AggregationLayerSerializerOriginal):

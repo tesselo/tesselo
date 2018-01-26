@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import calendar
 import datetime
 
 from raster.models import RasterLayer, RasterLayerParseStatus
@@ -193,6 +194,14 @@ class Composite(models.Model):
     """
     A set of rasterlayers containing composits of sentinel scenes.
     """
+    WEEKLY = 'Weekly'
+    MONTHLY = 'Monthly'
+    CUSTOM = 'Custom'
+    INTERVAL_CHOICES = (
+        (WEEKLY, WEEKLY),
+        (MONTHLY, MONTHLY),
+        (CUSTOM, CUSTOM),
+    )
     # Name of the group.
     name = models.CharField(max_length=500)
     # Zones of interest relevant for this group.
@@ -208,6 +217,7 @@ class Composite(models.Model):
     # Parse related data.
     active = models.BooleanField(default=True, help_text='If unchecked, this area will not be included in the parsing.')
     official = models.BooleanField(default=False, editable=False)
+    interval = models.CharField(max_length=200, choices=INTERVAL_CHOICES, default=CUSTOM, editable=False)
 
     def __str__(self):
         return self.name
@@ -215,6 +225,19 @@ class Composite(models.Model):
     @property
     def rasterlayer_lookup(self):
         return {lyr.band: lyr.rasterlayer_id for lyr in self.compositebands.all()}
+
+    def save(self, *args, **kwargs):
+        """
+        Compute interval field based on dates.
+        """
+        if self.min_date.day == 1 and self.max_date.day == calendar.monthrange(self.max_date.year, self.max_date.month)[1]:
+            self.interval = self.MONTHLY
+        elif calendar.weekday(self.min_date.year, self.min_date.month, self.min_date.day) == calendar.MONDAY and calendar.weekday(self.max_date.year, self.max_date.month, self.max_date.day) == calendar.SUNDAY:
+            self.interval = self.WEEKLY
+        else:
+            self.interval = self.CUSTOM
+
+        super(Composite, self).save(*args, **kwargs)
 
 
 @receiver(post_save, sender=Composite)

@@ -280,7 +280,7 @@ class CompositeViewSet(PermissionsModelViewSet):
     queryset = Composite.objects.all().order_by('id')
     serializer_class = CompositeSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
-    filter_fields = ('active', 'official', )
+    filter_fields = ('active', 'official', 'interval', )
     search_fields = ('name', 'description', )
     pagination_class = LargeResultsSetPagination
 
