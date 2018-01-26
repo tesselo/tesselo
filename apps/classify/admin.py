@@ -1,5 +1,5 @@
 from classify.models import Classifier, PredictedLayer, TrainingSample
-from classify.tasks import train_sentinel_classifier
+from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const
@@ -48,6 +48,12 @@ class ClassifierAdmin(admin.ModelAdmin):
 
 class PredictedLayerAdmin(admin.ModelAdmin):
     raw_id_fields = ('composite', 'sentineltile', 'rasterlayer', )
+    actions = ['predict_layer', ]
+
+    def predict_layer(self, request, queryset):
+        for pred in queryset:
+            predict_sentinel_layer.delay(pred.id)
+        self.message_user(request, 'Started predicting layer.')
 
 
 admin.site.register(Classifier, ClassifierAdmin)

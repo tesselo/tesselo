@@ -1,3 +1,4 @@
+import datetime
 import io
 import pickle
 
@@ -124,18 +125,40 @@ def predict_sentinel_layer(predicted_layer_id):
     model is the mediator.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    pred.log = '[{0}] Started predicting layer.'.format(datetime.datetime.now())
+    pred.save()
     # Get tile range for compositeband or sentineltile for this prediction.
     if pred.composite:
-        tiles = get_world_tile_indices(pred.composite)
+        tiles = get_world_tile_indices(pred.composite, ZOOM)
         rasterlayer_lookup = pred.composite.rasterlayer_lookup
     else:
-        tiles = get_sentinel_tile_indices(pred.sentineltile)
+        tiles = get_sentinel_tile_indices(pred.sentineltile, ZOOM)
         rasterlayer_lookup = pred.sentineltile.rasterlayer_lookup
 
-    for tilex, tiley, tilez in tiles:
+    counter = 0
+    chunks = []
+    for tile_index in tiles:
+        chunks.append(tile_index)
+        counter += 1
+        if counter % 50 == 0:
+            predict_sentinel_chunks(pred.id, rasterlayer_lookup, chunks)
+            chunks = []
+
+
+@task
+def predict_sentinel_chunks(predicted_layer_id, rasterlayer_lookup, chunks):
+    """
+    Predict over a group of tiles.
+    """
+    pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    for tilex, tiley, tilez in chunks:
         # Get data from tiles for prediction.
         data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
         # Predict classes.
-        predicted = pred.classifier.clf.predict(data)
+        predicted = pred.classifier.clf.predict(data).astype('uint8')
         # Write predicted pixels into a tile and store in DB.
         write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
+
+    pred.refresh_from_db()
+    pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), chunks[0], chunks[-1])
+    pred.save()

@@ -42,7 +42,7 @@ def disaggregate_tile(tile, factor, offsetx, offsety):
     return data.repeat(factor, axis=0).repeat(factor, axis=1)
 
 
-def get_world_tile_indices(world):
+def get_world_tile_indices(world, zoom=const.ZOOM_LEVEL_WORLDLAYER):
     """
     Get x-y-z tile indexes for all tiles intersecting over this compositeband's
     zones of interest.
@@ -56,23 +56,23 @@ def get_world_tile_indices(world):
     # Build composite tiles for each zone.
     for zone in zones:
         # Compute index range for this zone of interest.
-        indexrange = zone.index_range(const.ZOOM_LEVEL_WORLDLAYER)
+        indexrange = zone.index_range(zoom)
 
         for tilex in range(indexrange[0], indexrange[2] + 1):
             for tiley in range(indexrange[1], indexrange[3] + 1):
-                yield tilex, tiley, const.ZOOM_LEVEL_WORLDLAYER
+                yield tilex, tiley, zoom
 
 
-def get_sentinel_tile_indices(sentineltile):
+def get_sentinel_tile_indices(sentineltile, zoom=const.ZOOM_LEVEL_10M):
     """
     Get x-y-z tile indexes for all tiles intersecting with this sentineltile's
     data geometry.
     """
     geom = sentineltile.tile_data_geom.transform(WEB_MERCATOR_SRID, clone=True)
-    indexrange = tile_index_range(geom.extent, const.ZOOM_LEVEL_10M, tolerance=1e-3)
+    indexrange = tile_index_range(geom.extent, zoom, tolerance=1e-3)
     for tilex in range(indexrange[0], indexrange[2] + 1):
         for tiley in range(indexrange[1], indexrange[3] + 1):
-            yield tilex, tiley, const.ZOOM_LEVEL_10M
+            yield tilex, tiley, zoom
 
 
 def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):

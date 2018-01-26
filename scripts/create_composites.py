@@ -1,8 +1,10 @@
 import calendar
 import datetime
 
+from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 from isoweek import Week
 
+from django.contrib.auth.models import User
 from sentinel.models import Composite
 
 for year in range(2014, 2019):
@@ -36,9 +38,6 @@ for year in range(2014, 2019):
 Invite or exclude users and groups from having view, change, or delete
 permissions on this object.
 """
-from sentinel.models import Composite
-from django.contrib.auth.models import User
-from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 
 invitee = 22
 invitee = User.objects.get(id=invitee)
