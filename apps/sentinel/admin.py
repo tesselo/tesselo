@@ -5,7 +5,7 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBand, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
     SentinelTileBand, ZoneOfInterest
 )
-from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers
+from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers, upgrade_sentineltile_to_l2a
 
 
 class PatchedOSMGeoAdmin(admin.GeoModelAdmin):
@@ -43,7 +43,7 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
 
     def upgrade_to_l2a(self, request, queryset):
         for tile in queryset:
-            tile.upgrade_to_l2a()
+            upgrade_sentineltile_to_l2a.delay(tile.id)
         self.message_user(request, 'Triggered update for all tile bands to L2A.')
 
 

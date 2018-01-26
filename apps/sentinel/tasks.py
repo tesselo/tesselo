@@ -675,3 +675,25 @@ def build_world_pyramids(world, tilex, tiley, tilez):
 
     wpp.end = timezone.now()
     wpp.write('Finished building pyramid.')
+
+
+@task
+def upgrade_sentineltile_to_l2a(sentineltile_id):
+    tile = SentinelTile.objects.get(id=sentineltile_id)
+    # Return if the product is already at Level 2.
+    if tile.level == const.LEVEL_L2A:
+        return
+
+    # Abort if image is before L2A avaliablitiy cutoff.
+    if tile.collected.date() < const.L2A_AVAILABILITY_DATE:
+        return
+
+    # Update level.
+    tile.level = const.LEVEL_L2A
+    tile.save()
+
+    # Update raster layers with L2A bucket addresses, which triggers
+    # re-parsing.
+    for band in tile.sentineltileband_set.all():
+        band.layer.source_url = tile.get_source_url(band.band)
+        band.layer.save()
