@@ -13,6 +13,7 @@ from django.contrib.gis.gdal import SpatialReference
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from sentinel import const
 
 
@@ -230,9 +231,17 @@ class Composite(models.Model):
         """
         Compute interval field based on dates.
         """
-        if self.min_date.day == 1 and self.max_date.day == calendar.monthrange(self.max_date.year, self.max_date.month)[1]:
+        min_date = self.min_date
+        if isinstance(min_date, str):
+            min_date = parse_date(min_date)
+
+        max_date = self.max_date
+        if isinstance(max_date, str):
+            max_date = parse_date(max_date)
+
+        if min_date.day == 1 and max_date.day == calendar.monthrange(max_date.year, max_date.month)[1]:
             self.interval = self.MONTHLY
-        elif calendar.weekday(self.min_date.year, self.min_date.month, self.min_date.day) == calendar.MONDAY and calendar.weekday(self.max_date.year, self.max_date.month, self.max_date.day) == calendar.SUNDAY:
+        elif calendar.weekday(min_date.year, min_date.month, min_date.day) == calendar.MONDAY and calendar.weekday(max_date.year, max_date.month, max_date.day) == calendar.SUNDAY:
             self.interval = self.WEEKLY
         else:
             self.interval = self.CUSTOM
