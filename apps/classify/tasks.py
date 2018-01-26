@@ -141,7 +141,7 @@ def predict_sentinel_layer(predicted_layer_id):
         chunks.append(tile_index)
         counter += 1
         if counter % 50 == 0:
-            predict_sentinel_chunks(pred.id, rasterlayer_lookup, chunks)
+            predict_sentinel_chunks.delay(pred.id, rasterlayer_lookup, chunks)
             chunks = []
 
 
