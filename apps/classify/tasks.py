@@ -154,6 +154,8 @@ def predict_sentinel_chunks(predicted_layer_id, rasterlayer_lookup, chunks):
     for tilex, tiley, tilez in chunks:
         # Get data from tiles for prediction.
         data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
+        if data is None:
+            continue
         # Predict classes.
         predicted = pred.classifier.clf.predict(data).astype('uint8')
         # Write predicted pixels into a tile and store in DB.

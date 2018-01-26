@@ -43,6 +43,7 @@ from raster_api.serializers import (
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
+from raster_api.filters import CompositeFilter
 
 # from multiprocessing import Pool
 
@@ -280,7 +281,7 @@ class CompositeViewSet(PermissionsModelViewSet):
     queryset = Composite.objects.all().order_by('id')
     serializer_class = CompositeSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
-    filter_fields = ('active', 'official', 'interval', )
+    filter_class = CompositeFilter
     search_fields = ('name', 'description', )
     pagination_class = LargeResultsSetPagination
 
