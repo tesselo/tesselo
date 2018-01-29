@@ -136,6 +136,8 @@ define([
         setLayerDict: function(model){
             this.layer_dict_date = model.get('name');
             this.layer_dict = model.get('rasterlayer_lookup');
+            this.prefix = model.get('prefix');
+            console.log('prefix', this.prefix);
             this.composite_id = model.id;
             this.refresh();
         },
@@ -169,6 +171,7 @@ define([
                 var blue = _.filter(this.layer_dict, function(val, key){ return key == 'B02.jp2' })[0];
 
                 var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=10,3e3&alpha';
+                var url = '/api/sentinel/' + this.prefix + '{z}/{x}/{y}.png?layers=r=1,g=2,b=3&scale=3,3e3&alpha';
                 var nav_base = this.composite_id + '/';
             } else {
                 // Construct ids array from current composite.
