@@ -7,7 +7,6 @@ from sklearn.svm import LinearSVC
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import HStoreField
-from django.core.cache import cache
 from sentinel.models import Composite, SentinelTile
 
 
@@ -56,15 +55,7 @@ class Classifier(models.Model):
 
     @property
     def clf(self):
-        # Create cache key for this classifier.
-        cache_key = 'sentinel_classifier_{}'.format(self.id)
-        # Get classifier from cache.
-        clf = cache.get(cache_key)
-        # If the classifier is not cached, get it from storage and cache it locally.
-        if not clf:
-            clf = pickle.loads(self.trained.read())
-            cache.set(cache_key, clf, 6000)
-        return clf
+        return pickle.loads(self.trained.read())
 
 
 class PredictedLayer(models.Model):
