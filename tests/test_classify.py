@@ -83,7 +83,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.SVM
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
-        self.clf.refresh_from_db()
+        self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, LinearSVC))
         cache.clear()
 
@@ -91,7 +91,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.RF
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
-        self.clf.refresh_from_db()
+        self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, RandomForestClassifier))
         cache.clear()
 
@@ -99,7 +99,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.NN
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
-        self.clf.refresh_from_db()
+        self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, MLPClassifier))
         cache.clear()
 
