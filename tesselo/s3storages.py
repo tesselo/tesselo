@@ -30,3 +30,4 @@ class PrivateMediaS3Boto3Storage(S3Boto3Storage):
     bucket_name = settings.AWS_STORAGE_BUCKET_NAME_MEDIA
     default_acl = 'private'
     file_overwrite = True
+    signature_version = 's3v4'
