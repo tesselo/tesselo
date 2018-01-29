@@ -205,7 +205,7 @@ class Tesselo(object):
 
         # Prepare raster name and target dict.
         name = self._get_raster_name(region_key)
-        targets = {}
+        targets = OrderedDict()
 
         for bnd in self.bands_to_include:
             targets[bnd + '.jp2'] = GDALRaster({
@@ -230,7 +230,7 @@ class Tesselo(object):
         Reload target rasters from local disk.
         """
         name = self._get_raster_name(region_key)
-        targets = {}
+        targets = OrderedDict()
         for bnd in self.bands_to_include:
             targets[bnd + '.jp2'] = GDALRaster(os.path.join(os.getcwd(), '{}-{}.tif'.format(name, bnd.lower())))
         return targets
