@@ -66,19 +66,20 @@ class SentinelBucketParserTest(TestCase):
         bnd = SentinelTileBand.objects.filter(band=const.BD1).first()
         self.assertEqual(bnd.resolution, const.BAND_RESOLUTIONS[const.BD1])
         result = RasterTile.objects.all().values_list('tilez').annotate(count=Count('tilez'))
-        self.assertListEqual(
-            [x for x in result],
-            [
-                (8, 26),
-                (13, 40),
-                (11, 26),
-                (14, 32),
-                (12, 40),
-                (10, 26),
-                (9, 26),
-                (6, 26),
-                (7, 26),
-            ],
+
+        self.assertEqual(
+            {x[0]: x[1] for x in result},
+            {
+                8: 26,
+                13: 40,
+                11: 26,
+                14: 32,
+                12: 40,
+                10: 26,
+                9: 26,
+                6: 26,
+                7: 26,
+            }
         )
 
     def test_world_layer(self):
