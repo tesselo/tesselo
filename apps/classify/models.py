@@ -53,9 +53,13 @@ class Classifier(models.Model):
     def __str__(self):
         return '{0} ({1})'.format(self.name, self.get_algorithm_display())
 
+    _clf = None
+
     @property
     def clf(self):
-        return pickle.loads(self.trained.read())
+        if self._clf is None:
+            self._clf = pickle.loads(self.trained.read())
+        return self._clf
 
 
 class PredictedLayer(models.Model):
