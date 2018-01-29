@@ -47,7 +47,10 @@ define([
             }
 
             // Add new layer.
-            this.layer = L.tileLayer(url, {opacity: current_opacity});
+            this.layer = L.tileLayer(url, {
+              opacity: current_opacity,
+              minZoom: 8
+            });
             this.layer.addTo(this.map);
         },
 
