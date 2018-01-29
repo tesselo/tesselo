@@ -200,8 +200,6 @@ def get_aggregation_area_scenes(aggregationarea_id):
         if tile.sentineltileband_set.count() > 0:
             continue
 
-        register_bands_for_tile(tile)
-
 
 @receiver(post_save, sender=AggregationArea)
 def trigger_scene_ingestion(sender, instance, **kwargs):
