@@ -14,7 +14,7 @@ requirejs.config({
         'leaflet.vectorgrid': '../../node_modules/leaflet.vectorgrid/dist/Leaflet.VectorGrid',
         'd3-color': '../../node_modules/d3-color/build/d3-color',
         'd3-interpolate': '../../node_modules/d3-interpolate/build/d3-interpolate',
-        'd3-scale-chromatic': '../../node_modules/d3-scale-chromatic/build/d3-scale-chromatic',
+        'd3-scale-chromatic': '../../node_modules/d3-scale-chromatic/dist/d3-scale-chromatic',
         'nouislider': '../../node_modules/nouislider/distribute/nouislider',
         chartjs: '../../node_modules/chart.js/dist/Chart',
     },
