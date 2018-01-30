@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-import numpy
+from multiprocessing import Pool
+
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
-from PIL import Image
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_scale
@@ -31,6 +31,7 @@ from django.contrib.auth.models import Group, User
 from django.contrib.gis.gdal import GDALRaster
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from raster_api.filters import CompositeFilter
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
     RasterTilePermission, ValueCountResultCreatePermission
@@ -43,9 +44,6 @@ from raster_api.serializers import (
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
-from raster_api.filters import CompositeFilter
-
-# from multiprocessing import Pool
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -364,16 +362,16 @@ def get_tile(prefix, tilez, tilex, tiley):
     """
     Returns tile data for the given Sentinel-2 scene over the input TMS tile.
     """
-    # Compute bounds, scale and size of tile
+    # Compute bounds, scale and size of tile.
     bounds = tile_bounds(int(tilex), int(tiley), int(tilez))
     tilescale = tile_scale(int(tilez))
 
-    # Open raster on s3
+    # Open raster on s3.
     path = '/vsis3/{}'.format(prefix)
     rst = GDALRaster(path)
 
     # Warp parent tile to child tile in memory.
-    return rst.warp({
+    target = rst.warp({
         'driver': 'MEM',
         'srid': WEB_MERCATOR_SRID,
         'width': WEB_MERCATOR_TILESIZE,
@@ -381,6 +379,12 @@ def get_tile(prefix, tilez, tilex, tiley):
         'scale': [tilescale, -tilescale],
         'origin': [bounds[0], bounds[3]],
     })
+
+    # The GDALRaster can not be pickled, so it needs to be decomposed here.
+    data = [{'data': band.data(), 'nodata_value': band.nodata_value} for band in target.bands]
+    dtype = target.bands[0].datatype()
+
+    return tilescale, dtype, (bounds[0], bounds[3]), data
 
 
 class LambdaView(AlgebraView, RasterAPIView):
@@ -443,14 +447,9 @@ class LambdaView(AlgebraView, RasterAPIView):
 
                 }
 
-    def get_tile(self, band_name):
-        # Get tile indices from the request url parameters.
-        tilez = int(self.kwargs.get('z'))
-        tilex = int(self.kwargs.get('x'))
-        tiley = int(self.kwargs.get('y'))
-
+    def get_vsi_path(self):
         if 'sentinel' in self.kwargs:
-            vsis3path = 'sentinel-s2-l1c/tiles/{utm_zone}/{lat_band}/{grid_id}/{year}/{month}/{day}/{scene_nr}/{band}.jp2'.format(
+            vsis3path = 'sentinel-s2-l1c/tiles/{utm_zone}/{lat_band}/{grid_id}/{year}/{month}/{day}/{scene_nr}/{{band}}.jp2'.format(
                 utm_zone=self.kwargs.get('utm_zone'),
                 lat_band=self.kwargs.get('lat_band'),
                 grid_id=self.kwargs.get('grid_id'),
@@ -458,26 +457,24 @@ class LambdaView(AlgebraView, RasterAPIView):
                 month=self.kwargs.get('month'),
                 day=self.kwargs.get('day'),
                 scene_nr=self.kwargs.get('scene_nr'),
-                band=band_name,
             )
         elif 'landsat' in self.kwargs:
             if 'collection' in self.kwargs:
-                vsis3path = 'landsat-pds/{collection}/{sensor}/{row}/{column}/{scene}/{scene}_{band}.TIF'.format(
+                vsis3path = 'landsat-pds/{collection}/{sensor}/{row}/{column}/{scene}/{scene}_{{band}}.TIF'.format(
                     collection=self.kwargs.get('collection'),
                     sensor=self.kwargs.get('sensor'),
                     row=self.kwargs.get('row'),
                     column=self.kwargs.get('column'),
                     scene=self.kwargs.get('scene'),
-                    band=band_name,
                 )
             else:
-                vsis3path = 'landsat-pds/{sensor}/{row}/{column}/{scene}/{scene}_{band}.TIF'.format(
+                vsis3path = 'landsat-pds/{sensor}/{row}/{column}/{scene}/{scene}_{{band}}.TIF'.format(
                     collection=self.kwargs.get('collection'),
                     sensor=self.kwargs.get('sensor'),
                     row=self.kwargs.get('row'),
                     column=self.kwargs.get('column'),
                     scene=self.kwargs.get('scene'),
-                    band=band_name,
+
                 )
         elif 'naip' in self.kwargs:
                 vsis3path = 'aws-naip/{state}/{year}/{resolution}/{img_src}/{quadrangle}/{scene}.tif'.format(
@@ -487,72 +484,58 @@ class LambdaView(AlgebraView, RasterAPIView):
                     img_src=self.kwargs.get('img_src'),
                     quadrangle=self.kwargs.get('quadrangle'),
                     scene=self.kwargs.get('scene'),
-                    band=band_name,
                 )
 
-        print(vsis3path)
+        return vsis3path
 
-        return get_tile(vsis3path, tilez, tilex, tiley)
+    def list(self, request, *args, **kwargs):
+        # Get layer ids
+        ids = self.get_ids()
 
-    def list(self, *args, **kwargs):
-        return super(LambdaView, self).get(*args, **kwargs)
+        # Get tile indices from the request url parameters.
+        tilez = int(self.kwargs.get('z'))
+        tilex = int(self.kwargs.get('x'))
+        tiley = int(self.kwargs.get('y'))
 
+        # VSIS3 path
+        vsis3path = self.get_vsi_path()
 
-class LambdaViewV1(RasterAPIView):
+        # Prepare unique list of layer ids to be efficient if the same layer
+        # is used multiple times (for band access for instance).
+        layerids = set(ids.values())
 
-    permission_classes = (IsAuthenticated, )
+        # Construct pool arguments.
+        pool_args = [(vsis3path.format(band=band_name), tilez, tilex, tiley) for band_name in layerids]
 
-    def list(self, request, utm_zone, lat_band, grid_id, year, month, day, scene_nr, z, x, y, **kwargs):
+        # Get the tiles for each unique layer in parallel.
+        with Pool(len(pool_args)) as pool:
+            tile_results = pool.starmap(get_tile, pool_args)
 
-        stile = 'tiles/{utm_zone}/{lat_band}/{grid_id}/{year}/{month}/{day}/{scene_nr}/'.format(
-            utm_zone=utm_zone,
-            lat_band=lat_band,
-            grid_id=grid_id,
-            year=year,
-            month=month,
-            day=day,
-            scene_nr=scene_nr,
-        )
+        # Reconstruct raster objects from pooled data.
+        tile_results = [GDALRaster({
+            'driver': 'MEM',
+            'srid': WEB_MERCATOR_SRID,
+            'width': WEB_MERCATOR_TILESIZE,
+            'height': WEB_MERCATOR_TILESIZE,
+            'scale': [scale, -scale],
+            'origin': origin,
+            'datatype': dtype,
+            'bands': data,
+        }) for scale, dtype, origin, data in tile_results]
 
-        red = get_tile(stile + 'B04.jp2', z, x, y)
-        green = get_tile(stile + 'B03.jp2', z, x, y)
-        blue = get_tile(stile + 'B02.jp2', z, x, y)
+        # Construct tiles dict.
+        tiles = dict(zip(layerids, tile_results))
 
-        # with Pool(3) as pool:
-        #     red, green, blue = pool.starmap(get_tile, [
-        #         (stile + 'B04.jp2', z, x, y),
-        #         (stile + 'B03.jp2', z, x, y),
-        #         (stile + 'B02.jp2', z, x, y),
-        #     ])
+        # Map tiles to a dict with formula names as keys.
+        data = {}
+        for name, layerid in ids.items():
+            data[name] = tiles[layerid]
 
-        scale_min = 0.0
-        scale_max = 3000.0
+        formula = request.GET.get('formula', None)
 
-        # Clip the image minimum.
-        red[red < scale_min] = scale_min
-        green[green < scale_min] = scale_min
-        blue[blue < scale_min] = scale_min
-
-        # Clip the image maximum.
-        red[red > scale_max] = scale_max
-        green[green > scale_max] = scale_max
-        blue[blue > scale_max] = scale_max
-
-        # Scale the image.
-        red = 255 * (red - scale_min) / scale_max
-        green = 255 * (green - scale_min) / scale_max
-        blue = 255 * (blue - scale_min) / scale_max
-
-        mode = 'RGB'
-        reshape = 3
-        img_array = numpy.array((red.ravel(), green.ravel(), blue.ravel()))
-
-        # Reshape array into tile size.
-        img_array = img_array.T.reshape(WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE, reshape).astype('uint8')
-
-        # Create image from array
-        img = Image.fromarray(img_array, mode=mode)
-        stats = {}
-
-        # Return rendered image
-        return self.write_img_to_response(img, stats)
+        # Dispatch by request type. If a formula was provided, use raster
+        # algebra otherwise look for rgb request.
+        if formula:
+            return self.get_algebra(data, formula)
+        else:
+            return self.get_rgb(data)
