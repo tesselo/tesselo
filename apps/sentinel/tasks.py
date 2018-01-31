@@ -1,8 +1,12 @@
 from __future__ import unicode_literals
 
+import glob
 import io
 import json
 import logging
+import os
+import shutil
+import tempfile
 import time
 import traceback
 import uuid
@@ -16,6 +20,7 @@ from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
+from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
 
@@ -695,3 +700,159 @@ def upgrade_sentineltile_to_l2a(sentineltile_id):
     for band in tile.sentineltileband_set.all():
         band.layer.source_url = tile.get_source_url(band.band)
         band.layer.save()
+
+
+PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /Products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
+SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
+
+
+@task
+def process_l2a(sentineltile_id):
+    # Open sentinel tile instance.
+    tile = SentinelTile.objects.get(id=sentineltile_id)
+
+    # Construct download command.
+    mgrs_code = '{0}{1}{2}'.format(
+        tile.mgrstile.utm_zone,
+        tile.mgrstile.latitude_band,
+        tile.mgrstile.grid_square
+    )
+    productdownload_cmd = PRODUCT_DOWNLOAD_CMD_TMPL.format(
+        tile_id=tile.id,
+        mgrs_code=mgrs_code,
+        start=tile.collected.date(),
+        end=tile.collected.date(),
+    )
+
+    # Download the scene.
+    os.system(productdownload_cmd)
+
+    # Construct Sen2Cor command.
+    product_path = glob.glob('/Products/{}/*.SAFE'.format(tile.id))[0]
+    sen2cor_cmd = SEN2COR_CMD_TMPL.format(product_path=product_path)
+
+    # Apply atmoshperic correction.
+    os.system(sen2cor_cmd)
+
+    # Update level.
+    tile.level = const.LEVEL_L2A
+    tile.save()
+
+    # Ingest the resulting rasters as tiles.
+    for filename, description in const.BAND_CHOICES:
+
+        # Fix zoom level by band to ensure consistency.
+        if filename in const.BANDS_10M:
+            resolution = '10'
+            zoom = const.ZOOM_LEVEL_10M
+        elif filename in const.BANDS_20M:
+            resolution = '20'
+            zoom = const.ZOOM_LEVEL_20M
+        else:
+            resolution = '60'
+            zoom = const.ZOOM_LEVEL_60M
+
+        # Check if this band already exists.
+        band = SentinelTileBand.objects.filter(band=filename, tile=tile).first()
+
+        if not band:
+            # Create new raster layer and register it as sentinel band.
+            layer = RasterLayer.objects.create(
+                name=tile.prefix + filename,
+                datatype=RasterLayer.CONTINUOUS,
+                nodata=const.SENTINEL_NODATA_VALUE,
+                max_zoom=zoom,
+                build_pyramid=True,
+                store_reprojected=False,
+            )
+
+            # Make sentinel bands available to all users.
+            layer.publicrasterlayer.public = True
+            layer.publicrasterlayer.save()
+
+            # Register raster layer as sentinel tile band.
+            band = SentinelTileBand.objects.create(
+                layer=layer,
+                band=filename,
+                tile=tile,
+            )
+
+        # Get path of corrected image for this band.
+        glob_pattern = '/Products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R{resolution}m/*{band}_{resolution}m.jp2'.format(
+            tile_id=tile.id,
+            band=band.band.split('.jp2')[0],
+            resolution=resolution,
+        )
+        bandpath = glob.glob(glob_pattern)
+
+        # Continue if file has not been created.
+        if not len(bandpath):
+            print('Atmosphericaly corrected band ', band.band, 'not found.')
+            continue
+        else:
+            print('Processing', band)
+            bandpath = bandpath[0]
+
+        # Create workdir for parsing.
+        tmpdir = tempfile.mkdtemp()
+        intermediate_rst = os.path.join(tmpdir, band.band.split('.jp2')[0] + '.tif')
+        target_rst = os.path.join(tmpdir, 's2_' + '_'.join(tile.prefix.split('/')[1:]) + band.band.split('.jp2')[0] + '.tif')
+
+        # Transform raster into cloud optimized geotiff in Web Mercator.
+        os.system('gdalwarp -t_srs EPSG:{} {} {} -co TILED=YES -co BLOCKXSIZE=256 -co BLOCKYSIZE=256 -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
+            WEB_MERCATOR_SRID,
+            bandpath,
+            intermediate_rst,
+        ))
+
+        os.system('gdaladdo -r average {} 2 4 6 8 16 32'.format(
+            intermediate_rst,
+        ))
+
+        os.system('gdal_translate {} {} -co TILED=YES -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
+            intermediate_rst,
+            target_rst,
+        ))
+
+        # Store cloud optimized tif as source in raster model. This triggers
+        # tiling automatically.
+        band.layer.rasterfile = File(
+            open(target_rst, 'rb'),
+            name=os.path.basename(target_rst)
+        )
+        band.layer.source_url = ''
+        band.layer.save()
+
+        # Remove intermediate files.
+        shutil.rmtree(tmpdir)
+
+    # Remove main product files.
+    shutil.rmtree('/Products/{}'.format(tile.id))
+
+
+def locally_parse_raster(zoom, target_rst, band):
+    """
+    Instead of uploading the reprojected tif, we could parse the rasters right
+    here. This would allow to never store the full tif files, but is more
+    suceptible to random killing of spot instances.
+    """
+    # Open parser for the band.
+    parser = RasterLayerParser(band.layer_id)
+    parser.tmpdir = tempfile.mkdtemp()
+
+    # Open rasterlayer as GDALRaster, assign to parser attribute.
+    parser.dataset = GDALRaster(target_rst)
+    parser.extract_metadata()
+
+    # Reproject and tile dataset.
+    try:
+        parser.create_tiles(list(range(zoom + 1)))
+    except:
+        print('Failed parsing', band.band, traceback.format_exc())
+        parser.log(
+            traceback.format_exc(),
+            status=parser.rasterlayer.parsestatus.FAILED
+        )
+    finally:
+        del parser.dataset
+        shutil.rmtree(parser.tmpdir)
