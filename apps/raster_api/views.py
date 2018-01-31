@@ -304,7 +304,7 @@ class ZoneOfInterestViewSet(PermissionsModelViewSet):
     _model = 'zoneofinterest'
 
 
-class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
+class SentinelTileAggregationLayerViewSet(ModelViewSet):
     serializer_class = SentinelTileAggregationLayerSerializer
     pagination_class = LargeResultsSetPagination
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
