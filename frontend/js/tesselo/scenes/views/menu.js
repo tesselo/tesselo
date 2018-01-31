@@ -171,7 +171,7 @@ define([
                 var blue = _.filter(this.layer_dict, function(val, key){ return key == 'B02.jp2' })[0];
 
                 var url = '/api/algebra/{z}/{x}/{y}.png?layers=r=' + red + ',g=' + green + ',b=' + blue + '&scale=10,3e3&alpha';
-                var url = '/api/sentinel/' + this.prefix + '{z}/{x}/{y}.png?layers=r=1,g=2,b=3&scale=3,3e3&alpha';
+                var url = '/api/sentinel/' + this.prefix + '{z}/{x}/{y}.png?&scale=3,3e3&alpha';
                 var nav_base = this.composite_id + '/';
             } else {
                 // Construct ids array from current composite.
@@ -181,7 +181,7 @@ define([
                     // Remove jp2 from band names.
                     var name = key.split('.jp2')[0];
                     // Remove zero in band names.
-                    name = name.split('B0').join('B');
+                    // name = name.split('B0').join('B');
                     // Filter bands that are in formula.
                     if(_this.formula_model.get('formula').indexOf(name) !== -1){
                         ids.push(name + '=' + val);
@@ -199,9 +199,22 @@ define([
                 // Construct url.
                 var url = '/api/algebra/{z}/{x}/{y}.png?layers=' + ids +'&formula=' + formula + '&colormap=' + legend;
 
+                formula = formula
+                  .replace(/B1(?!0|1|2)/g, 'B01')
+                  .replace(/B2/g, 'B02')
+                  .replace(/B3/g, 'B03')
+                  .replace(/B4/g, 'B04')
+                  .replace(/B5/g, 'B05')
+                  .replace(/B6/g, 'B06')
+                  .replace(/B7/g, 'B07')
+                  .replace(/B8(?!A)/g, 'B08')
+                  .replace(/B9/g, 'B09');
+
+
+                var url = '/api/sentinel/' + this.prefix + '{z}/{x}/{y}.png?formula=' + formula + '&colormap=' + legend;
+
                 // Navigation base
                 //var nav_base = this.composite_id + '/' + formula + '/' + min + '/' + max + '/' + (brk ? brk : '0') + '/' + color + '/';
-
             }
 
             this.triggerMethod('did:refresh', url);
