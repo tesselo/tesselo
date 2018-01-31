@@ -31,7 +31,7 @@ from django.contrib.auth.models import Group, User
 from django.contrib.gis.gdal import GDALRaster
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from raster_api.filters import CompositeFilter
+from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
     RasterTilePermission, ValueCountResultCreatePermission
@@ -309,17 +309,12 @@ class SentinelTileAggregationLayerViewSet(PermissionsModelViewSet):
     pagination_class = LargeResultsSetPagination
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
     filter_backends = (SearchFilter, DjangoFilterBackend, )
-    filter_fields = ('active', )
+    filter_class = SentinelTileAggregationLayerFilter
     search_fields = ('sentineltile__prefix', )
 
     _parent_model = 'aggregationlayer'
 
-    def get_queryset(self):
-        qs = SentinelTileAggregationLayer.objects.all().order_by('id')
-        agglyr = self.request.GET.get('aggregationlayer', None)
-        if agglyr:
-            qs = qs.filter(aggregationlayer_id=agglyr)
-        return qs
+    queryset = SentinelTileAggregationLayer.objects.all().order_by('id')
 
 
 class ObtainExpiringAuthToken(ObtainAuthToken):
