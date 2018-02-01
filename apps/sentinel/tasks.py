@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import pathlib
 import shutil
 import tempfile
 import time
@@ -794,9 +795,12 @@ def process_l2a(sentineltile_id):
             bandpath = bandpath[0]
 
         # Create workdir for parsing.
-        tmpdir = tempfile.mkdtemp()
+        tmpdir = '/Products/{tile_id}/tmp'.format(tile_id=tile.id)
+        pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
         intermediate_rst = os.path.join(tmpdir, band.band.split('.jp2')[0] + '.tif')
+        print('Intermediate raster is ', intermediate_rst)
         target_rst = os.path.join(tmpdir, 's2_' + '_'.join(tile.prefix.split('/')[1:]) + band.band.split('.jp2')[0] + '.tif')
+        print('Target raster is ', intermediate_rst)
 
         # Transform raster into cloud optimized geotiff in Web Mercator.
         os.system('gdalwarp -t_srs EPSG:{} {} {} -co TILED=YES -co BLOCKXSIZE=256 -co BLOCKYSIZE=256 -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
