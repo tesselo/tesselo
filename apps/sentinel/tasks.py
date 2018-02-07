@@ -806,7 +806,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
 
         # Continue if file has not been created.
         if not len(bandpath):
-            print('Atmosphericaly corrected band ', band.band, 'not found.')
+            print('No source found for band ', band.band)
             continue
         else:
             print('Processing', band)
@@ -867,9 +867,11 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
     here. This would allow to never store the full tif files, but is more
     suceptible to random killing of spot instances.
     """
-    # Open parser for the band.
+    # Open parser for the band, set tempdir and remove previous log.
     parser = RasterLayerParser(band.layer_id)
     parser.tmpdir = tmpdir
+    parser.rasterlayer.parsestatus.log = ''
+    parser.rasterlayer.parsestatus.save()
 
     # Open rasterlayer as GDALRaster, assign to parser attribute.
     parser.dataset = GDALRaster(target_rst)
@@ -878,6 +880,7 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
     # Reproject and tile dataset.
     try:
         parser.create_tiles(list(range(zoom + 1)))
+        parser.send_success_signal()
     except:
         print('Failed parsing', band.band, traceback.format_exc())
         parser.log(
