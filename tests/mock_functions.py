@@ -137,4 +137,19 @@ def point_to_test_file(source_url, filepath):
 
 
 def get_numpy_tile(prefix, tilez, tilex, tiley):
-    return numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')
+    class FakeTile(object):
+        rast = None
+    tile = FakeTile()
+    data = numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')
+    tile.rast = GDALRaster({
+        'width': 256,
+        'height': 256,
+        'origin': (11843687, -458452),
+        'scale': [10, -10],
+        'srid': WEB_MERCATOR_SRID,
+        'datatype': 2,
+        'bands': [
+            {'nodata_value': 0, 'data': data},
+        ],
+    })
+    return tile

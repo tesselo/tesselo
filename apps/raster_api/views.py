@@ -9,7 +9,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_scale
 from raster.views import AlgebraView, ExportView, RasterView
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
-from raster_aggregation.serializers import AggregationAreaSimplifiedSerializer, ValueCountResultSerializer
+from raster_aggregation.serializers import AggregationAreaSimplifiedSerializer
 from raster_aggregation.views import AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
 from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from rest_framework import renderers
@@ -40,7 +40,7 @@ from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     AggregationLayerSerializer, CompositeSerializer, GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer,
     LegendSerializer, RasterLayerSerializer, SentinelTileAggregationLayerSerializer, UserSerializer,
-    ZoneOfInterestSerializer
+    ValueCountResultSerializer, ZoneOfInterestSerializer
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest

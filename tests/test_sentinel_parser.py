@@ -22,7 +22,7 @@ from sentinel.tasks import (
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
-@mock.patch('sentinel.tasks.get_tile', get_numpy_tile)
+@mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 class SentinelBucketParserTest(TestCase):

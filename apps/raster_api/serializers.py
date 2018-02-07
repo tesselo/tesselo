@@ -8,6 +8,7 @@ from raster.models import (
 from raster.tiles.const import WEB_MERCATOR_SRID
 from raster_aggregation.models import AggregationLayer
 from raster_aggregation.serializers import AggregationLayerSerializer as AggregationLayerSerializerOriginal
+from raster_aggregation.serializers import ValueCountResultSerializer as ValueCountResultSerializerOriginal
 from rest_framework.serializers import (
     CharField, FileField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
 )
@@ -298,3 +299,11 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
         extent.srid = WEB_MERCATOR_SRID
         extent.transform(4326)
         return extent.extent
+
+
+class ValueCountResultSerializer(ValueCountResultSerializerOriginal):
+
+    name = CharField(source='aggregationarea.name', read_only=True)
+
+    class Meta(ValueCountResultSerializerOriginal.Meta):
+        fields = ValueCountResultSerializerOriginal.Meta.fields + ('name', )

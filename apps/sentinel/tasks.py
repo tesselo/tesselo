@@ -367,7 +367,10 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     tiles = []
     for sentineltile in sentineltiles:
         for band in bnds:
-            tile = get_raster_tile(SentinelTileBand.objects.get(tile__prefix=sentineltile, band=band).layer_id, tilez, tilex, tiley)
+            try:
+                tile = get_raster_tile(SentinelTileBand.objects.get(tile__prefix=sentineltile, band=band).layer_id, tilez, tilex, tiley)
+            except SentinelTileBand.DoesNotExist:
+                continue
             if not tile:
                 continue
             # tile = get_tile(sentineltile + band, tilez, tilex, tiley)
