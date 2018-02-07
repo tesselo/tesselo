@@ -3,8 +3,7 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - $(aws ecr get-login --region eu-central-1)
+
   build:
     commands:
       - echo "Started Docker Build ${CODEBUILD_BUILD_ID##*:}"
@@ -12,9 +11,16 @@ phases:
       - docker build -t tesselo -f DockerfileTesselo .
       - echo Running tests on Docker image...
       - docker run --rm --env DEBUG=True tesselo /run.sh test
-      - echo Pushing the Docker image...
+      - echo Logging in to Amazon ECR on eu-central-1...
+      - $(aws ecr get-login --region eu-central-1)
+      - echo Pushing the Docker image to eu-central-1...
       - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
       - docker push 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
+      - echo Logging in to Amazon ECR on us-east-1...
+      - $(aws ecr get-login --region us-east-1)
+      - echo Pushing the Docker image to us-east-1...
+      - docker tag tesselo:latest 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:latest
+      - docker push 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:latest
       - "echo {\\\"image\\\":\\\"595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest}\\\"} > image.json"
 
 artifacts:

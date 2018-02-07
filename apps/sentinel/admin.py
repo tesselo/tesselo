@@ -5,7 +5,7 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBand, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
     SentinelTileBand, ZoneOfInterest
 )
-from sentinel.tasks import drive_sentinel_bucket_parser, drive_world_layers, upgrade_sentineltile_to_l2a
+from sentinel.tasks import drive_composite_builders, drive_sentinel_bucket_parser, upgrade_sentineltile_to_l2a
 
 
 class PatchedOSMGeoAdmin(admin.GeoModelAdmin):
@@ -29,6 +29,11 @@ class SentinelTileBandAdmin(admin.ModelAdmin):
     raw_id_fields = ('tile', 'layer', )
 
 
+class SentinelTileCompositeInline(admin.TabularInline):
+    model = SentinelTile.composite_set.through
+    extra = 1
+
+
 class SentinelTileAdmin(PatchedOSMGeoAdmin):
     actions = ('upgrade_to_l2a', )
     readonly_fields = (
@@ -40,6 +45,7 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
     modifiable = False
     list_filter = ('mgrstile__utm_zone', 'mgrstile__latitude_band', )
     search_fields = ('prefix', )
+    inlines = (SentinelTileCompositeInline, )
 
     def upgrade_to_l2a(self, request, queryset):
         for tile in queryset:
@@ -59,14 +65,14 @@ class MGRSTileAdmin(PatchedOSMGeoAdmin):
 class CompositeAdmin(admin.ModelAdmin):
     list_filter = ('active', )
     model = Composite
-    readonly_fields = ('compositebands', )
-    actions = ['build_compositebands', ]
+    readonly_fields = ('compositebands', 'sentineltiles', )
+    actions = ['build_composite', ]
 
-    def build_compositebands(self, request, queryset):
+    def build_composite(self, request, queryset):
         """
         Admin action to build selected compositebands.
         """
-        drive_world_layers.delay([lyr.id for lyr in queryset])
+        drive_composite_builders.delay([lyr.id for lyr in queryset])
         self.message_user(request, 'Started building compositebands.')
 
 

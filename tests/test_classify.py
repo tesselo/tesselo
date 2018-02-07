@@ -17,7 +17,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.test import TestCase, override_settings
 from sentinel.models import Composite, SentinelTile, ZoneOfInterest
-from sentinel.tasks import drive_sentinel_queue, drive_world_layers, sync_sentinel_bucket_utm_zone
+from sentinel.tasks import drive_composite_builders, drive_sentinel_queue, sync_sentinel_bucket_utm_zone
 
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
@@ -118,7 +118,7 @@ class SentinelClassifierTest(TestCase):
 
     def test_classifier_prediction_composite(self):
         self._get_data()
-        drive_world_layers()
+        drive_composite_builders()
         train_sentinel_classifier(self.clf.id)
 
         pred = PredictedLayer.objects.create(

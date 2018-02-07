@@ -16,7 +16,7 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileBand, ZoneOfInterest
 )
 from sentinel.tasks import (
-    drive_sentinel_queue, drive_world_layers, repair_incomplete_scenes, sync_sentinel_bucket_utm_zone
+    drive_composite_builders, drive_sentinel_queue, repair_incomplete_scenes, sync_sentinel_bucket_utm_zone
 )
 
 
@@ -93,7 +93,7 @@ class SentinelBucketParserTest(TestCase):
         drive_sentinel_queue()
         drive_sentinel_queue()
 
-        drive_world_layers()
+        drive_composite_builders()
 
         self.assertTrue(RasterTile.objects.filter(rasterlayer_id=lyr.id).count() > 0)
         self.assertTrue(RasterTile.objects.filter(tilez=5, rasterlayer_id=lyr.id).count() > 0)

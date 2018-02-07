@@ -42,16 +42,16 @@ def disaggregate_tile(tile, factor, offsetx, offsety):
     return data.repeat(factor, axis=0).repeat(factor, axis=1)
 
 
-def get_world_tile_indices(world, zoom=const.ZOOM_LEVEL_WORLDLAYER):
+def get_composite_tile_indices(composite, zoom=const.ZOOM_LEVEL_WORLDLAYER):
     """
     Get x-y-z tile indexes for all tiles intersecting over this compositeband's
     zones of interest.
     """
     # Get all active zones of interest for this composite.
-    if world.all_zones:
+    if composite.all_zones:
         zones = ZoneOfInterest.objects.filter(active=True)
     else:
-        zones = world.zonesofinterest.filter(active=True)
+        zones = composite.zonesofinterest.filter(active=True)
 
     # Build composite tiles for each zone.
     for zone in zones:
@@ -144,7 +144,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         dest = io.BytesIO(dest.vsi_buffer)
         dest = File(dest, name='tile.tif')
 
-        # Create a new tile if the world tile does not exist yet.
+        # Create a new tile if the composite tile does not exist yet.
         RasterTile.objects.create(
             rasterlayer_id=layer_id,
             tilez=tilez,

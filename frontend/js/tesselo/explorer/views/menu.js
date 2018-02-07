@@ -60,7 +60,7 @@ define([
             // Show composite view.
             this.showChildView('worldRegion', world);
             // Limit composites to active layers.
-            var params = {data: $.param({active: true})};
+            var params = {data: $.param({active: true, official: false})};
             // Fetch composite data and set first layer.
             collection.fetch(params).done(function(){
                 _this.setLayerDict(collection.models[0]);

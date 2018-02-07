@@ -7,7 +7,6 @@ import logging
 import os
 import pathlib
 import shutil
-import tempfile
 import time
 import traceback
 import uuid
@@ -21,6 +20,7 @@ from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
+from raster.tiles.lookup import get_raster_tile
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
@@ -32,7 +32,7 @@ from django.db.models import Count, F, Func
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from raster_api.views import get_tile
+# from raster_api.views import get_tile
 from sentinel import const
 from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
@@ -41,7 +41,7 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
     SentinelTileBand, ZoneOfInterest
 )
-from sentinel.utils import aggregate_tile, disaggregate_tile, get_world_tile_indices, write_raster_tile
+from sentinel.utils import aggregate_tile, disaggregate_tile, get_composite_tile_indices, write_raster_tile
 
 logger = get_task_logger(__name__)
 
@@ -238,26 +238,26 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
         logger.info(msg.format(layers_processing))
         return
 
-    worlds = Composite.objects.filter(active=True)
-    for world in worlds:
+    composites = Composite.objects.filter(active=True)
+    for composite in composites:
         # Get all active zones of interest for this composite.
-        if world.all_zones:
+        if composite.all_zones:
             zones = ZoneOfInterest.objects.filter(active=True)
         else:
-            zones = world.zonesofinterest.filter(active=True)
+            zones = composite.zonesofinterest.filter(active=True)
         # Loop through zones to add new scenes.
         for zone in zones.iterator():
             # Get MGRS tiles that intersect with the zone of interest, and do not
             # have more than two layers ingested. Currently exclude utm zones at
-            # the time horizon, because geometries are wrapped around the world.
+            # the time horizon, because geometries are wrapped around the composite.
             for mgrs in MGRSTile.objects.exclude(utm_zone__in=[1, 60]).filter(geom__intersects=zone.geom):
                 # Count number of complete scenes for the given time frame and mgrs tile.
                 nr_of_complete_scenes = mgrs.sentineltile_set.annotate(
                     band_count=Count('sentineltileband')
                 ).filter(
                     band_count=const.NR_OF_BANDS,
-                    collected__gte=world.min_date,
-                    collected__lte=world.max_date,
+                    collected__gte=composite.min_date,
+                    collected__lte=composite.max_date,
                 ).count()
                 # Limit the number of scenes to a maximum.
                 if nr_of_complete_scenes >= const.MAX_SCENES_PER_MGRSTILE and scene_limit:
@@ -268,8 +268,8 @@ def drive_sentinel_queue(queue_limit=True, scene_limit=True):
                 qs = qs.filter(mgrstile=mgrs)
                 # Filter sentinel tiles by date.
                 qs = qs.filter(
-                    collected__gte=world.min_date,
-                    collected__lte=world.max_date,
+                    collected__gte=composite.min_date,
+                    collected__lte=composite.max_date,
                 )
                 # Compute cohorts for cloud covers in steps of 10 percent, the cohorts
                 # are necessary such that the date ordering still has an effect. The
@@ -367,31 +367,38 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     tiles = []
     for sentineltile in sentineltiles:
         for band in bnds:
-            tile = get_tile(sentineltile + band, tilez, tilex, tiley)
-            tiles.append((sentineltile, band, tile))
+            tile = get_raster_tile(SentinelTileBand.objects.get(tile__prefix=sentineltile, band=band).layer_id, tilez, tilex, tiley)
+            if not tile:
+                continue
+            # tile = get_tile(sentineltile + band, tilez, tilex, tiley)
+            tiles.append((sentineltile, band, tile.rast.bands[0].data()))
     return tiles
 
 
-def zone_tile_stacks(world, tilex, tiley, tilez):
+def zone_tile_stacks(composite, tilex, tiley, tilez, level=const.LEVEL_L1C):
     """
     Iterator to provide scene level band stacks for all xyz tiles that
     intersect with a zone of interest.
     """
     logger.info('Creating Tiles for Layer "{0}" at {1}/{2}/{3}'.format(
-        world.name,
+        composite.name,
         tilez,
         tilex,
         tiley,
     ))
 
-    # Preload tiles that are populated on the bands based on the world
-    # layer group settings.
-    sentineltiles = SentinelTile.objects.filter(
-        collected__gte=world.min_date,
-        collected__lte=world.max_date,
-    ).order_by(
-        'cloudy_pixel_percentage',
-    )
+    if composite.sentineltiles.count() > 0:
+        # Get specific sentinel tiles if specified.
+        sentineltiles = composite.sentineltiles.all()
+    else:
+        # Preload tiles that are populated on the bands based on the composite
+        # layer group settings.
+        sentineltiles = SentinelTile.objects.filter(
+            collected__gte=composite.min_date,
+            collected__lte=composite.max_date,
+        ).order_by(
+            'cloudy_pixel_percentage',
+        )
 
     # Compute indexrange for this higher level tile.
     bounds = tile_bounds(tilex, tiley, tilez)
@@ -462,19 +469,19 @@ def zone_tile_stacks(world, tilex, tiley, tilez):
 
 
 @task
-def drive_world_layers(world_ids=None):
+def drive_composite_builders(composite_ids=None):
     """
     Schedule composite creation based on zones of interest.
     """
-    worlds = Composite.objects.filter(active=True)
-    if world_ids:
-        worlds = worlds.filter(id__in=world_ids)
+    composites = Composite.objects.filter(active=True)
+    if composite_ids:
+        composites = composites.filter(id__in=composite_ids)
 
-    for world in worlds:
-        for tilex, tiley, tilez in get_world_tile_indices(world):
+    for composite in composites:
+        for tilex, tiley, tilez in get_composite_tile_indices(composite):
             # Check if the tile is currently building.
             processing = CompositeBuildLog.objects.filter(
-                composite=world,
+                composite=composite,
                 tilex=tilex,
                 tiley=tiley,
                 tilez=tilez,
@@ -486,24 +493,24 @@ def drive_world_layers(world_ids=None):
 
             # Register parse effort.
             wpp = CompositeBuildLog.objects.create(
-                composite=world,
+                composite=composite,
                 tilex=tilex,
                 tiley=tiley,
                 tilez=tilez,
                 log='',
             )
-            wpp.write('Scheduled world builder, waiting for worker availability.')
+            wpp.write('Scheduled composite builder, waiting for worker availability.')
 
             # Sleep to not put too many heavy tasks on the DB at once.
             time.sleep(1)
 
-            build_world_layers.delay(world.id, tilex, tiley, tilez)
+            build_composite(composite.id, tilex, tiley, tilez)
 
-    return 'Started composites for layers {0}.'.format([world.pk for world in worlds])
+    return 'Started composites for layers {0}.'.format([composite.id for composite in composites])
 
 
 @task
-def build_world_layers(world_id, tilex, tiley, tilez):
+def build_composite(composite_id, tilex, tiley, tilez):
     """
     Build a cloud free unified base layer for a given zone of interest and for
     each sentinel band.
@@ -511,11 +518,11 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     If reset is activated, the files are deleted and re-created from scratch.
     """
     # Get compositeband and zone from db.
-    world = Composite.objects.get(id=world_id)
+    composite = Composite.objects.get(id=composite_id)
 
-    # Update world parse process.
+    # Update composite parse process.
     wpp = CompositeBuildLog.objects.filter(
-        composite=world,
+        composite=composite,
         tilex=tilex,
         tiley=tiley,
         tilez=tilez,
@@ -523,15 +530,15 @@ def build_world_layers(world_id, tilex, tiley, tilez):
     ).first()
 
     wpp.start = timezone.now()
-    wpp.write('Starting to build compositeband.')
+    wpp.write('Starting to build composite band.')
 
     # Get the list of master layers for all 13 bands.
-    rasterlayer_lookup = world.rasterlayer_lookup
+    rasterlayer_lookup = composite.rasterlayer_lookup
 
     # Loop over all TMS tiles in a given zone and get band stacks for available
     # scenes in that tile.
     counter = 0
-    for x, y, stacks in zone_tile_stacks(world, tilex, tiley, tilez):
+    for x, y, stacks in zone_tile_stacks(composite, tilex, tiley, tilez):
         # Compute the cloud probabilities for each avaiable scene band stack.
         cloud_probs = [clouds(stack) for stack in stacks]
 
@@ -547,15 +554,15 @@ def build_world_layers(world_id, tilex, tiley, tilez):
 
         # Loop over all bands.
         for key, name in const.BAND_CHOICES:
-            # Merge scene tiles for this band into a world tile using the selector index.
+            # Merge scene tiles for this band into a composite tile using the selector index.
             bnds = numpy.array([stack[key] for stack in stacks])
 
             # Construct final composite band array from selector index.
-            composite = bnds[selector_index, const.CLOUD_IDX1, const.CLOUD_IDX2]
+            composite_data = bnds[selector_index, const.CLOUD_IDX1, const.CLOUD_IDX2]
 
             # Update results dict with data, using a random name for the in
             # memory raster.
-            result_dict['bands'][0]['data'] = composite
+            result_dict['bands'][0]['data'] = composite_data
             result_dict['name'] = '/vsimem/{}'.format(uuid.uuid4())
 
             # Convert gdalraster to file like object.
@@ -591,18 +598,18 @@ def build_world_layers(world_id, tilex, tiley, tilez):
             logger.info('{count} World Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=x, y=y))
 
     # Build pyramid for this zone.
-    build_world_pyramids(world, tilex, tiley, tilez)
+    build_composite_pyramids(composite, tilex, tiley, tilez)
 
-    return 'Successfully built compositeband {0} at (x={1}, y={2}, z={3})'.format(world_id, tilex, tiley, tilez)
+    return 'Successfully built compositeband {0} at (x={1}, y={2}, z={3})'.format(composite_id, tilex, tiley, tilez)
 
 
-def build_world_pyramids(world, tilex, tiley, tilez):
+def build_composite_pyramids(composite, tilex, tiley, tilez):
     """
     Build pyramids for the global layer of each band.
     """
-    # Get world parse process logger.
+    # Get composite parse process logger.
     wpp = CompositeBuildLog.objects.filter(
-        composite=world,
+        composite=composite,
         tilex=tilex,
         tiley=tiley,
         tilez=tilez,
@@ -610,7 +617,7 @@ def build_world_pyramids(world, tilex, tiley, tilez):
     ).first()
 
     # Get rasterlayers.
-    rasterlayer_lookup = world.rasterlayer_lookup.values()
+    rasterlayer_lookup = composite.rasterlayer_lookup.values()
 
     bounds = tile_bounds(tilex, tiley, tilez)
     indexrange60 = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
@@ -703,12 +710,12 @@ def upgrade_sentineltile_to_l2a(sentineltile_id):
         band.layer.save()
 
 
-PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /Products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
-SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
+PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
+SEN2COR_CMD_TMPL = '/home/mrdjango/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
 
 
 @task
-def process_l2a(sentineltile_id):
+def process_l2a(sentineltile_id, push_rasters=False):
     # Open sentinel tile instance.
     tile = SentinelTile.objects.get(id=sentineltile_id)
 
@@ -729,15 +736,16 @@ def process_l2a(sentineltile_id):
     os.system(productdownload_cmd)
 
     # Construct Sen2Cor command.
-    product_path = glob.glob('/Products/{}/*.SAFE'.format(tile.id))[0]
+    product_path = glob.glob('/rasterwd/products/{}/*.SAFE'.format(tile.id))[0]
     sen2cor_cmd = SEN2COR_CMD_TMPL.format(product_path=product_path)
 
     # Apply atmoshperic correction.
     os.system(sen2cor_cmd)
 
     # Update level.
-    tile.level = const.LEVEL_L2A
-    tile.save()
+    if tile.level != const.LEVEL_L2A:
+        tile.level = const.LEVEL_L2A
+        tile.save()
 
     # Ingest the resulting rasters as tiles.
     for filename, description in const.BAND_CHOICES:
@@ -778,13 +786,20 @@ def process_l2a(sentineltile_id):
                 tile=tile,
             )
 
-        # Get path of corrected image for this band.
-        glob_pattern = '/Products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R{resolution}m/*{band}_{resolution}m.jp2'.format(
-            tile_id=tile.id,
-            band=band.band.split('.jp2')[0],
-            resolution=resolution,
-        )
-        bandpath = glob.glob(glob_pattern)
+        # Get path of corrected image for this band, use uncorrected for 60m.
+        if resolution == '60':
+            glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL1C*.SAFE/GRANULE/*/IMG_DATA/*{band}'.format(
+                tile_id=tile.id,
+                band=band.band,
+            )
+            bandpath = glob.glob(glob_pattern)
+        else:
+            glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R{resolution}m/*{band}_{resolution}m.jp2'.format(
+                tile_id=tile.id,
+                band=band.band.split('.jp2')[0],
+                resolution=resolution,
+            )
+            bandpath = glob.glob(glob_pattern)
 
         # Continue if file has not been created.
         if not len(bandpath):
@@ -795,12 +810,12 @@ def process_l2a(sentineltile_id):
             bandpath = bandpath[0]
 
         # Create workdir for parsing.
-        tmpdir = '/Products/{tile_id}/tmp'.format(tile_id=tile.id)
+        tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
         pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
         intermediate_rst = os.path.join(tmpdir, band.band.split('.jp2')[0] + '.tif')
         print('Intermediate raster is ', intermediate_rst)
         target_rst = os.path.join(tmpdir, 's2_' + '_'.join(tile.prefix.split('/')[1:]) + band.band.split('.jp2')[0] + '.tif')
-        print('Target raster is ', intermediate_rst)
+        print('Target raster is ', target_rst)
 
         # Transform raster into cloud optimized geotiff in Web Mercator.
         os.system('gdalwarp -t_srs EPSG:{} {} {} -co TILED=YES -co BLOCKXSIZE=256 -co BLOCKYSIZE=256 -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
@@ -817,24 +832,33 @@ def process_l2a(sentineltile_id):
             intermediate_rst,
             target_rst,
         ))
-
-        # Store cloud optimized tif as source in raster model. This triggers
-        # tiling automatically.
-        band.layer.rasterfile = File(
-            open(target_rst, 'rb'),
-            name=os.path.basename(target_rst)
-        )
-        band.layer.source_url = ''
-        band.layer.save()
-
-        # Remove intermediate files.
-        shutil.rmtree(tmpdir)
+        if push_rasters:
+            push_and_parse_rasters(tmpdir, band, target_rst)
+        else:
+            locally_parse_raster(tmpdir, band, target_rst, zoom)
 
     # Remove main product files.
-    shutil.rmtree('/Products/{}'.format(tile.id))
+    shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
 
 
-def locally_parse_raster(zoom, target_rst, band):
+def push_and_parse_rasters(tmpdir, band, target_rst):
+    """
+    Stores the raster bands as RasterLayer files. This triggers regular parsing.
+    """
+    # Store cloud optimized tif as source in raster model. This triggers
+    # tiling automatically.
+    band.layer.rasterfile = File(
+        open(target_rst, 'rb'),
+        name=os.path.basename(target_rst)
+    )
+    band.layer.source_url = ''
+    band.layer.save()
+
+    # Remove intermediate files.
+    shutil.rmtree(tmpdir)
+
+
+def locally_parse_raster(tmpdir, band, target_rst, zoom):
     """
     Instead of uploading the reprojected tif, we could parse the rasters right
     here. This would allow to never store the full tif files, but is more
@@ -842,7 +866,7 @@ def locally_parse_raster(zoom, target_rst, band):
     """
     # Open parser for the band.
     parser = RasterLayerParser(band.layer_id)
-    parser.tmpdir = tempfile.mkdtemp()
+    parser.tmpdir = tmpdir
 
     # Open rasterlayer as GDALRaster, assign to parser attribute.
     parser.dataset = GDALRaster(target_rst)
@@ -858,5 +882,4 @@ def locally_parse_raster(zoom, target_rst, band):
             status=parser.rasterlayer.parsestatus.FAILED
         )
     finally:
-        del parser.dataset
         shutil.rmtree(parser.tmpdir)

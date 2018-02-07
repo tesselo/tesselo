@@ -212,9 +212,10 @@ class Composite(models.Model):
     # One raster layer for each band.
     compositebands = models.ManyToManyField(CompositeBand, editable=False)
     # Defining parameters of the layer group.
-    min_date = models.DateField()
-    max_date = models.DateField()
+    min_date = models.DateField(null=True, blank=True)
+    max_date = models.DateField(null=True, blank=True)
     max_cloudy_pixel_percentage = models.FloatField(default=100)
+    sentineltiles = models.ManyToManyField(SentinelTile, blank=True, help_text='Limit the composite to a specific set of sentinel tiles.')
     # Parse related data.
     active = models.BooleanField(default=True, help_text='If unchecked, this area will not be included in the parsing.')
     official = models.BooleanField(default=False, editable=False)

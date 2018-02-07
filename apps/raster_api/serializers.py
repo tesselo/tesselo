@@ -240,8 +240,12 @@ class CompositeSerializer(PermissionsModelSerializer):
             'id', 'name', 'rasterlayer_lookup', 'zonesofinterest', 'all_zones',
             'compositebands', 'min_date', 'max_date', 'interval', 'official',
             'max_cloudy_pixel_percentage', 'active', 'start_week', 'interval',
+            'sentineltiles',
         )
-        read_only_fields = ('rasterlayer_lookup', 'compositebands', 'official', 'interval', )
+        read_only_fields = (
+            'rasterlayer_lookup', 'compositebands', 'official', 'interval',
+            'sentineltiles',
+        )
 
     def get_start_week(self, obj):
         return obj.min_date.isocalendar()[1]

@@ -13,7 +13,7 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 from classify.models import Classifier, PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
-from sentinel.utils import get_sentinel_tile_indices, get_world_tile_indices, write_raster_tile
+from sentinel.utils import get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
 
 ZOOM = 14
 
@@ -129,7 +129,7 @@ def predict_sentinel_layer(predicted_layer_id):
     pred.save()
     # Get tile range for compositeband or sentineltile for this prediction.
     if pred.composite:
-        tiles = get_world_tile_indices(pred.composite, ZOOM)
+        tiles = get_composite_tile_indices(pred.composite, ZOOM)
         rasterlayer_lookup = pred.composite.rasterlayer_lookup
     else:
         tiles = get_sentinel_tile_indices(pred.sentineltile, ZOOM)
