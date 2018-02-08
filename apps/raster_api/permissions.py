@@ -42,8 +42,9 @@ class ValueCountResultCreatePermission(permissions.BasePermission):
         if request.method != 'POST':
             return True
         # The user can view all raster layers.
-        qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
-        view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
+        # qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
+        # view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
+        view_all_rasters = True
         # Check for permission on aggregation area through aggregationlayer.
         aggarea_id = view.request.data.get('aggregationarea', None)
         # If not aggarea was provided, grant access (aggregation package will raise error later).
