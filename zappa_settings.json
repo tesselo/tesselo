@@ -1,0 +1,24 @@
+{
+    "dev": {
+        "aws_region": "eu-central-1",
+        "django_settings": "tesselo.settings",
+        "profile_name": "tesselo",
+        "project_name": "tesselo",
+        "runtime": "python3.6",
+        "s3_bucket": "zappa-vnt9hcrr2",
+        "environment_variables": {
+            "AWS_ACCESS_KEY_ID": "AKIAI3E2MJQSAYZEJZKQ",
+            "AWS_REQUEST_PAYER": "requester",
+            "AWS_SECRET_ACCESS_KEY": "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",
+            "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media",
+            "AWS_STORAGE_BUCKET_NAME_STATIC": "tesselo-static",
+            "AWS_DEFAULT_REGION": "eu-central-1",
+            "DB_HOST": "tesselo-dev.cepyvetzz6ui.eu-central-1.rds.amazonaws.com",
+            "DB_PASSWORD": "hoppybhoppslb",
+            "DB_USER": "tesselo",
+        },
+        "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
+        "domain": "api.tesselo.com",
+        "slim_handler": true
+    }
+}

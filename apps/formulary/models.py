@@ -90,8 +90,8 @@ def create_formula_public_object(sender, instance, created, **kwargs):
 
 class WMTSLayer(models.Model):
     title = models.CharField(max_length=200)
-    formula = models.ForeignKey(Formula, null=True, help_text='Assumes RGB mode if left blank.')
-    sentineltile = models.ForeignKey(SentinelTile)
+    formula = models.ForeignKey(Formula, null=True, help_text='Assumes RGB mode if left blank.', on_delete=models.CASCADE)
+    sentineltile = models.ForeignKey(SentinelTile, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{0} - {1}'.format(self.formula, self.sentineltile)

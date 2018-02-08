@@ -390,18 +390,7 @@ def zone_tile_stacks(composite, tilex, tiley, tilez, level=const.LEVEL_L1C):
         tiley,
     ))
 
-    if composite.sentineltiles.count() > 0:
-        # Get specific sentinel tiles if specified.
-        sentineltiles = composite.sentineltiles.all()
-    else:
-        # Preload tiles that are populated on the bands based on the composite
-        # layer group settings.
-        sentineltiles = SentinelTile.objects.filter(
-            collected__gte=composite.min_date,
-            collected__lte=composite.max_date,
-        ).order_by(
-            'cloudy_pixel_percentage',
-        )
+    sentineltiles = composite.get_sentineltiles()
 
     # Compute indexrange for this higher level tile.
     bounds = tile_bounds(tilex, tiley, tilez)
@@ -889,3 +878,53 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
         )
     finally:
         shutil.rmtree(parser.tmpdir)
+
+
+def fargate_process_l2a(sentineltile_id):
+    """
+    Process Sentinel Tile L2A ingestion on Fargate.
+    """
+    client = boto3.client('ecs', region_name='us-east-1')
+    return client.run_task(
+        cluster='tesselo-workers',
+        taskDefinition='tesselo-process-l2a-8GB-2vCPU:1',
+        overrides={
+            'containerOverrides': [
+                {
+                    'name': 'tesselo',
+                    'command': [
+                        'python3',
+                        'manage.py',
+                        'process_l2a',
+                        str(stile.id),
+                    ],
+                },
+            ],
+        },
+        launchType='FARGATE',
+        networkConfiguration={
+            'awsvpcConfiguration': {
+                'subnets': [
+                    'subnet-4ae19b65',
+                    'subnet-5007051b',
+                ],
+                'securityGroups': [
+                    'sg-66ef6c11',
+                ],
+                'assignPublicIp': 'ENABLED',
+            }
+        }
+    )
+
+
+def build_composite(aggregationlayer_id, composite_id):
+    """
+    Builds a composite over an aggregationlayer.
+    """
+    agglayer = AggregationLayer.objects.get(pk=aggregationlayer_id)
+    composite = Composite.objects.get(pk=composite_id)
+    sentineltiles = composite.get_sentineltiles()
+
+    for stile in sentineltiles:
+        if stile.level != const.LEVEL_L2A:
+            fargate_process_l2a(stile.id)

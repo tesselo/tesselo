@@ -56,7 +56,7 @@ class SentinelTile(models.Model):
     prefix = models.TextField(unique=True)
     datastrip = models.TextField()
     product_name = models.TextField()
-    mgrstile = models.ForeignKey(MGRSTile)
+    mgrstile = models.ForeignKey(MGRSTile, on_delete=models.CASCADE)
     tile_geom = models.PolygonField(null=True)
     tile_data_geom = models.MultiPolygonField(null=True)
     collected = models.DateTimeField()
@@ -119,9 +119,9 @@ class SentinelTileBand(models.Model):
     """
     Sentinel tile band (aka Granule) ingested as raster layer.
     """
-    tile = models.ForeignKey(SentinelTile)
+    tile = models.ForeignKey(SentinelTile, on_delete=models.CASCADE)
     band = models.CharField(max_length=7, choices=const.BAND_CHOICES)
-    layer = models.OneToOneField(RasterLayer)
+    layer = models.OneToOneField(RasterLayer, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (("tile", "band"),)
@@ -135,8 +135,8 @@ class SentinelTileBand(models.Model):
 
 
 class SentinelTileAggregationLayer(models.Model):
-    sentineltile = models.ForeignKey(SentinelTile)
-    aggregationlayer = models.ForeignKey(AggregationLayer)
+    sentineltile = models.ForeignKey(SentinelTile, on_delete=models.CASCADE)
+    aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
 
     class Meta:
@@ -185,7 +185,7 @@ class CompositeBand(models.Model):
     Register RasterLayers as rasterlayer_lookup.
     """
     band = models.CharField(max_length=7, choices=const.BAND_CHOICES)
-    rasterlayer = models.ForeignKey(RasterLayer)
+    rasterlayer = models.ForeignKey(RasterLayer, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{} - {}'.format(self.band, self.rasterlayer.name)
@@ -249,6 +249,19 @@ class Composite(models.Model):
 
         super(Composite, self).save(*args, **kwargs)
 
+    def get_sentineltiles(self):
+        if self.sentineltiles.count() > 0:
+            # Get specific sentinel tiles if specified.
+            return self.sentineltiles.all()
+        else:
+            # Preload tiles that are populated on the bands based on the composite
+            # layer group settings.
+            return SentinelTile.objects.filter(
+                collected__gte=self.min_date,
+                collected__lte=self.max_date,
+                cloudy_pixel_percentage__lte=self.max_cloudy_pixel_percentage,
+            )
+
 
 @receiver(post_save, sender=Composite)
 def create_compositeband_layers(sender, instance, created, **kwargs):
@@ -289,7 +302,7 @@ class CompositeBuildLog(models.Model):
     """
     Track parsing processes to prevent duplication.
     """
-    composite = models.ForeignKey(Composite)
+    composite = models.ForeignKey(Composite, on_delete=models.CASCADE)
 
     tilex = models.IntegerField()
     tiley = models.IntegerField()

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/dev/ref/settings/
 """
 import os
+import glob
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,6 +29,10 @@ LOGIN_REDIRECT_URL = '/'
 # Forward to ssl if not ssl recieved.
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Custom c-library locations.
+# GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgdal-*.so.*'))[0]
+# GEOS_LIBRARY_PATH = os.path.join(os.path.join(BASE_DIR, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
 
 # Application definition
 INSTALLED_APPS = [
