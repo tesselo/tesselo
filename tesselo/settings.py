@@ -31,8 +31,13 @@ SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Custom c-library locations.
-# GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgdal-*.so.*'))[0]
-# GEOS_LIBRARY_PATH = os.path.join(os.path.join(BASE_DIR, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
+if DEBUG:
+    BASE_DIR_LOCAL = '/usr/local/lib/python3.5/dist-packages'
+    GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_LOCAL, 'rasterio/.libs/libgdal-*.so.*'))[0]
+    GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_LOCAL, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
+else:
+    GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgdal-*.so.*'))[0]
+    GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
 
 # Application definition
 INSTALLED_APPS = [
@@ -63,7 +68,7 @@ INSTALLED_APPS = [
 
     'raster_api',
     'sentinel',
-    'classify',
+    # 'classify',
     'formulary',
 ]
 
@@ -162,8 +167,8 @@ CACHES = {
 }
 
 # S3 Settings
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID_ZAP', None)
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY_ZAP', None)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/

@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from multiprocessing import Pool
-
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
@@ -509,14 +507,9 @@ class LambdaView(AlgebraView, RasterAPIView):
         # is used multiple times (for band access for instance).
         layerids = set(ids.values())
 
-        # Construct pool arguments.
-        pool_args = [(vsis3path.format(band=band_name), tilez, tilex, tiley) for band_name in layerids]
+        tile_results = [get_tile(vsis3path.format(band=band_name), tilez, tilex, tiley) for band_name in layerids]
 
-        # Get the tiles for each unique layer in parallel.
-        with Pool(len(pool_args)) as pool:
-            tile_results = pool.starmap(get_tile, pool_args)
-
-        # Reconstruct raster objects from pooled data.
+        # Reconstruct raster objects from data.
         tile_results = [GDALRaster({
             'driver': 'MEM',
             'srid': WEB_MERCATOR_SRID,
