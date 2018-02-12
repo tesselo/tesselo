@@ -15,7 +15,7 @@
             "AWS_DEFAULT_REGION": "eu-central-1",
             "DB_HOST": "tesselo-dev.cepyvetzz6ui.eu-central-1.rds.amazonaws.com",
             "DB_PASSWORD": "hoppybhoppslb",
-            "DB_USER": "tesselo",
+            "DB_USER": "tesselo"
         },
         "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
         "domain": "api.tesselo.com",

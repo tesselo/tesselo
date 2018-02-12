@@ -38,6 +38,7 @@ if DEBUG:
 else:
     GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgdal-*.so.*'))[0]
     GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
+    os.environ['GDAL_DATA'] = os.path.join(BASE_DIR, 'rasterio/gdal_data')
 
 # Application definition
 INSTALLED_APPS = [
