@@ -7,7 +7,7 @@ from raster_api.views import PermissionsModelViewSet
 
 
 class FormulaViewSet(PermissionsModelViewSet):
-    queryset = Formula.objects.all()
+    queryset = Formula.objects.all().order_by('name')
     serializer_class = FormulaSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     search_fields = ('name', 'acronym')
