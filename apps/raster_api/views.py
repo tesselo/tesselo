@@ -281,7 +281,7 @@ class LargeResultsSetPagination(PageNumberPagination):
 
 class CompositeViewSet(PermissionsModelViewSet):
 
-    queryset = Composite.objects.all().order_by('id')
+    queryset = Composite.objects.all().order_by('min_date')
     serializer_class = CompositeSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     filter_class = CompositeFilter
