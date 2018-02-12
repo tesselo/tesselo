@@ -240,6 +240,11 @@ class AggregationLayerVectorTilesViewSet(AggregationLayerVectorTilesViewSetOrig,
 
     _model = 'aggregationlayer'
 
+    def dispatch(self, *args, **kwargs):
+        response = super(AggregationLayerVectorTilesViewSet, self).dispatch(*args, **kwargs)
+        response['Cache-Control'] = 'max-age=604800, private'  # 1 Week
+        return response
+
 
 class AggregationAreaViewSet(ModelViewSet):
 
