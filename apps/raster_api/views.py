@@ -226,7 +226,7 @@ class RasterLayerViewSet(PermissionsModelViewSet):
 
 class AggregationLayerViewSet(PermissionsModelViewSet):
 
-    queryset = AggregationLayer.objects.all().order_by('id')
+    queryset = AggregationLayer.objects.all().order_by('name')
     serializer_class = AggregationLayerSerializer
     filter_backends = (SearchFilter, )
     search_fields = ('name', 'description', )
