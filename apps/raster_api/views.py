@@ -52,6 +52,11 @@ class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
     pagination_class = None
     queryset = RasterTile.objects.all()
 
+    def dispatch(self, *args, **kwargs):
+        response = super(RasterAPIView, self).dispatch(*args, **kwargs)
+        response['Cache-Control'] = 'max-age=604800, private'  # 1 Week
+        return response
+
 
 class AlgebraAPIView(AlgebraView, RasterAPIView):
     """
