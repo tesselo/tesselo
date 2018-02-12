@@ -71,7 +71,7 @@ class AlgebraAPIView(AlgebraView, RasterAPIView):
 
 class ExportAPIView(ExportView, RasterAPIView):
 
-    def list(self, request, *args, **kwargs):
+    def list(self, *args, **kwargs):
         return super(ExportAPIView, self).get(*args, **kwargs)
 
 
