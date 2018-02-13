@@ -81,5 +81,5 @@ apiurlpatterns = [
     url(r'^api/token-auth/', ObtainExpiringAuthToken.as_view()),
     url(r'^api/token-logout/', RemoveAuthToken.as_view()),
     url(r'^api/wmts$', WMTSAPIView.as_view()),
-    url(r'^api/', include(router.urls)),
+    url(r'^', include(router.urls)),
 ]
