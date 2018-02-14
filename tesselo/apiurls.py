@@ -78,8 +78,8 @@ router.register(r'wmtslayer', WMTSLayerViewSet, base_name='wmtslayer')
 
 
 apiurlpatterns = [
-    url(r'^api/token-auth/', ObtainExpiringAuthToken.as_view()),
-    url(r'^api/token-logout/', RemoveAuthToken.as_view()),
-    url(r'^api/wmts$', WMTSAPIView.as_view()),
+    url(r'^token-auth/', ObtainExpiringAuthToken.as_view()),
+    url(r'^token-logout/', RemoveAuthToken.as_view()),
+    url(r'^wmts$', WMTSAPIView.as_view()),
     url(r'^', include(router.urls)),
 ]
