@@ -41,6 +41,7 @@ from raster_api.serializers import (
     ValueCountResultSerializer, ZoneOfInterestSerializer
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
+from raster_api.tasks import compute_single_value_count_result
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
 
@@ -267,8 +268,38 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
     _model = 'valuecountresult'
 
     def perform_create(self, serializer):
-        # Call perform create from the value count result view.
-        super(ValueCountResultViewSet, self).perform_create(serializer)
+        # Get list of rasterlayers based on layer names dict.
+        rasterlayers = [RasterLayer.objects.get(id=pk) for pk in set(serializer.validated_data.get('layer_names').values())]
+
+        # Get zoom level, the serializer has a default to trick the validation. The
+        # unique constraints on the model disable the required=False argument.
+        if serializer.validated_data.get('zoom') != -1:
+            zoom = serializer.validated_data.get('zoom')
+        else:
+            # Compute zoom if not provided. Work at the resolution of the
+            # input layer with the highest zoom level by default, or the
+            # lowest one if requested.
+            zlevels = [rst.metadata.max_zoom for rst in rasterlayers]
+            if 'minmaxzoom' in self.request.GET:
+                # Get the minimum of maxzoom levels
+                zoom = min(zlevels)
+            elif 'maxzoom' in self.request.GET:
+                # Limit maximum zoom level
+                maxzoom = int(self.request.GET.get('maxzoom'))
+                zoom = min(max(zlevels), maxzoom)
+            else:
+                # Compute at the maximum maxzoom (resolution of highest definition layer)
+                zoom = max(zlevels)
+
+        # Create object with final zoom value.
+        try:
+            obj = serializer.save(zoom=zoom, rasterlayers=rasterlayers)
+        except IntegrityError:
+            raise DuplicateError()
+
+        # Push value count task to queue.
+        compute_single_value_count_result(obj.id)
+
         # Manually assign permissions after object was created.
         self._assign_perms(serializer.instance)
 

@@ -20,7 +20,7 @@ class BucketParseLogModelAdmin(admin.ModelAdmin):
         """
         Parses the sentinel-s2-l1c bucket on S3.
         """
-        drive_sentinel_bucket_parser.delay()
+        run_ecs_command('python36 manage.py sentinel drive_sentinel_bucket_parser')
         self.message_user(request, 'Started parsing the "sentinel-s2-l1c" bucket on S3.')
 
 
@@ -49,7 +49,7 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
 
     def upgrade_to_l2a(self, request, queryset):
         for tile in queryset:
-            upgrade_sentineltile_to_l2a.delay(tile.id)
+            run_ecs_command('python36 manage.py sentinel process_l2a {}'.format(tile.id))
         self.message_user(request, 'Triggered update for all tile bands to L2A.')
 
 
@@ -72,7 +72,7 @@ class CompositeAdmin(admin.ModelAdmin):
         """
         Admin action to build selected compositebands.
         """
-        drive_composite_builders.delay([lyr.id for lyr in queryset])
+        drive_composite_builders([lyr.id for lyr in queryset])
         self.message_user(request, 'Started building compositebands.')
 
 

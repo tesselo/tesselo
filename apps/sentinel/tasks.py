@@ -48,13 +48,29 @@ logger = get_task_logger(__name__)
 boto3.set_stream_logger('boto3', logging.ERROR)
 
 
+def run_ecs_command(command):
+    """
+    Execute a command on an ECS Fargate instance.
+    """
+    command = const.FARGATE_COMMAND_BASE.copy()
+    command['overrides']['containerOverrides'][0]['command'] = command.split(' ')
+    client = boto3.client('ecs', region_name='us-east-1')
+    return client.run_task(**command)
+
+
 @task
 def drive_sentinel_bucket_parser(max_keys=None):
     for utm_zone in range(1, const.NUMBER_OF_UTM_ZONES + 1):
         if BucketParseLog.objects.filter(utm_zone=utm_zone, end__isnull=True).exists():
             logger.info('UTM Zone {} is currently parsing, no new task scheduled.'.format(utm_zone))
         else:
-            sync_sentinel_bucket_utm_zone.delay(utm_zone, max_keys=max_keys)
+            # Create bucket parse log.
+            log = BucketParseLog.objects.create(
+                utm_zone=utm_zone,
+                start=timezone.now(),
+            )
+            log.write('Scheduled parsing utm zone "{0}".'.format(utm_zone))
+            run_ecs_command('python3.6 manage.py sentinel sync_sentinel_bucket_utm_zone {}'.format(utm_zone))
 
 
 @task
@@ -64,10 +80,19 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
     bucket.
     """
     # Create bucket parse log.
-    log = BucketParseLog.objects.create(
+    log = BucketParseLog.objects.filter(
         utm_zone=utm_zone,
-        start=timezone.now()
-    )
+        end__isnull=True,
+    ).first()
+
+    # Abort if log object has disapeared.
+    if not log:
+        print('No parse log found.')
+        return
+
+    # Update start time and log.
+    log.start=timezone.now()
+    log.save()
     log.write('Started parsing utm zone "{0}".'.format(utm_zone))
 
     # Initiate anonymous boto session.
@@ -178,7 +203,6 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
     log.save()
 
 
-@task
 def get_aggregation_area_scenes(aggregationarea_id):
     """
     Get all available scenes for each aggregation area in the system.
@@ -209,7 +233,7 @@ def get_aggregation_area_scenes(aggregationarea_id):
 
 @receiver(post_save, sender=AggregationArea)
 def trigger_scene_ingestion(sender, instance, **kwargs):
-    get_aggregation_area_scenes.delay(instance.id)
+    get_aggregation_area_scenes(instance.id)
 
 
 @task
@@ -493,10 +517,7 @@ def drive_composite_builders(composite_ids=None):
             )
             wpp.write('Scheduled composite builder, waiting for worker availability.')
 
-            # Sleep to not put too many heavy tasks on the DB at once.
-            time.sleep(1)
-
-            build_composite(composite.id, tilex, tiley, tilez)
+            run_ecs_command('python3.6 manage.py sentinel build_composite {} {} {} {}'.format(composite.id, tilex, tiley, tilez))
 
     return 'Started composites for layers {0}.'.format([composite.id for composite in composites])
 
@@ -884,37 +905,7 @@ def fargate_process_l2a(sentineltile_id):
     """
     Process Sentinel Tile L2A ingestion on Fargate.
     """
-    client = boto3.client('ecs', region_name='us-east-1')
-    return client.run_task(
-        cluster='tesselo-workers',
-        taskDefinition='tesselo-process-l2a-8GB-2vCPU:1',
-        overrides={
-            'containerOverrides': [
-                {
-                    'name': 'tesselo',
-                    'command': [
-                        'python3',
-                        'manage.py',
-                        'process_l2a',
-                        str(stile.id),
-                    ],
-                },
-            ],
-        },
-        launchType='FARGATE',
-        networkConfiguration={
-            'awsvpcConfiguration': {
-                'subnets': [
-                    'subnet-4ae19b65',
-                    'subnet-5007051b',
-                ],
-                'securityGroups': [
-                    'sg-66ef6c11',
-                ],
-                'assignPublicIp': 'ENABLED',
-            }
-        }
-    )
+    run_fargate_command('python3.6 manage.py sentinel process_l2a {}'.format(sentineltile_id))
 
 
 def build_composite(aggregationlayer_id, composite_id):

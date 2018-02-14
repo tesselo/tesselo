@@ -7,10 +7,10 @@ if [ "$WORKER" = "True" ]; then
 fi
 
 echo "Compressing static files"
-python3 manage.py compress --force
+python3.6 manage.py compress --force
 
 echo "Collecting static files"
-python3 manage.py collectstatic --noinput\
+python3.6 manage.py collectstatic --noinput\
     -i tesselo\
     -i docs\
     -i fonts\
@@ -27,4 +27,4 @@ python3 manage.py collectstatic --noinput\
     -i LICENSE
 
 echo "Migrating database"
-python3 manage.py migrate
+python3.6 manage.py migrate

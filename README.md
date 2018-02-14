@@ -35,7 +35,7 @@ Do access the runserver, you need to find the local IP of the container its runn
 run `docker ps` and then use the container ID to run `docker inspect containerid`, then the IP is prompted
 as part of the metadata. You can then access the container on port 8000. For example http://172.17.0.2:8000/.
 
-Also you can drop into the container running `docker exec -it CONTAINERID python3 manage.py shell`.
+Also you can drop into the container running `docker exec -it CONTAINERID python3.6 manage.py shell`.
 
 Run the test suite
 ------------------
