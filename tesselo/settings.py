@@ -32,7 +32,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Custom c-library locations.
 if DEBUG:
-    BASE_DIR_LOCAL = '/usr/local/lib/python3.5/dist-packages'
+    BASE_DIR_LOCAL = '/usr/local/lib/python3.6/site-packages'
     GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_LOCAL, 'rasterio/.libs/libgdal-*.so.*'))[0]
     GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_LOCAL, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
 else:

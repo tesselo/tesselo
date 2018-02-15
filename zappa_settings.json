@@ -18,13 +18,13 @@
             "DB_USER": "tesselo"
         },
         "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/aaf50ef4-12e2-4d1c-b85c-7b0ed02e745e",
-        "domain": "api.tesselo.com",
+        "domain": "dev.api.tesselo.com",
         "slim_handler": true,
         "memory_size": 1024
     },
     "staging": {
       "extends": "dev",
-      "domain": "staging.api.tesselo.com",
+      "domain": "staging.api.tesselo.com"
     },
     "production": {
       "extends": "dev",
