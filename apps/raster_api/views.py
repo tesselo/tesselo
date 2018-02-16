@@ -41,7 +41,7 @@ from raster_api.serializers import (
     ValueCountResultSerializer, ZoneOfInterestSerializer
 )
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
-from raster_aggregation.tasks import compute_single_value_count_result
+from raster_api.tasks import compute_single_value_count_result
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
 
