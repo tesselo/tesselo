@@ -1,302 +1,235 @@
 <!DOCTYPE html>
-{% load compress %}
 <html lang="en">
 
-    <head>
+<head>
 
-        <title>Tesselo</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="description" content="Geospatial Intelligence for Sustainability. Tesselo brings together satellite imagery and artificial intelligence.">
 
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="Geospatial Intelligence for Sustainability. Tesselo brings together satellite imagery and artificial intelligence.">
+  <title>Tesselo</title>
 
-        <link rel="icon" type="image/png" href="{{ STATIC_URL }}images/tesselo-favicon.png"/>
+  <link rel="icon" type="image/png" href="https://static.tesselo.com/landing/img/tesselo-favicon.png"/>
 
-        {% compress css %}
-        <link rel="stylesheet" href="{{ STATIC_URL }}node_modules/leaflet/dist/leaflet.css" type="text/css"/>
-        <link rel="stylesheet" href="{{ STATIC_URL }}node_modules/nouislider/distribute/nouislider.css" type="text/css"/>
-        <link rel="stylesheet" href="{{ STATIC_URL }}less/swatchmaker.less" type="text/less"/>
-        <link rel="stylesheet" href="{{ STATIC_URL }}less/main.less" type="text/less"/>
-        <!-- Bootstrap Core CSS -->
-        <!--<link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">-->
+  <!-- Bootstrap Core CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 
-        {% endcompress css %}
-        {% if not user.is_authenticated %}
-            {% compress css %}
-                <link href="{{ STATIC_URL }}less/tesselo.less" rel="stylesheet" type="text/less">
-            {% endcompress css %}
-        {% endif %}
+  <!-- Theme CSS -->
+  <link href="https://static.tesselo.com/landing/css/tesselo.min.css" rel="stylesheet">
 
+  <!-- Custom Fonts -->
+  <link href="https://static.tesselo.com/landing/vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Abel" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
 
-        <!-- Custom Fonts -->
-        <link href="https://fonts.googleapis.com/css?family=Abel" rel="stylesheet" type="text/css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+  <![endif]-->
 
-        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-        <!--[if lt IE 9]>
-            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-        <![endif]-->
+</head>
 
-    </head>
-    {% if user.is_authenticated %}
-    <body>
-        <nav class="navbar navbar-default navbar-fixed-top">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-1" aria-expanded="false">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="#">Tesselo</a>
-                </div>
-                <div class="collapse navbar-collapse" id="navbar-collapse-1">
-                    <ul class="nav navbar-nav navbar-right">
-                        {% if user.is_authenticated %}
-                        <li><a href="/logout/?next=/"><span class="glyphicon glyphicon-log-out"></span></a></li>
-                        {% else %}
-                        <li><a href="/login/?next=/"><span class="glyphicon glyphicon-log-in"></span></a></li>
-                        {% endif %}
-                    </ul>
-                </div>
+<body id="page-top" class="index">
+  <div id="skipnav"><a href="#maincontent">Skip to main content</a></div>
+
+  <!-- Navigation -->
+  <nav id="mainNav" class="navbar navbar-default navbar-fixed-top navbar-custom">
+    <div class="container">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header page-scroll">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span> Menu <i class="fa fa-bars"></i>
+        </button>
+        <a class="navbar-brand" href="#page-top"><img src="https://static.tesselo.com/landing/img/logo-tesselo-50.png" /></a>
+      </div>
+
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="hidden">
+            <a href="#page-top"></a>
+          </li>
+          <li class="page-scroll">
+            <a href="#services">Services</a>
+          </li>
+          <li class="page-scroll">
+            <a href="#platform">Platform</a>
+          </li>
+          <li class="page-scroll">
+            <a href="#about">About</a>
+          </li>
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container-fluid -->
+  </nav>
+
+  <!-- Header -->
+  <header>
+    <div class="container" id="maincontent" tabindex="-1">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="intro-text">
+            <h1 class="name animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">Geospatial intelligence for sustainability</h1>
+            <div class="text-center animate" data-animate="fadeInUp" data-duration="1.0s" data-delay="0.1s">
+              <a href="https://tesselo.com/app/" class="btn btn-lg btn-outline">Launch Tesselo</a>
             </div>
-        </nav>
-        <div class="main"></div>
-        {% compress js %}
-        <script language="javascript">var STATIC_URL = "{{ STATIC_URL }}";</script>
-        {% if DEBUG %}
-        <script data-main="{{ STATIC_URL }}js/tesselo/main" src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
-        {% else %}
-        <script src="{{ STATIC_URL }}node_modules/requirejs/require.js"></script>
-        <script src="{{ STATIC_URL }}js/dist.js"></script>
-        {% endif %}
-        {% endcompress %}
-    </body>
-
-    {% else %}
-
-    <body id="page-top" class="index">
-        <div id="skipnav"><a href="#maincontent">Skip to main content</a></div>
-
-        <!-- Navigation -->
-        <nav id="mainNav" class="navbar navbar-default navbar-fixed-top navbar-custom">
-            <div class="container">
-                <!-- Brand and toggle get grouped for better mobile display -->
-                <div class="navbar-header page-scroll">
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-                        <span class="sr-only">Toggle navigation</span> Menu <i class="fa fa-bars"></i>
-                    </button>
-                    <a class="navbar-brand" href="#page-top"><img src="{{ STATIC_URL }}images/logo-tesselo-50.png" /></a>
-                </div>
-
-                <!-- Collect the nav links, forms, and other content for toggling -->
-                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li class="hidden">
-                            <a href="#page-top"></a>
-                        </li>
-                        <li class="page-scroll">
-                            <a href="#services">Services</a>
-                        </li>
-                        <li class="page-scroll">
-                            <a href="#platform">Platform</a>
-                        </li>
-                        <li class="page-scroll">
-                            <a href="#about">About</a>
-                        </li>
-                    </ul>
-                </div>
-                <!-- /.navbar-collapse -->
-            </div>
-            <!-- /.container-fluid -->
-        </nav>
-
-        <!-- Header -->
-        <header>
-            <div class="container" id="maincontent" tabindex="-1">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="intro-text">
-                            <h1 class="name animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">Geospatial intelligence for sustainability</h1>
-                            <div class="text-center animate" data-animate="fadeInUp" data-duration="1.0s" data-delay="0.1s">
-                                <a href="/login/" class="btn btn-lg btn-outline">Launch Tesselo</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Services Grid Section -->
-        <section id="services">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="2.0s" data-delay="0.1s">
-                        <h2>Services</h2>
-                        <hr class="star-primary">
-                    </div>
-                    <div class="col-lg-8 col-lg-offset-2 platform-header-item ">
-                        <p>
-                        Tesselo brings together satellite imagery and artificial intelligence to deliver real-time geospatial intelligence.
-                        We specialize in remote sensing analysis, land cover mapping and sustainability. If your business depends on managing land-based natural resources, Tesselo can provide you with easy-to-use continuous environmental monitoring tools.
-                        </p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 services-item">
-                        <img src="{{ STATIC_URL }}images/agriculture.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Agriculture">
-                        <h3 class="fadeIn">Agriculture</h3>
-                        <p class="fadeInLeft">
-                        Our systems support continuous monitoring of crops to catch problems early, and reduce the need of inputs. The increased efficiency enables farmers to lower costs and clears the path for applying sustainable agricultural practices. For insurers, investors and certifiers our data helps to increase the confidence in their portfolios, lowering the cost of capital, insurance and compliance verification.
-                        </p>
-                    </div>
-                    <div class="col-sm-4 services-item">
-                        <img src="{{ STATIC_URL }}images/forest.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Forest">
-                        <h3 class="fadeIn">Forestry</h3>
-                        Tesselo supports both production and conservation applications in forestry. We can monitor health-related indices across vast areas. Our platform measures above and below ground carbon stocks using standard international protocols.
-                        <p class="fadeInLeft">
-                        </p>
-                    </div>
-                    <div class="col-sm-4 services-item">
-                        <img src="{{ STATIC_URL }}images/road.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Road">
-                        <h3 class="fadeIn">Urban planning</h3>
-                        Tesselo provides an up-to-date map of your region  across multiple administrative boundaries out of the box.  We use artificial intelligence to produce impervious cover maps, watershed and green infrastructure analysis. Our platform can deliver in near real time what used to take weeks to produce.
-                        <p class="fadeInLeft">
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Platform Section -->
-        <section class="success" id="platform">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="1.0s" data-delay="0.1s">
-                        <h2>The Platform</h2>
-                        <hr class="star-primary">
-                    </div>
-                    <div class="col-lg-8 col-lg-offset-2 platform-header-item">
-                        <p>
-                        Our cloud based platform is blazingly fast and easy to use. No prior knowledge of satellite image processing is required.  Tesselo continuously ingests earth observation data, and processes it to generate beautiful imagery and accurate analysis.
-
-                        We have optimized the platform to brings the massive processing needed for satellite imagery at a fraction of the standard price to bring the best value for money for our customers.
-                        </p>
-                    </div>
-                </div>
-                <div class="row animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
-                    <div class="col-sm-4 platform-item">
-                        <img src="{{ STATIC_URL }}images/icon-perf.png" class="img-responsive" alt="Performance">
-                        <h3>User Centric</h3>
-                        <p>
-                        Tesselo features extensive custom dashboard and reporting capabilities. This makes it simple to securely distribute your management information to various stakeholders - no additional software or skills required. You can also incorporate your monitoring information into standard business intelligence tools.
-                        </p>
-                    </div>
-                    <div class="col-sm-4 platform-item">
-                        <img src="{{ STATIC_URL }}images/icon-ai.png" class="img-responsive" alt="Artificial Intelligence">
-                        <h3>Artificial Intelligence</h3>
-                        <p>
-                        Our team combines expert knowledge in vegetation remote sensing, urban planning and artificial intelligence. We bring state-of-the-art machine learning and deep learning technique to satellite imagery. Obtain the business intelligence your organization needs at the click of a button.
-                        </p>
-                    </div>
-                    <div class="col-sm-4 platform-item">
-                        <img src="{{ STATIC_URL }}images/icon-cloud.png" class="img-responsive" alt="Cloud">
-                        <h3>Cloud API</h3>
-                        <p>
-                        Tesselo leverages cloud distributed cloud computing to power our API.
-
-                        We designed our platform to be easy-to-use for non-specialists but you our data can be plugged your app into our API to instantly collect up to date geo-spatial intelligence.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- About Section -->
-        <section id="about">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="1.0s" data-delay="0.1s">
-                        <h2>About</h2>
-                        <hr class="star-primary">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-lg-7 animate" data-animate="fadeInRight" data-duration="1.0s" data-delay="0.1s">
-                        <p>
-                        Tesselo is a startup founded in 2017 in Portugal. The founders combine passions for remote sensing, artificial intelligence, urban planning and environmental sustainability.
-                        </p>
-                        <p>
-                        Tesselo is backed by the European Space Agency (ESA) through the ESA BIC Portugal program.
-                        </p>
-                    </div>
-                    <div class="col-lg-5 animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
-                        <span>In partnership with</span>
-                        <img src="{{ STATIC_URL }}images/logo-esabic-pt.png" class="img-responsive" alt="ESA logo">
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Contact Section -->
-        <section id="contact">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="text-center animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
-                            <a href="mailto:contact@tesselo.com" class="btn btn-lg btn-outline">Contact</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="text-center">
-            <div class="footer-below">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            Made with care in Lisbon, Portugal.
-                        </div>
-                        <div class="col-lg-6 copyright">
-                            Copyright &copy; 2017 Space Mosaic Lda All rights reserved
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </footer>
-
-        <!-- Scroll to Top Button (Only visible on small and extra-small screen sizes) -->
-        <div class="scroll-top page-scroll hidden-sm hidden-xs hidden-lg hidden-md">
-            <a class="btn btn-primary" href="#page-top">
-                <i class="fa fa-chevron-up"></i>
-            </a>
+          </div>
         </div>
+      </div>
+    </div>
+  </header>
 
-        {% compress js %}
-            <!-- jQuery -->
-            <script src="{{ STATIC_URL }}node_modules/jquery/dist/jquery.js"></script>
+  <!-- Services Grid Section -->
+  <section id="services">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="2.0s" data-delay="0.1s">
+          <h2>Services</h2>
+          <hr class="star-primary">
+        </div>
+        <div class="col-lg-8 col-lg-offset-2 platform-header-item ">
+          <p>
+            Tesselo brings together satellite imagery and artificial intelligence to deliver real-time geospatial intelligence.
+            We specialize in remote sensing analysis, land cover mapping and sustainability. If your business depends on managing land-based natural resources, Tesselo can provide you with easy-to-use continuous environmental monitoring tools.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 services-item">
+          <img src="https://static.tesselo.com/landing/img/agriculture.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Agriculture">
+          <h3 class="fadeIn">Agriculture</h3>
+          <p class="fadeInLeft">Our systems support continuous monitoring of crops to catch problems early, and reduce the need of inputs. The increased efficiency enables farmers to lower costs and clears the path for applying sustainable agricultural practices. For insurers, investors and certifiers our data helps to increase the confidence in their portfolios, lowering the cost of capital, insurance and compliance verification.</p>
+        </div>
+        <div class="col-sm-4 services-item">
+          <img src="https://static.tesselo.com/landing/img/forest.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Forest">
+          <h3 class="fadeIn">Forestry</h3>
+          <p class="fadeInLeft">Tesselo supports both production and conservation applications in forestry. We can monitor health-related indices across vast areas. Our platform measures above and below ground carbon stocks using standard international protocols.</p>
+        </div>
+        <div class="col-sm-4 services-item">
+          <img src="https://static.tesselo.com/landing/img/road.jpg" class="img-responsive animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s" alt="Road">
+          <h3 class="fadeIn">Urban planning</h3>
+          <p class="fadeInLeft">Tesselo provides an up-to-date map of your region  across multiple administrative boundaries out of the box.  We use artificial intelligence to produce impervious cover maps, watershed and green infrastructure analysis. Our platform can deliver in near real time what used to take weeks to produce.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            <!-- Bootstrap Core JavaScript -->
-            <script src="{{ STATIC_URL }}node_modules/bootstrap/dist/js/bootstrap.js"></script>
+  <!-- Platform Section -->
+  <section class="success" id="platform">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="1.0s" data-delay="0.1s">
+          <h2>The Platform</h2>
+          <hr class="star-primary">
+        </div>
+        <div class="col-lg-8 col-lg-offset-2 platform-header-item">
+          <p>
+            Our cloud based platform is blazingly fast and easy to use. No prior knowledge of satellite image processing is required.  Tesselo continuously ingests earth observation data, and processes it to generate beautiful imagery and accurate analysis.
 
-            <!-- Plugin viewportchecker -->
-            <script src="{{ STATIC_URL }}landing/js/scrolla.js"></script>
+            We have optimized the platform to brings the massive processing needed for satellite imagery at a fraction of the standard price to bring the best value for money for our customers.
+          </p>
+        </div>
+      </div>
+      <div class="row animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
+        <div class="col-sm-4 platform-item">
+          <img src="https://static.tesselo.com/landing/img/icon-perf.png" class="img-responsive" alt="Performance">
+          <h3>User Centric</h3>
+          <p>Tesselo features extensive custom dashboard and reporting capabilities. This makes it simple to securely distribute your management information to various stakeholders - no additional software or skills required. You can also incorporate your monitoring information into standard business intelligence tools.</p>
+        </div>
+        <div class="col-sm-4 platform-item">
+          <img src="https://static.tesselo.com/landing/img/icon-ai.png" class="img-responsive" alt="Artificial Intelligence">
+          <h3>Artificial Intelligence</h3>
+          <p>Our team combines expert knowledge in vegetation remote sensing, urban planning and artificial intelligence. We bring state-of-the-art machine learning and deep learning technique to satellite imagery. Obtain the business intelligence your organization needs at the click of a button.</p>
+        </div>
+        <div class="col-sm-4 platform-item">
+          <img src="https://static.tesselo.com/landing/img/icon-cloud.png" class="img-responsive" alt="Cloud">
+          <h3>Cloud API</h3>
+          <p>Tesselo leverages cloud distributed cloud computing to power our API. We designed our platform to be easy-to-use for non-specialists but you our data can be plugged your app into our API to instantly collect up to date geo-spatial intelligence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            <!-- Theme JavaScript -->
-            <script src="{{ STATIC_URL }}landing/js/tesselo.js"></script>
-        {% endcompress %}
+  <!-- About Section -->
+  <section id="about">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12 text-center animate" data-animate="fadeIn" data-duration="1.0s" data-delay="0.1s">
+          <h2>About</h2>
+          <hr class="star-primary">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-lg-9 animate" data-animate="fadeInRight" data-duration="1.0s" data-delay="0.1s">
+          <p>Tesselo is a startup founded in 2017 in Portugal. The founders combine passions for remote sensing, artificial intelligence, urban planning and environmental sustainability.</p>
+          <p>Tesselo is backed by the European Space Agency (ESA) through the ESA BIC Portugal program.</p>
+        </div>
+        <div class="col-lg-3 animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
+          <span>In partnership with</span>
+          <img src="https://static.tesselo.com/landing/img/logo-esabic-pt.png" class="img-responsive" alt="ESA BIC Logo">
+        </div>
+      </div>
+    </div>
+  </section>
 
-        <!-- Plugin JavaScript -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+  <!-- Contact Section -->
+  <section id="contact">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="text-center animate" data-animate="zoomIn" data-duration="1.0s" data-delay="0.1s">
+            <a href="mailto:contact@tesselo.com" class="btn btn-lg btn-outline">Contact</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    </body>
+  <!-- Footer -->
+  <footer class="text-center">
+    <div class="footer-below">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-6">
+            Made with care in Lisbon, Portugal.
+          </div>
+          <div class="col-lg-6 copyright">
+            Copyright &copy; 2018 Space Mosaic Lda All rights reserved
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
 
-    {% endif %}
+  <!-- Scroll to Top Button (Only visible on small and extra-small screen sizes) -->
+  <div class="scroll-top page-scroll hidden-sm hidden-xs hidden-lg hidden-md">
+    <a class="btn btn-primary" href="#page-top">
+      <i class="fa fa-chevron-up"></i>
+    </a>
+  </div>
+
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- Bootstrap Core JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+  <!-- Plugin JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+
+  <!-- Plugin viewportchecker -->
+  <script src="https://static.tesselo.com/landing/js/scrolla.min.js"></script>
+
+  <!-- Theme JavaScript -->
+  <script src="https://static.tesselo.com/landing/js/tesselo.min.js"></script>
+
+</body>
 
 </html>
