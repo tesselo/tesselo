@@ -1,28 +1,23 @@
 version: 0.2
 
 phases:
-  pre_build:
-    commands:
-      - echo Logging in to Amazon ECR on eu-central-1...
-      - $(aws ecr get-login --region eu-central-1)
-
   build:
     commands:
-      - echo "Started Docker Build ${CODEBUILD_BUILD_ID##*:}"
-      - echo Building the Docker image...
+      - echo Getting the Vue App Index file...
+      - aws s3 cp s3://${BUCKET}/index.html tesselo/templates/app.html
+      - echo Building the zappa deploy image...
+      - docker build -t tesselo_zappa -f DockerfileZappa .
+      - echo Deploying App to Stage $STAGE
+      - docker run --rm --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY tesselo_zappa zappa update ${STAGE}
+      - echo Building the worker Docker image...
       - docker build -t tesselo -f DockerfileTesselo .
-      - echo Running tests on Docker image...
-      - docker run --rm --env DEBUG=True tesselo /run.sh test
       - echo Pushing the Docker image to eu-central-1...
-      - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
-      - docker push 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest
+      - docker tag tesselo:latest 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:${STAGE}
+      - echo Logging in to Amazon ECR on eu-central-1...
+      - $(aws ecr get-login --region eu-central-1)
+      - docker push 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:${STAGE}
       - echo Logging in to Amazon ECR on us-east-1...
       - $(aws ecr get-login --region us-east-1)
       - echo Pushing the Docker image to us-east-1...
-      - docker tag tesselo:latest 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:latest
-      - docker push 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:latest
-      - "echo {\\\"image\\\":\\\"595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest}\\\"} > image.json"
-
-artifacts:
-  files:
-    - 'image.json'
+      - docker tag tesselo:latest 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:${STAGE}
+      - docker push 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:${STAGE}
