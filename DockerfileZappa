@@ -1,24 +1,16 @@
 FROM lambci/lambda:build-python3.6
 
 WORKDIR /code
-
-RUN rpm --rebuilddb && yum install -y npm --enablerepo=epel
-
-ADD frontend/package.json /code/frontend/package.json
-RUN npm install --prefix frontend frontend
+ENTRYPOINT ["/entrypoint.sh"]
+RUN printf '#!/bin/sh\nsource /var/venv/bin/activate\nexec "$@"' > /entrypoint.sh && \
+  chmod 700 /entrypoint.sh
 
 ADD requirements.txt /code/requirements.txt
 RUN virtualenv /var/venv && \
   source /var/venv/bin/activate && \
   pip install -r /code/requirements.txt
 
-ADD . /code/
-
-RUN npm install -g requirejs@2.3.5 less@2.7.1
-RUN ls frontend
-RUN r.js -o frontend/js/build.js
-
-RUN echo '#!/bin/sh\nset -e\nsource /var/venv/bin/activate\nexec "$@"' | /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT /entrypoint.sh
+ADD apps /code/apps
+ADD tesselo /code/tesselo
+ADD manage.py /code/manage.py
+ADD zappa_settings.json /code/zappa_settings.json
