@@ -26,7 +26,8 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^sentinel/', include('sentinel.urls')),
     url(r'^', include('django.contrib.auth.urls')),
-    url(r'^mosaic$', TemplateView.as_view(template_name='index.html')),
+    url(r'^app/', TemplateView.as_view(template_name='app.html')),
+    url(r'^$', TemplateView.as_view(template_name='index.html')),
 ]
 
 urlpatterns += apiurlpatterns
