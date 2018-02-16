@@ -2,7 +2,6 @@
     "dev": {
         "aws_region": "eu-central-1",
         "django_settings": "tesselo.settings",
-        "profile_name": "tesselo",
         "project_name": "tesselo",
         "runtime": "python3.6",
         "s3_bucket": "zappa-vnt9hcrr2",
@@ -18,16 +17,16 @@
             "DB_USER": "tesselo"
         },
         "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/aaf50ef4-12e2-4d1c-b85c-7b0ed02e745e",
-        "domain": "dev.api.tesselo.com",
+        "domain": "api.tesselo.com",
         "slim_handler": true,
         "memory_size": 1024
     },
     "staging": {
       "extends": "dev",
-      "domain": "staging.api.tesselo.com"
+      "domain": "staging.tesselo.com"
     },
     "production": {
       "extends": "dev",
-      "domain": "api.tesselo.com"
+      "domain": "tesselo.com"
     }
 }
