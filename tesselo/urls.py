@@ -27,7 +27,6 @@ urlpatterns = [
     url(r'^sentinel/', include('sentinel.urls')),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^app/', TemplateView.as_view(template_name='app.html')),
-    url(r'^lecacy/', TemplateView.as_view(template_name='legacy.html')),
     url(r'^$', TemplateView.as_view(template_name='index.html')),
 ]
 

@@ -5,9 +5,6 @@ ENTRYPOINT ["/entrypoint.sh"]
 RUN printf '#!/bin/sh\nsource /var/venv/bin/activate\nexec "$@"' > /entrypoint.sh && \
   chmod 700 /entrypoint.sh
 
-ADD compress_collect_migrate.sh /code/compress_collect_migrate.sh
-RUN chmod +x compress_collect_migrate.sh
-
 ADD requirements.txt /code/requirements.txt
 RUN virtualenv /var/venv && \
   source /var/venv/bin/activate && \
@@ -17,3 +14,6 @@ ADD apps /code/apps
 ADD tesselo /code/tesselo
 ADD manage.py /code/manage.py
 ADD zappa_settings.json /code/zappa_settings.json
+
+ADD compress_collect_migrate.sh /code/compress_collect_migrate.sh
+RUN chmod +x compress_collect_migrate.sh

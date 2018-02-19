@@ -182,10 +182,6 @@ STATICFILES_FINDERS = (
     'compressor.finders.CompressorFinder',
 )
 
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'frontend'),
-)
-
 STATIC_ROOT = '/tmp/staticfiles'
 if LOCAL:
     STATIC_URL = '/static/'
