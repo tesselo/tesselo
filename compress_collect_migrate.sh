@@ -12,6 +12,10 @@ docker run --rm \
   --env AWS_STORAGE_BUCKET_NAME_STATIC=$AWS_STORAGE_BUCKET_NAME_STATIC \
   --env AWS_STORAGE_BUCKET_NAME_MEDIA=$AWS_STORAGE_BUCKET_NAME_MEDIA \
   tesselo_zappa \
+  yum install -y --enablerepo=epel npm \
+  npm install -g requirejs \
+  npm install --prefix frontend frontend \
+  r.js -o frontend/js/build.js \
   python manage.py compress --force && \
   python manage.py collectstatic --noinput \
       -i tesselo \
