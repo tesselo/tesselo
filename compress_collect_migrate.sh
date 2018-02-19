@@ -12,8 +12,8 @@ docker run --rm \
   --env AWS_STORAGE_BUCKET_NAME_STATIC=$AWS_STORAGE_BUCKET_NAME_STATIC \
   --env AWS_STORAGE_BUCKET_NAME_MEDIA=$AWS_STORAGE_BUCKET_NAME_MEDIA \
   tesselo_zappa \
-  ./manage.py compress --force && \
-  ./manage.py collectstatic --noinput \
+  python manage.py compress --force && \
+  python manage.py collectstatic --noinput \
       -i tesselo \
       -i docs \
       -i fonts \
@@ -28,4 +28,4 @@ docker run --rm \
       -i bootswatch \
       -i LICENSE.md \
       -i LICENSE && \
-    ./manage.py migrate
+    python manage.py migrate
