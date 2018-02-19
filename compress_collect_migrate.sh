@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-docker run --rm -it \
+docker run --rm \
   --env ZAPPA=True \
   --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
   --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
