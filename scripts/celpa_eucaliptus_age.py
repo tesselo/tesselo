@@ -2,14 +2,14 @@ import os
 import pickle
 from collections import OrderedDict
 
-import matplotlib.pyplot as plt
 import numpy
+
+import matplotlib.pyplot as plt
 import statsmodels
 import statsmodels.api as sm
-from matplotlib.colors import LogNorm
-
 import tesselate
 from django.contrib.gis.gdal import GDALRaster
+from matplotlib.colors import LogNorm
 
 os.chdir('/media/tam/rhino/work/projects/tesselo/celpa/analysis/sentinel_exports')
 

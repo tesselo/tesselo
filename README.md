@@ -65,3 +65,9 @@ CodeBuild Test Command
 Command used on the CodePipeline CodeBuild on aws.
 
     $(aws ecr get-login --region eu-central-1) && docker run --rm --env DEBUG=True 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo:latest /code/run.sh test
+
+
+Zappa create superuser
+----------------------
+
+    zappa invoke dev "printf \"from django.contrib.auth.models import User; User.objects.create_superuser('daniel', 'daniel@tesselo.com', 'pKE5M53PieYBOdJ125CQ')\" | python manage.py shell" --raw

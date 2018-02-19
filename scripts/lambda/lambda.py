@@ -1,5 +1,6 @@
-import mercantile
 import rasterio as rio
+
+import mercantile
 
 # export LC_ALL=C.UTF-8
 # export LANG=C.UTF-8

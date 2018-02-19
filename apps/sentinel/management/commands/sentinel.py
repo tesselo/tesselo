@@ -1,6 +1,9 @@
 from django.core.management.base import BaseCommand
 from sentinel.const import FARGATE_COMMAND_BASE
-from sentinel.tasks import process_l2a, drive_sentinel_bucket_parser, sync_sentinel_bucket_utm_zone, get_aggregation_area_scenes, build_composite
+from sentinel.tasks import (
+    build_composite, drive_sentinel_bucket_parser, get_aggregation_area_scenes, process_l2a,
+    sync_sentinel_bucket_utm_zone
+)
 
 
 class Command(BaseCommand):

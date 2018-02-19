@@ -9,8 +9,8 @@ https://docs.djangoproject.com/en/dev/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/dev/ref/settings/
 """
-import os
 import glob
+import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,14 +31,16 @@ SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Custom c-library locations.
-if DEBUG:
-    BASE_DIR_LOCAL = '/usr/local/lib/python3.6/site-packages'
-    GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_LOCAL, 'rasterio/.libs/libgdal-*.so.*'))[0]
-    GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_LOCAL, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
+if os.environ.get('ZAPPA', None):
+    BASE_DIR_GDAL = '/var/venv/lib/python3.6/site-packages'
+elif DEBUG:
+    BASE_DIR_GDAL = '/usr/local/lib/python3.6/site-packages'
 else:
-    GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgdal-*.so.*'))[0]
-    GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
+    BASE_DIR_GDAL = BASE_DIR
     os.environ['GDAL_DATA'] = os.path.join(BASE_DIR, 'rasterio/gdal_data')
+
+GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio/.libs/libgdal-*.so.*'))[0]
+GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
 
 # Application definition
 INSTALLED_APPS = [
@@ -184,19 +186,22 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'frontend'),
 )
 
-STATIC_ROOT = '/staticfiles'
+STATIC_ROOT = '/tmp/staticfiles'
 if LOCAL:
     STATIC_URL = '/static/'
 else:
-    # Storage class for static files and compressor
+    # Storage class for static files and compressor.
     STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootCachedS3Boto3Storage'
-    # Get S3 bucket name
+    # Get S3 bucket name.
     AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
-    # Set the url to the bucket for serving files
-    STATIC_URL = 'https://{bucket}.s3.amazonaws.com/'.format(
-        bucket=AWS_STORAGE_BUCKET_NAME_STATIC,
-    )
-    # Define the storage class and url for compression
+    # Set the url to the bucket for serving files.
+    if AWS_STORAGE_BUCKET_NAME_STATIC == 'dev.static.tesselo.com':
+        STATIC_URL = 'https://devstatic.tesselo.com/'
+    elif AWS_STORAGE_BUCKET_NAME_STATIC == 'staging.static.tesselo.com':
+        STATIC_URL = 'https://stagingstatic.tesselo.com/'
+    elif AWS_STORAGE_BUCKET_NAME_STATIC == 'static.tesselo.com':
+        STATIC_URL = 'https://static.tesselo.com/'
+    # Define the storage class and url for compression.
     COMPRESS_STORAGE = STATICFILES_STORAGE
     COMPRESS_URL = STATIC_URL
 
@@ -212,7 +217,7 @@ COMPRESS_CSS_FILTERS = [
 
 COMPRESS_PRECOMPILERS = (
     ('text/scss', 'sass {infile} {outfile}'),
-    ('text/less', 'lessc {infile} > {outfile}'),
+    ('text/less', 'less {infile} > {outfile}'),
 )
 
 COMPRESS_OFFLINE = True

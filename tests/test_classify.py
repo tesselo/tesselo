@@ -4,9 +4,6 @@ import shutil
 import tempfile
 
 import mock
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import LinearSVC
 from tests.mock_functions import client_get_object, get_numpy_tile, iterator_search, point_to_test_file
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
@@ -18,6 +15,9 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase, override_settings
 from sentinel.models import Composite, SentinelTile, ZoneOfInterest
 from sentinel.tasks import drive_composite_builders, drive_sentinel_queue, sync_sentinel_bucket_utm_zone
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import LinearSVC
 
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)

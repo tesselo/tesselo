@@ -3,23 +3,23 @@ import os
 import urllib
 from collections import OrderedDict
 
-import matplotlib.pyplot as plt
 import numpy
-import pandas
 import requests
-from geomet import wkt
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+
+import matplotlib.pyplot as plt
+import pandas
+from django.conf import settings
+from django.contrib.gis.gdal import DataSource, GDALRaster, OGRGeometry
+from django.contrib.gis.geos import GEOSGeometry
+from geomet import wkt
 from sklearn import svm
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, cohen_kappa_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-
-from django.conf import settings
-from django.contrib.gis.gdal import DataSource, GDALRaster, OGRGeometry
-from django.contrib.gis.geos import GEOSGeometry
 
 CELPA_CLASSES = {
     "Acacia": "Other Trees",

@@ -1,13 +1,13 @@
 import pickle
 
 from raster.models import RasterLayer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import LinearSVC
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import HStoreField
 from sentinel.models import Composite, SentinelTile
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import LinearSVC
 
 
 class TrainingSample(models.Model):

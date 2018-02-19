@@ -1,32 +1,49 @@
 {
     "dev": {
-        "aws_region": "eu-central-1",
+        "aws_region": "us-east-1",
         "django_settings": "tesselo.settings",
         "project_name": "tesselo",
         "runtime": "python3.6",
-        "s3_bucket": "zappa-vnt9hcrr2",
+        "s3_bucket": "tesselo-zappa",
         "environment_variables": {
             "AWS_REQUEST_PAYER": "requester",
-            "AWS_ACCESS_KEY_ID_ZAP": "AKIAI3E2MJQSAYZEJZKQ",
-            "AWS_SECRET_ACCESS_KEY_ZAP": "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",
-            "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media",
-            "AWS_STORAGE_BUCKET_NAME_STATIC": "tesselo-static",
-            "AWS_DEFAULT_REGION": "eu-central-1",
-            "DB_HOST": "tesselo-dev.cepyvetzz6ui.eu-central-1.rds.amazonaws.com",
-            "DB_PASSWORD": "hoppybhoppslb",
-            "DB_USER": "tesselo"
+            "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-develop",
+            "AWS_STORAGE_BUCKET_NAME_STATIC": "dev.static.tesselo.com",
+            "AWS_DEFAULT_REGION": "us-east-1",
+            "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
+            "DB_USER": "tesselo",
+            "DB_NAME": "tesselo_dev"
         },
-        "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/aaf50ef4-12e2-4d1c-b85c-7b0ed02e745e",
-        "domain": "api.tesselo.com",
+        "aws_kms_key_arn": "arn:aws:kms:us-east-1:595064993071:key/a10d1542-69fd-4fd2-895b-5f578ea8c651",
+        "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
+        "domain": "dev.tesselo.com",
         "slim_handler": true,
         "memory_size": 1024
     },
     "staging": {
       "extends": "dev",
+      "environment_variables": {
+          "AWS_REQUEST_PAYER": "requester",
+          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-staging",
+          "AWS_STORAGE_BUCKET_NAME_STATIC": "staging.static.tesselo.com",
+          "AWS_DEFAULT_REGION": "eu-central-1",
+          "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
+          "DB_USER": "tesselo",
+          "DB_NAME": "tesselo_staging"
+      },
       "domain": "staging.tesselo.com"
     },
     "production": {
       "extends": "dev",
+      "environment_variables": {
+          "AWS_REQUEST_PAYER": "requester",
+          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media",
+          "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
+          "AWS_DEFAULT_REGION": "eu-central-1",
+          "DB_HOST": "tesselo-dev.cepyvetzz6ui.eu-central-1.rds.amazonaws.com",
+          "DB_PASSWORD": "hoppybhoppslb",
+          "DB_USER": "tesselo"
+      },
       "domain": "tesselo.com"
     }
 }

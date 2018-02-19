@@ -1,5 +1,5 @@
-from zappa.async import task
 from raster_aggregation.models import ValueCountResult
+from zappa.async import task
 
 
 @task

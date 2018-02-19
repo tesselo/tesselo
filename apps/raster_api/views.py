@@ -40,8 +40,8 @@ from raster_api.serializers import (
     LegendSerializer, RasterLayerSerializer, SentinelTileAggregationLayerSerializer, UserSerializer,
     ValueCountResultSerializer, ZoneOfInterestSerializer
 )
-from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from raster_api.tasks import compute_single_value_count_result
+from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
 
 

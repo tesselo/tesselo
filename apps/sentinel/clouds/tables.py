@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
 import numpy
+
+from sentinel import const
+
 # from scipy.ndimage import maximum_filter, minimum_filter
 # from sklearn.preprocessing import minmax_scale
 
-from sentinel import const
 
 
 def nodata_mask(stack):

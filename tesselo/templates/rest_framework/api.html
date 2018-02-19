@@ -1,14 +1,24 @@
 {% extends "rest_framework/base.html" %}
-{% load compress %}
+{% load static %}
 
 {% block title%}Tesselo REST API{% endblock title %}
 
 {% block bootstrap_theme %}
-    {% compress css %}
-        <link rel="stylesheet" href="{{ STATIC_URL }}less/swatchmaker.less" type="text/less"/>
-    {% endcompress css %}
+    <link rel="stylesheet" type="text/css" href="{% static "less/bootstrap.min.css" %}"/>
+    <style>
+    @font-face {
+      font-family: 'Glyphicons Halflings';
+      src: url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.eot');
+      src: url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.woff2') format('woff2'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.woff') format('woff'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.ttf') format('truetype'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+    }
+    </style>
 {% endblock %}
 
+
 {% block branding %}
-   <a class="navbar-brand" rel="nofollow" href="#">Tesselo REST API</a> 
+   <a class="navbar-brand" rel="nofollow" href="#">Tesselo REST API</a>
 {% endblock %}
