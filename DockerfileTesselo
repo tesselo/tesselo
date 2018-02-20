@@ -1,8 +1,9 @@
-FROM 595064993071.dkr.ecr.eu-central-1.amazonaws.com/tesselo-base:latest
+FROM 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo-base:latest
 
 # Add requirements files separately to be able to cache pip and npm installs.
-ADD requirements.txt /code/requirements.txt
-RUN pip3 install -r /code/requirements.txt
+ADD requirements/common.txt /code/requirements_common.txt
+ADD requirements/workers.txt /code/requirements_workers.txt
+RUN pip3 install -r /code/requirements_common.txt && pip3 install -r /code/requirements_workers.txt
 
 ADD frontend/package.json /code/frontend/package.json
 RUN npm install --prefix frontend frontend

@@ -5,10 +5,10 @@ ENTRYPOINT ["/entrypoint.sh"]
 RUN printf '#!/bin/sh\nsource /var/venv/bin/activate\nexec "$@"' > /entrypoint.sh && \
   chmod 700 /entrypoint.sh
 
-ADD requirements.txt /code/requirements.txt
+ADD requirements/common.txt /code/requirements_common.txt
 RUN virtualenv /var/venv && \
   source /var/venv/bin/activate && \
-  pip install -r /code/requirements.txt
+  pip install -r /code/requirements_common.txt
 
 ADD apps /code/apps
 ADD tesselo /code/tesselo

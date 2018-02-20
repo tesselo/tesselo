@@ -1,7 +1,4 @@
-#https://github.com/geodesign/django/archive/geodesign_v9.tar.gz
 django==2.0.2
-scikit-learn==0.19.1
-scipy==1.0.0
 ipython==6.2.1
 ipdb==0.10.3
 psycopg2-binary==2.7.4
