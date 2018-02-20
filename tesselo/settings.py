@@ -169,9 +169,10 @@ CACHES = {
     }
 }
 
-# S3 Settings
+# AWS and S3 Settings
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+AWS_S3_URL_PROTOCOL = 'https'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
@@ -193,10 +194,13 @@ else:
     # Set the url to the bucket for serving files.
     if AWS_STORAGE_BUCKET_NAME_STATIC == 'dev.static.tesselo.com':
         STATIC_URL = 'https://devstatic.tesselo.com/'
+        AWS_S3_CUSTOM_DOMAIN = 'devstatic.tesselo.com'
     elif AWS_STORAGE_BUCKET_NAME_STATIC == 'staging.static.tesselo.com':
         STATIC_URL = 'https://stagingstatic.tesselo.com/'
+        AWS_S3_CUSTOM_DOMAIN = 'stagingstatic.tesselo.com'
     elif AWS_STORAGE_BUCKET_NAME_STATIC == 'static.tesselo.com':
         STATIC_URL = 'https://static.tesselo.com/'
+        AWS_S3_CUSTOM_DOMAIN = 'static.tesselo.com'
     # Define the storage class and url for compression.
     COMPRESS_STORAGE = STATICFILES_STORAGE
     COMPRESS_URL = STATIC_URL
