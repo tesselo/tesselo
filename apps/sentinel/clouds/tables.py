@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import numpy
 
 from sentinel import const
-from sklearn.preprocessing import minmax_scale
 
 
 def nodata_mask(stack):

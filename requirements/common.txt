@@ -33,6 +33,5 @@ django-celery-results==1.0.1
 django-celery-beat==1.1.0
 rasterio==1.0a12
 zappa==0.45.1
-scikit-learn==0.19.1
 https://github.com/geodesign/django-raster/archive/raster_file_field_jp2.tar.gz
 https://github.com/geodesign/django-raster-aggregation/archive/master.tar.gz
