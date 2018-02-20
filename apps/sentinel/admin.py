@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
 from django.contrib.gis import admin
+from sentinel import ecs
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBand, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
     SentinelTileBand, ZoneOfInterest
 )
-from sentinel.tasks import drive_composite_builders, drive_sentinel_bucket_parser, upgrade_sentineltile_to_l2a
+from sentinel.tasks import drive_composite_builders
 
 
 class PatchedOSMGeoAdmin(admin.GeoModelAdmin):
@@ -20,7 +21,7 @@ class BucketParseLogModelAdmin(admin.ModelAdmin):
         """
         Parses the sentinel-s2-l1c bucket on S3.
         """
-        run_ecs_command('python36 manage.py sentinel drive_sentinel_bucket_parser')
+        ecs.drive_sentinel_bucket_parser()
         self.message_user(request, 'Started parsing the "sentinel-s2-l1c" bucket on S3.')
 
 
@@ -49,8 +50,9 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
 
     def upgrade_to_l2a(self, request, queryset):
         for tile in queryset:
-            run_ecs_command('python36 manage.py sentinel process_l2a {}'.format(tile.id))
-        self.message_user(request, 'Triggered update for all tile bands to L2A.')
+            ecs.process_l2a(tile.id)
+
+        self.message_user(request, 'Triggered L2A updates for scenes {}'.format([tile.id for tile in queryset]))
 
 
 class MGRSTileAdmin(PatchedOSMGeoAdmin):

@@ -134,29 +134,3 @@ PROCESS_LEVELS = (
     (LEVEL_L1C, 'Level 1C'),
     (LEVEL_L2A, 'Level 2A'),
 )
-
-FARGATE_COMMAND_BASE = {
-    'cluster': 'tesselo-workers',
-    'taskDefinition': 'tesselo-process-l2a-8GB-2vCPU:1',
-    'overrides': {
-        'containerOverrides': [
-            {
-                'name': 'tesselo',
-                'command': [],
-            },
-        ],
-    },
-    'launchType': 'FARGATE',
-    'networkConfiguration': {
-        'awsvpcConfiguration': {
-            'subnets': [
-                'subnet-4ae19b65',
-                'subnet-5007051b',
-            ],
-            'securityGroups': [
-                'sg-66ef6c11',
-            ],
-            'assignPublicIp': 'ENABLED',
-        }
-    }
-}

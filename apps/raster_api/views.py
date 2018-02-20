@@ -6,6 +6,7 @@ from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, Ras
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_scale
 from raster.views import AlgebraView, ExportView, RasterView
+from raster_aggregation.exceptions import DuplicateError
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
 from raster_aggregation.serializers import AggregationAreaSimplifiedSerializer
 from raster_aggregation.views import AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
@@ -27,6 +28,7 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from django.contrib.auth.models import Group, User
 from django.contrib.gis.gdal import GDALRaster
+from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter

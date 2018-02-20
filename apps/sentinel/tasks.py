@@ -7,7 +7,6 @@ import logging
 import os
 import pathlib
 import shutil
-import time
 import traceback
 import uuid
 
@@ -23,7 +22,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
-from raster_aggregation.models import AggregationArea
+from raster_aggregation.models import AggregationArea, AggregationLayer
 
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
@@ -33,7 +32,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 # from raster_api.views import get_tile
-from sentinel import const
+from sentinel import const, ecs
 from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
@@ -48,16 +47,6 @@ logger = get_task_logger(__name__)
 boto3.set_stream_logger('boto3', logging.ERROR)
 
 
-def run_ecs_command(command):
-    """
-    Execute a command on an ECS Fargate instance.
-    """
-    command = const.FARGATE_COMMAND_BASE.copy()
-    command['overrides']['containerOverrides'][0]['command'] = command.split(' ')
-    client = boto3.client('ecs', region_name='us-east-1')
-    return client.run_task(**command)
-
-
 @task
 def drive_sentinel_bucket_parser(max_keys=None):
     for utm_zone in range(1, const.NUMBER_OF_UTM_ZONES + 1):
@@ -67,10 +56,11 @@ def drive_sentinel_bucket_parser(max_keys=None):
             # Create bucket parse log.
             log = BucketParseLog.objects.create(
                 utm_zone=utm_zone,
-                start=timezone.now(),
+                status=BucketParseLog.PENDING,
+                scheduled=timezone.now(),
             )
+            ecs.sync_sentinel_bucket_utm_zone(utm_zone)
             log.write('Scheduled parsing utm zone "{0}".'.format(utm_zone))
-            run_ecs_command('python3.6 manage.py sentinel sync_sentinel_bucket_utm_zone {}'.format(utm_zone))
 
 
 @task
@@ -79,19 +69,26 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
     Synchronize the local database of sentinel scenes with the sentinel S3
     bucket.
     """
-    # Create bucket parse log.
+    # Get or create bucket parse log.
     log = BucketParseLog.objects.filter(
         utm_zone=utm_zone,
-        end__isnull=True,
+        status__in=(BucketParseLog.PENDING, BucketParseLog.PROCESSING),
     ).first()
 
-    # Abort if log object has disapeared.
     if not log:
-        print('No parse log found.')
+        now = timezone.now()
+        log = BucketParseLog.objects.create(
+            utm_zone=utm_zone,
+            status=BucketParseLog.PROCESSING,
+            scheduled=now,
+            start=now,
+        )
+    elif log.status == BucketParseLog.PROCESSING:
+        # Abort if this utm zone is already processing.
         return
 
     # Update start time and log.
-    log.start=timezone.now()
+    log.start = timezone.now()
     log.save()
     log.write('Started parsing utm zone "{0}".'.format(utm_zone))
 
@@ -199,6 +196,7 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
 
     # Log the end of the parsing process
     log.write('Finished parsing, {0} tiles created.'.format(counter))
+    log.status == BucketParseLog.FINISHED
     log.end = timezone.now()
     log.save()
 
@@ -517,7 +515,7 @@ def drive_composite_builders(composite_ids=None):
             )
             wpp.write('Scheduled composite builder, waiting for worker availability.')
 
-            run_ecs_command('python3.6 manage.py sentinel build_composite {} {} {} {}'.format(composite.id, tilex, tiley, tilez))
+            ecs.build_composite(composite.id, tilex, tiley, tilez)
 
     return 'Started composites for layers {0}.'.format([composite.id for composite in composites])
 
@@ -701,28 +699,6 @@ def build_composite_pyramids(composite, tilex, tiley, tilez):
     wpp.write('Finished building pyramid.')
 
 
-@task
-def upgrade_sentineltile_to_l2a(sentineltile_id):
-    tile = SentinelTile.objects.get(id=sentineltile_id)
-    # Return if the product is already at Level 2.
-    if tile.level == const.LEVEL_L2A:
-        return
-
-    # Abort if image is before L2A avaliablitiy cutoff.
-    if tile.collected.date() < const.L2A_AVAILABILITY_DATE:
-        return
-
-    # Update level.
-    tile.level = const.LEVEL_L2A
-    tile.save()
-
-    # Update raster layers with L2A bucket addresses, which triggers
-    # re-parsing.
-    for band in tile.sentineltileband_set.all():
-        band.layer.source_url = tile.get_source_url(band.band)
-        band.layer.save()
-
-
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
 SEN2COR_CMD_TMPL = '/home/mrdjango/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
 
@@ -731,6 +707,10 @@ SEN2COR_CMD_TMPL = '/home/mrdjango/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resol
 def process_l2a(sentineltile_id, push_rasters=False):
     # Open sentinel tile instance.
     tile = SentinelTile.objects.get(id=sentineltile_id)
+
+    # TODO: Ingest L2A Data from AWS PDS bucket if over Europa.
+    # if tile.collected.date() < const.L2A_AVAILABILITY_DATE:
+    #     return
 
     # Construct download command.
     mgrs_code = '{0}{1}{2}'.format(
@@ -901,14 +881,7 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
         shutil.rmtree(parser.tmpdir)
 
 
-def fargate_process_l2a(sentineltile_id):
-    """
-    Process Sentinel Tile L2A ingestion on Fargate.
-    """
-    run_fargate_command('python3.6 manage.py sentinel process_l2a {}'.format(sentineltile_id))
-
-
-def build_composite(aggregationlayer_id, composite_id):
+def build_composite_new(aggregationlayer_id, composite_id):
     """
     Builds a composite over an aggregationlayer.
     """
@@ -918,4 +891,4 @@ def build_composite(aggregationlayer_id, composite_id):
 
     for stile in sentineltiles:
         if stile.level != const.LEVEL_L2A:
-            fargate_process_l2a(stile.id)
+            ecs.process_l2a(stile.id)

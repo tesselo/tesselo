@@ -3,10 +3,7 @@ from __future__ import unicode_literals
 import numpy
 
 from sentinel import const
-
-# from scipy.ndimage import maximum_filter, minimum_filter
-# from sklearn.preprocessing import minmax_scale
-
+from sklearn.preprocessing import minmax_scale
 
 
 def nodata_mask(stack):
@@ -27,6 +24,7 @@ def scale_array(arr, vmin, vmax):
 
 
 def clouds_v3(stack):
+    from sklearn.preprocessing import minmax_scale
     # Select minimum sum of thick cloud and cirrus cloud bands.
     index = minmax_scale(stack[const.BD1]) + minmax_scale(stack[const.BD10])
     index[(stack[const.BD11] < 900)] = 3
@@ -39,6 +37,9 @@ def clouds_v3(stack):
 
 
 def clouds(stack):
+    # Scipy is only installed on workers. So import it when used only.
+    from scipy.ndimage import maximum_filter, minimum_filter
+
     # Maximum and minimum filters will ensure that the cloud edges are
     # recognized as such. Between cloud and shadow, the values have normal
     # range and would be confused with good pixels.
@@ -73,9 +74,7 @@ def clouds(stack):
     )
 
     # Construct cloud index with equal weights for cirrus and thick.
-    # cloud = thick_cloud
     cloud = thick_cloud + cirrus_cloud
-    # cloud = minmax_scale(thick_cloud + cirrus_cloud)
 
     # Construct final index avoiding shadows and clouds.
     index = cloud + shadow

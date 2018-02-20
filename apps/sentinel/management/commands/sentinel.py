@@ -1,9 +1,5 @@
 from django.core.management.base import BaseCommand
-from sentinel.const import FARGATE_COMMAND_BASE
-from sentinel.tasks import (
-    build_composite, drive_sentinel_bucket_parser, get_aggregation_area_scenes, process_l2a,
-    sync_sentinel_bucket_utm_zone
-)
+from sentinel.tasks import build_composite, drive_sentinel_bucket_parser, process_l2a, sync_sentinel_bucket_utm_zone
 
 
 class Command(BaseCommand):
@@ -27,4 +23,4 @@ class Command(BaseCommand):
         # Run function.
         funk(*options['command_args'])
         # Return success message.
-        self.stdout.write(self.style.SUCCESS('Successfully processed task {} with args {}'.format(options['command'][0], options['command_args'])))
+        self.stdout.write(self.style.SUCCESS('Successfully scheduled task {} with args {}'.format(options['command'][0], options['command_args'])))

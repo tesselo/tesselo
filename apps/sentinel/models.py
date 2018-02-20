@@ -150,10 +150,23 @@ class BucketParseLog(models.Model):
     """
     Track parse attempts and progress.
     """
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    BUCKET_PARSE_STATUS_CHOICES = (
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+
     utm_zone = models.CharField(max_length=3)
-    start = models.DateTimeField()
+    schedulded = models.DateTimeField()
+    start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
     log = models.TextField(default='')
+    status = models.CharField(max_length=20, choices=BUCKET_PARSE_STATUS_CHOICES)
 
     def __str__(self):
         return 'Utm Zone {0}, {1}'.format(self.utm_zone, get_duration(self))
