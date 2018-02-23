@@ -44,6 +44,6 @@ invitee = User.objects.get(id=invitee)
 for composite in Composite.objects.all():
     assign_perm('{perm}_{model}'.format(perm='view', model='composite'), invitee, composite)
     assign_perm('{perm}_{model}'.format(perm='change', model='composite'), invitee, composite)
-    for wlayer in composite.compositebands.all():
+    for wlayer in composite.compositeband_set.all():
         assign_perm('{perm}_rasterlayer'.format(perm='view'), invitee, wlayer.rasterlayer)
         assign_perm('{perm}_rasterlayer'.format(perm='change'), invitee, wlayer.rasterlayer)

@@ -17,17 +17,16 @@ from botocore.client import Config
 from celery import task
 from celery.utils.log import get_task_logger
 from dateutil import parser
-from raster.models import RasterLayer, RasterLayerParseStatus, RasterTile
+from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
-from raster_aggregation.models import AggregationArea, AggregationLayer
+from raster_aggregation.models import AggregationArea
 
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
-from django.db.models import Count, F, Func
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -37,10 +36,10 @@ from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
-    BucketParseLog, Composite, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
-    SentinelTileBand, ZoneOfInterest
+    BucketParseLog, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
+    SentinelTileBand
 )
-from sentinel.utils import aggregate_tile, disaggregate_tile, get_composite_tile_indices, write_raster_tile
+from sentinel.utils import aggregate_tile, disaggregate_tile, write_raster_tile
 
 logger = get_task_logger(__name__)
 
@@ -234,146 +233,6 @@ def trigger_scene_ingestion(sender, instance, **kwargs):
     get_aggregation_area_scenes(instance.id)
 
 
-@task
-def drive_sentinel_queue(queue_limit=True, scene_limit=True):
-    """
-    Schedule download and parsing of sentinel scenes.
-    """
-    # List of parse status codes that indicate parsing is in process
-    in_process_codes = (
-        RasterLayerParseStatus.UNPARSED,
-        RasterLayerParseStatus.DOWNLOADING_FILE,
-        RasterLayerParseStatus.REPROJECTING_RASTER,
-        RasterLayerParseStatus.CREATING_TILES,
-        RasterLayerParseStatus.DROPPING_EMPTY_TILES,
-    )
-
-    # Count raster layers that are currently processing or waiting for
-    # being processed.
-    layers_processing = RasterLayer.objects.filter(
-        parsestatus__status__in=in_process_codes
-    ).count()
-
-    # If number of layers is below a threshold, add more to queue
-    if layers_processing >= const.MIN_TASK_QUEUE_LENGTH and queue_limit:
-        msg = 'No new tasks pushed ({0} layers currently processing).'
-        logger.info(msg.format(layers_processing))
-        return
-
-    composites = Composite.objects.filter(active=True)
-    for composite in composites:
-        # Get all active zones of interest for this composite.
-        if composite.all_zones:
-            zones = ZoneOfInterest.objects.filter(active=True)
-        else:
-            zones = composite.zonesofinterest.filter(active=True)
-        # Loop through zones to add new scenes.
-        for zone in zones.iterator():
-            # Get MGRS tiles that intersect with the zone of interest, and do not
-            # have more than two layers ingested. Currently exclude utm zones at
-            # the time horizon, because geometries are wrapped around the composite.
-            for mgrs in MGRSTile.objects.exclude(utm_zone__in=[1, 60]).filter(geom__intersects=zone.geom):
-                # Count number of complete scenes for the given time frame and mgrs tile.
-                nr_of_complete_scenes = mgrs.sentineltile_set.annotate(
-                    band_count=Count('sentineltileband')
-                ).filter(
-                    band_count=const.NR_OF_BANDS,
-                    collected__gte=composite.min_date,
-                    collected__lte=composite.max_date,
-                ).count()
-                # Limit the number of scenes to a maximum.
-                if nr_of_complete_scenes >= const.MAX_SCENES_PER_MGRSTILE and scene_limit:
-                    continue
-                # Get sentinel tiles that do not have bands yet.
-                qs = SentinelTile.objects.filter(sentineltileband=None)
-                # Limit to the MGRS tile.
-                qs = qs.filter(mgrstile=mgrs)
-                # Filter sentinel tiles by date.
-                qs = qs.filter(
-                    collected__gte=composite.min_date,
-                    collected__lte=composite.max_date,
-                )
-                # Compute cohorts for cloud covers in steps of 10 percent, the cohorts
-                # are necessary such that the date ordering still has an effect. The
-                # goal is to find the newest tiles within the highest cloud cohort.
-                qs = qs.annotate(
-                    cloud_cohort=Func(F('cloudy_pixel_percentage') / 10, function='ROUND')
-                )
-                # Limit to cloud cover below a threshold.
-                qs = qs.filter(cloud_cohort__lt=const.MAX_CLOUD_COHORT)
-                # Only consider scenes with siginificant amounts of pixel values.
-                qs = qs.filter(data_coverage_percentage__gt=const.MIN_PIXEL_COVERAGE)
-                # Order by cloud cover cohort and newest first
-                qs = qs.order_by('cloud_cohort', '-collected')
-                # Get first tile matching the criteria
-                tile = qs.distinct().first()
-                if tile:
-                    logger.info('Creating RasterLayers for SentinelTile {0}.'.format(tile.prefix))
-                else:
-                    logger.info('No more layers found to parse in zone {0}'.format(zone.name))
-                    continue
-
-                register_bands_for_tile(tile)
-
-
-def register_bands_for_tile(tile):
-    # Loop through all bands.
-    for filename, description in const.BAND_CHOICES:
-
-        # Continue if this band already exists.
-        if SentinelTileBand.objects.filter(band=filename, tile=tile).exists():
-            continue
-
-        # Fix zoom level by band to ensure consistency.
-        if filename in const.BANDS_10M:
-            zoom = const.ZOOM_LEVEL_10M
-        elif filename in const.BANDS_20M:
-            zoom = const.ZOOM_LEVEL_20M
-        else:
-            zoom = const.ZOOM_LEVEL_60M
-
-        # Create new raster layer and register it as sentinel band.
-        layer = RasterLayer.objects.create(
-            name=tile.prefix + filename,
-            datatype=RasterLayer.CONTINUOUS,
-            source_url=tile.get_source_url(filename),
-            nodata=const.SENTINEL_NODATA_VALUE,
-            max_zoom=zoom,
-            build_pyramid=True,
-            store_reprojected=False,
-        )
-
-        # Make sentinel bands available to all users.
-        layer.publicrasterlayer.public = True
-        layer.publicrasterlayer.save()
-
-        # Register raster layer as sentinel tile band.
-        try:
-            SentinelTileBand.objects.create(
-                layer=layer,
-                band=filename,
-                tile=tile,
-            )
-        except:
-            layer.delete()
-            raise
-
-
-@task
-def repair_incomplete_scenes():
-    """
-    Recreate missing sentinel tile bands on incomplete scenes.
-    """
-    qs = SentinelTile.objects.annotate(
-        count=Count('sentineltileband')
-    ).filter(
-        count__gt=0,
-        count__lt=const.NR_OF_BANDS,
-    ).distinct()
-    for incomplete in qs:
-        register_bands_for_tile(incomplete)
-
-
 def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     """
     Return a RasterTile queryset of tiles for the given indices.
@@ -400,22 +259,21 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     return tiles
 
 
-def zone_tile_stacks(composite, tilex, tiley, tilez, level=const.LEVEL_L1C):
+def compositetile_stacks(ctile):
     """
     Iterator to provide scene level band stacks for all xyz tiles that
-    intersect with a zone of interest.
+    are within one CompositeTile.
     """
     logger.info('Creating Tiles for Layer "{0}" at {1}/{2}/{3}'.format(
-        composite.name,
-        tilez,
-        tilex,
-        tiley,
+        ctile.composite.name,
+        ctile.tilez,
+        ctile.tilex,
+        ctile.tiley,
     ))
-
-    sentineltiles = composite.get_sentineltiles()
+    sentineltiles = ctile.composite.get_sentineltiles()
 
     # Compute indexrange for this higher level tile.
-    bounds = tile_bounds(tilex, tiley, tilez)
+    bounds = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
     indexrange = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
 
     # Loop through tiles at 60m that intersect with bounding box.
@@ -483,73 +341,24 @@ def zone_tile_stacks(composite, tilex, tiley, tilez, level=const.LEVEL_L1C):
 
 
 @task
-def drive_composite_builders(composite_ids=None):
+def process_compositetile(compositetile_id, run_callback=True):
     """
-    Schedule composite creation based on zones of interest.
-    """
-    composites = Composite.objects.filter(active=True)
-    if composite_ids:
-        composites = composites.filter(id__in=composite_ids)
-
-    for composite in composites:
-        for tilex, tiley, tilez in get_composite_tile_indices(composite):
-            # Check if the tile is currently building.
-            processing = CompositeBuildLog.objects.filter(
-                composite=composite,
-                tilex=tilex,
-                tiley=tiley,
-                tilez=tilez,
-                end__isnull=True,
-            ).exists()
-
-            if processing:
-                continue
-
-            # Register parse effort.
-            wpp = CompositeBuildLog.objects.create(
-                composite=composite,
-                tilex=tilex,
-                tiley=tiley,
-                tilez=tilez,
-                log='',
-            )
-            wpp.write('Scheduled composite builder, waiting for worker availability.')
-
-            ecs.build_composite(composite.id, tilex, tiley, tilez)
-
-    return 'Started composites for layers {0}.'.format([composite.id for composite in composites])
-
-
-@task
-def build_composite(composite_id, tilex, tiley, tilez):
-    """
-    Build a cloud free unified base layer for a given zone of interest and for
+    Build a cloud free unified base layer for a given areas of interest and for
     each sentinel band.
 
     If reset is activated, the files are deleted and re-created from scratch.
     """
-    # Get compositeband and zone from db.
-    composite = Composite.objects.get(id=composite_id)
-
-    # Update composite parse process.
-    wpp = CompositeBuildLog.objects.filter(
-        composite=composite,
-        tilex=tilex,
-        tiley=tiley,
-        tilez=tilez,
-        end__isnull=True,
-    ).first()
-
-    wpp.start = timezone.now()
-    wpp.write('Starting to build composite band.')
+    ctile = CompositeTile.objects.get(id=compositetile_id)
+    ctile.start = timezone.now()
+    ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
 
     # Get the list of master layers for all 13 bands.
-    rasterlayer_lookup = composite.rasterlayer_lookup
+    rasterlayer_lookup = ctile.composite.rasterlayer_lookup
 
     # Loop over all TMS tiles in a given zone and get band stacks for available
     # scenes in that tile.
     counter = 0
-    for x, y, stacks in zone_tile_stacks(composite, tilex, tiley, tilez):
+    for x, y, stacks in compositetile_stacks(ctile):
         # Compute the cloud probabilities for each avaiable scene band stack.
         cloud_probs = [clouds(stack) for stack in stacks]
 
@@ -606,31 +415,13 @@ def build_composite(composite_id, tilex, tiley, tilez):
         # Log progress.
         counter += 1
         if counter % 100 == 0:
-            logger.info('{count} World Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=x, y=y))
+            ctile.write('{count} Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=x, y=y))
 
-    # Build pyramid for this zone.
-    build_composite_pyramids(composite, tilex, tiley, tilez)
+    # Start pyramid building phase.
+    ctile.write('Finished building composite tile at max zoom level, starting Pyramid.')
 
-    return 'Successfully built compositeband {0} at (x={1}, y={2}, z={3})'.format(composite_id, tilex, tiley, tilez)
-
-
-def build_composite_pyramids(composite, tilex, tiley, tilez):
-    """
-    Build pyramids for the global layer of each band.
-    """
-    # Get composite parse process logger.
-    wpp = CompositeBuildLog.objects.filter(
-        composite=composite,
-        tilex=tilex,
-        tiley=tiley,
-        tilez=tilez,
-        end__isnull=True,
-    ).first()
-
-    # Get rasterlayers.
-    rasterlayer_lookup = composite.rasterlayer_lookup.values()
-
-    bounds = tile_bounds(tilex, tiley, tilez)
+    # Compute indexrange for pyramid.
+    bounds = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
     indexrange60 = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
 
     # Loop over all zoom levels to construct pyramid.
@@ -655,16 +446,14 @@ def build_composite_pyramids(composite, tilex, tiley, tilez):
             zoom - 1,
             [idx // 2 for idx in indexrange],
         )
-
-        logger.info(msg)
-        wpp.write(msg)
+        ctile.write(msg)
 
         # Loop over composite band tiles in blocks of four.
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
 
                 # Aggregate tiles for each composite band.
-                for rasterlayer_id in rasterlayer_lookup:
+                for rasterlayer_id in rasterlayer_lookup.values():
                     result = []
                     none_found = True
                     # Aggregate each tile in the block of 2x2.
@@ -695,8 +484,13 @@ def build_composite_pyramids(composite, tilex, tiley, tilez):
                     # Commit raster to DB.
                     write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
 
-    wpp.end = timezone.now()
-    wpp.write('Finished building pyramid.')
+    ctile.end = timezone.now()
+    ctile.write('Finished building composite tile.', CompositeTile.FINISHED)
+
+    # Run callback for composite builds, allow disabling callbacks when testing.
+    if run_callback:
+        for cbuild in ctile.compositebuild_set.all():
+            composite_build_callback(cbuild.id)
 
 
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
@@ -708,9 +502,17 @@ def process_l2a(sentineltile_id, push_rasters=False):
     # Open sentinel tile instance.
     tile = SentinelTile.objects.get(id=sentineltile_id)
 
-    # TODO: Ingest L2A Data from AWS PDS bucket if over Europa.
-    # if tile.collected.date() < const.L2A_AVAILABILITY_DATE:
-    #     return
+    # Don't duplicate the effort.
+    if tile.status in (SentinelTile.PROCESSING, SentinelTile.FINISHED):
+        tile.write('Status is {}, aborted additional L2A update.'.format(tile.status))
+        return
+    else:
+        tile.write('Started processing tile for L2A upgrade.', SentinelTile.PROCESSING)
+
+    # TODO: Over Europe, L2A data may exist already. In that case ingest L2A
+    # data directly from AWS PDS bucket.
+    # if tile.collected.date() >= const.L2A_AVAILABILITY_DATE:
+    #     Direct ingestion mode.
 
     # Construct download command.
     mgrs_code = '{0}{1}{2}'.format(
@@ -726,19 +528,26 @@ def process_l2a(sentineltile_id, push_rasters=False):
     )
 
     # Download the scene.
-    os.system(productdownload_cmd)
+    tile.write('Starting download of product data.')
+    try:
+        os.system(productdownload_cmd)
+    except:
+        tile.write('Failed download of product data.', SentinelTile.FAILED)
+        return
+    tile.write('Finished download of product data.')
 
     # Construct Sen2Cor command.
     product_path = glob.glob('/rasterwd/products/{}/*.SAFE'.format(tile.id))[0]
     sen2cor_cmd = SEN2COR_CMD_TMPL.format(product_path=product_path)
 
     # Apply atmoshperic correction.
-    os.system(sen2cor_cmd)
-
-    # Update level.
-    if tile.level != const.LEVEL_L2A:
-        tile.level = const.LEVEL_L2A
-        tile.save()
+    tile.write('Starting Sen2Cor algorithm.')
+    try:
+        os.system(sen2cor_cmd)
+    except:
+        tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
+        return
+    tile.write('Finished applying Sen2Cor algorithm.')
 
     # Ingest the resulting rasters as tiles.
     for filename, description in const.BAND_CHOICES:
@@ -796,42 +605,52 @@ def process_l2a(sentineltile_id, push_rasters=False):
 
         # Continue if file has not been created.
         if not len(bandpath):
-            print('No source found for band ', band.band)
+            tile.write('No source found for band {}, continuing.'.format(band.band))
             continue
         else:
-            print('Processing', band)
+            tile.write('Processing band {}.'.format(band))
             bandpath = bandpath[0]
 
-        # Create workdir for parsing.
-        tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
-        pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-        intermediate_rst = os.path.join(tmpdir, band.band.split('.jp2')[0] + '.tif')
-        print('Intermediate raster is ', intermediate_rst)
-        target_rst = os.path.join(tmpdir, 's2_' + '_'.join(tile.prefix.split('/')[1:]) + band.band.split('.jp2')[0] + '.tif')
-        print('Target raster is ', target_rst)
+        try:
+            # Create workdir for parsing.
+            tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
+            pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
+            intermediate_rst = os.path.join(tmpdir, band.band.split('.jp2')[0] + '.tif')
+            target_rst = os.path.join(tmpdir, 's2_' + '_'.join(tile.prefix.split('/')[1:]) + band.band.split('.jp2')[0] + '.tif')
 
-        # Transform raster into cloud optimized geotiff in Web Mercator.
-        os.system('gdalwarp -t_srs EPSG:{} {} {} -co TILED=YES -co BLOCKXSIZE=256 -co BLOCKYSIZE=256 -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
-            WEB_MERCATOR_SRID,
-            bandpath,
-            intermediate_rst,
-        ))
+            # Transform raster into cloud optimized geotiff in Web Mercator.
+            os.system('gdalwarp -t_srs EPSG:{} {} {} -co TILED=YES -co BLOCKXSIZE=256 -co BLOCKYSIZE=256 -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
+                WEB_MERCATOR_SRID,
+                bandpath,
+                intermediate_rst,
+            ))
 
-        os.system('gdaladdo -r average {} 2 4 6 8 16 32'.format(
-            intermediate_rst,
-        ))
+            os.system('gdaladdo -r average {} 2 4 6 8 16 32'.format(
+                intermediate_rst,
+            ))
 
-        os.system('gdal_translate {} {} -co TILED=YES -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
-            intermediate_rst,
-            target_rst,
-        ))
-        if push_rasters:
-            push_and_parse_rasters(tmpdir, band, target_rst)
-        else:
-            locally_parse_raster(tmpdir, band, target_rst, zoom)
+            os.system('gdal_translate {} {} -co TILED=YES -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
+                intermediate_rst,
+                target_rst,
+            ))
+            if push_rasters:
+                push_and_parse_rasters(tmpdir, band, target_rst)
+            else:
+                locally_parse_raster(tmpdir, band, target_rst, zoom)
+        except:
+            tile.write('Failed processing band {}'.format(band), SentinelTile.FAILED)
+
+        tile.write('Finished processing band {}'.format(band))
 
     # Remove main product files.
     shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+
+    # Update tile status.
+    tile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
+
+    # Run callbacks to continue build chain.
+    for cbuild in tile.compositebuild_set.filter(status=CompositeBuild.INGESTING_SCENES):
+        composite_build_callback(cbuild.id)
 
 
 def push_and_parse_rasters(tmpdir, band, target_rst):
@@ -872,7 +691,6 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
         parser.create_tiles(list(range(zoom + 1)))
         parser.send_success_signal()
     except:
-        print('Failed parsing', band.band, traceback.format_exc())
         parser.log(
             traceback.format_exc(),
             status=parser.rasterlayer.parsestatus.FAILED
@@ -881,14 +699,61 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
         shutil.rmtree(parser.tmpdir)
 
 
-def build_composite_new(aggregationlayer_id, composite_id):
+def composite_build_callback(compositebuild_id, initiate=False):
     """
-    Builds a composite over an aggregationlayer.
+    Initiate and update composite builds.
     """
-    agglayer = AggregationLayer.objects.get(pk=aggregationlayer_id)
-    composite = Composite.objects.get(pk=composite_id)
-    sentineltiles = composite.get_sentineltiles()
+    compositebuild = CompositeBuild.objects.get(id=compositebuild_id)
 
-    for stile in sentineltiles:
-        if stile.level != const.LEVEL_L2A:
+    # Initiate the compositebuild related objects if requested.
+    if initiate:
+        compositebuild.set_sentineltiles()
+        compositebuild.set_compositetiles()
+
+    # Flag to check scene status.
+    scene_ingestion_complete = not compositebuild.sentineltiles.exclude(status=SentinelTile.FINISHED).exists()
+
+    if not scene_ingestion_complete:
+        # Ensure compsitebuild status is "ingesting scenes".
+        if compositebuild.status != CompositeBuild.INGESTING_SCENES:
+            compositebuild.status = CompositeBuild.INGESTING_SCENES
+            compositebuild.save()
+        # Call the L2A upgrader for the set of sentinel tiles that are still
+        # unprocessed or have failed processing.
+        sentineltiles = compositebuild.sentineltiles.filter(
+            status__in=(SentinelTile.FAILED, SentinelTile.UNPROCESSED)
+        )
+        for stile in sentineltiles:
+            # Log scheduling of scene ingestion.
+            stile.scheduled = timezone.now()
+            stile.write('Scheduled scene ingestion, waiting for worker availability.', SentinelTile.PENDING)
             ecs.process_l2a(stile.id)
+        # Abort here and wait for callbacks from process_l2a.
+        return
+
+    # Flag to check composite tile status.
+    composite_tiles_complete = not compositebuild.compositetiles.exclude(status=CompositeTile.FINISHED).exists()
+
+    if not composite_tiles_complete:
+        # Ensure compsitebuild status is "building tiles".
+        if compositebuild.status != CompositeBuild.BUILDING_TILES:
+            compositebuild.status = CompositeBuild.BUILDING_TILES
+            compositebuild.save()
+
+        # Call the composite tile builder for tiles that are unprocessed.
+        compositetiles = compositebuild.compositetiles.filter(
+            status__in=(CompositeTile.UNPROCESSED, CompositeTile.FAILED)
+        )
+
+        for compositetile in compositetiles:
+            # Log scheduling of composite tile build.
+            compositetile.scheduled = timezone.now()
+            compositetile.write('Scheduled composite builder, waiting for worker availability.', CompositeTile.PENDING)
+            # Call build task.
+            ecs.process_compositetile(compositetile.id)
+        # Abort here and wait for callbacks from process_compositetile.
+        return
+    else:
+        # Composite build is complete, set status to "finished".
+        compositebuild.status = CompositeBuild.FINISHED
+        compositebuild.save()

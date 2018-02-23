@@ -4,17 +4,20 @@ import shutil
 import tempfile
 
 import mock
-from tests.mock_functions import client_get_object, get_numpy_tile, iterator_search, point_to_test_file
+from raster_aggregation.models import AggregationArea, AggregationLayer
+from tests.mock_functions import (
+    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_run_ecs_command, point_to_test_file
+)
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
 from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
 from django.test import TestCase, override_settings
-from sentinel.models import Composite, SentinelTile, ZoneOfInterest
-from sentinel.tasks import drive_composite_builders, drive_sentinel_queue, sync_sentinel_bucket_utm_zone
+from django.urls import reverse
+from sentinel.models import Composite, CompositeBuild, SentinelTile
+from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import LinearSVC
@@ -24,6 +27,8 @@ from sklearn.svm import LinearSVC
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
+@mock.patch('sentinel.ecs.run_ecs_command', patch_run_ecs_command)
+@mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 class SentinelClassifierTest(TestCase):
 
@@ -31,10 +36,14 @@ class SentinelClassifierTest(TestCase):
         bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
         bbox = OGRGeometry.from_bbox(bbox)
         bbox.srid = 3857
-        self.zone = ZoneOfInterest.objects.create(name='A zone', geom=bbox.ewkt)
-        bbox.transform(4326)
-        self.world = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
-        self.world.zonesofinterest.add(self.zone)
+        self.agglayer = AggregationLayer.objects.create(name='Test Agg Layer')
+        self.zone = AggregationArea.objects.create(
+            name='Test Agg Area',
+            aggregationlayer=self.agglayer,
+            geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11859687.0 -469452.0, 11859687.0 -441452.0, 11833687.0 -441452.0, 11833687.0 -469452.0)))'
+        )
+        self.composite = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
+        self.build = CompositeBuild.objects.create(composite=self.composite, aggregationlayer=self.agglayer)
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -60,13 +69,9 @@ class SentinelClassifierTest(TestCase):
         self.clf.trainingsamples.add(self.cloudfree)
 
     def _get_data(self):
-
         sync_sentinel_bucket_utm_zone(1)
-        drive_sentinel_queue()
-        drive_sentinel_queue()
-
+        composite_build_callback(self.build.id, initiate=True)
         tile = SentinelTile.objects.first()
-
         self.cloud.sentineltile = tile
         self.cloud.save()
         self.shadow.sentineltile = tile
@@ -118,11 +123,10 @@ class SentinelClassifierTest(TestCase):
 
     def test_classifier_prediction_composite(self):
         self._get_data()
-        drive_composite_builders()
         train_sentinel_classifier(self.clf.id)
 
         pred = PredictedLayer.objects.create(
-            composite=self.world,
+            composite=self.composite,
             classifier=self.clf,
         )
         predict_sentinel_layer(pred.id)

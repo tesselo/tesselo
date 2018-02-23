@@ -40,11 +40,11 @@ from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     AggregationLayerSerializer, CompositeSerializer, GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer,
     LegendSerializer, RasterLayerSerializer, SentinelTileAggregationLayerSerializer, UserSerializer,
-    ValueCountResultSerializer, ZoneOfInterestSerializer
+    ValueCountResultSerializer
 )
 from raster_api.tasks import compute_single_value_count_result
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
-from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
+from sentinel.models import Composite, SentinelTileAggregationLayer
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -144,7 +144,7 @@ class PermissionsModelViewSet(ModelViewSet):
 
         # Handle compositeband case.
         if self._model == 'composite':
-            for wlayer in obj.compositebands.all():
+            for wlayer in obj.compositeband_set.all():
                 funk('{perm}_rasterlayer'.format(perm=permission), invitee, wlayer.rasterlayer)
 
         return Response(status=HTTP_204_NO_CONTENT)
@@ -161,7 +161,7 @@ class PermissionsModelViewSet(ModelViewSet):
 
         # Handle compositeband case.
         if self._model == 'composite':
-            for wlayer in obj.compositebands.all():
+            for wlayer in obj.compositeband_set.all():
                 child = wlayer.rasterlayer.publicrasterlayer
                 child.public = not child.public
                 child.save()
@@ -330,19 +330,8 @@ class CompositeViewSet(PermissionsModelViewSet):
         # Create permissions for the compositeband itself.
         super(CompositeViewSet, self)._assign_perms(obj)
         # Assign permissions to the dependent rasterlayers.
-        for wlayer in obj.compositebands.all():
+        for wlayer in obj.compositeband_set.all():
             super(CompositeViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
-
-
-class ZoneOfInterestViewSet(PermissionsModelViewSet):
-
-    queryset = ZoneOfInterest.objects.all().order_by('id')
-    serializer_class = ZoneOfInterestSerializer
-    filter_backends = (SearchFilter, DjangoFilterBackend, )
-    filter_fields = ('active', 'composite')
-    search_fields = ('name', )
-
-    _model = 'zoneofinterest'
 
 
 class SentinelTileAggregationLayerViewSet(ModelViewSet):

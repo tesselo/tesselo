@@ -3,10 +3,9 @@ from __future__ import unicode_literals
 from django.contrib.gis import admin
 from sentinel import ecs
 from sentinel.models import (
-    BucketParseLog, Composite, CompositeBand, CompositeBuildLog, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
-    SentinelTileBand, ZoneOfInterest
+    BucketParseLog, Composite, CompositeBand, CompositeBuild, CompositeTile, MGRSTile, SentinelTile,
+    SentinelTileAggregationLayer, SentinelTileBand
 )
-from sentinel.tasks import drive_composite_builders
 
 
 class PatchedOSMGeoAdmin(admin.GeoModelAdmin):
@@ -67,31 +66,29 @@ class MGRSTileAdmin(PatchedOSMGeoAdmin):
 class CompositeAdmin(admin.ModelAdmin):
     list_filter = ('active', )
     model = Composite
-    readonly_fields = ('compositebands', 'sentineltiles', )
-    actions = ['build_composite', ]
-
-    def build_composite(self, request, queryset):
-        """
-        Admin action to build selected compositebands.
-        """
-        drive_composite_builders([lyr.id for lyr in queryset])
-        self.message_user(request, 'Started building compositebands.')
-
-
-class ZoneOfInterestAdmin(PatchedOSMGeoAdmin):
-    list_filter = ('active', )
+    readonly_fields = ('sentineltiles', )
 
 
 class SentinelTileAggregationLayerAdmin(admin.ModelAdmin):
     raw_id_fields = ('sentineltile', )
 
 
+class CompositeBuildAdmin(admin.ModelAdmin):
+    model = CompositeBuild
+    readonly_fields = ('sentineltiles', 'compositetiles', )
+    actions = ('run_composite_build', )
+
+    def run_composite_build(self, request, queryset):
+        for build in queryset:
+            ecs.composite_build_callback(build.id, initiate=True)
+
+
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
 admin.site.register(SentinelTileBand, SentinelTileBandAdmin)
 admin.site.register(SentinelTile, SentinelTileAdmin)
 admin.site.register(MGRSTile, MGRSTileAdmin)
-admin.site.register(ZoneOfInterest, ZoneOfInterestAdmin)
 admin.site.register(CompositeBand)
-admin.site.register(CompositeBuildLog)
+admin.site.register(CompositeTile)
+admin.site.register(CompositeBuild, CompositeBuildAdmin)
 admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)

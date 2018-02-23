@@ -7,7 +7,7 @@ from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
     CompositeViewSet, ExportAPIView, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
     ObtainExpiringAuthToken, RasterLayerViewSet, RemoveAuthToken, SentinelTileAggregationLayerViewSet,
-    ValueCountResultViewSet, ZoneOfInterestViewSet
+    ValueCountResultViewSet
 )
 from sentinel.views import SentinelTileViewSet
 
@@ -69,7 +69,6 @@ router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
 
 router.register(r'composite', CompositeViewSet, base_name='composite')
-router.register(r'zoneofinterest', ZoneOfInterestViewSet, base_name='zoneofinterest')
 router.register(r'sentineltileaggregationlayer', SentinelTileAggregationLayerViewSet, base_name='sentineltileaggregationlayer')
 router.register(r'sentineltile', SentinelTileViewSet, base_name='sentineltile')
 

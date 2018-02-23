@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import io
 import pickle
 
@@ -110,8 +111,11 @@ def train_sentinel_classifier(classifier_id):
                 X = numpy.vstack([data, X])
 
     # Instanciate and fit the classifier.
-    clf = classifier.ALGORITHM_CLASSES[classifier.algorithm]()
+    clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]()
+    clf_mod = importlib.import_module('sklearn.' + clf_mod)
+    clf = getattr(clf_mod, clf_class)()
     clf.fit(X, Y)
+
     # Store result in classifier.
     classifier.legend = categories
     classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name='trained')

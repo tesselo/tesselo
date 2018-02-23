@@ -71,7 +71,7 @@ INSTALLED_APPS = [
 
     'raster_api',
     'sentinel',
-    # 'classify',
+    'classify',
     'formulary',
 ]
 
@@ -159,7 +159,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = os.environ.get('USE_TZ', 'True') == 'True'
 
 # Cache settings.
 CACHES = {

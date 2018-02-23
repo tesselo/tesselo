@@ -7,7 +7,7 @@ from raster_aggregation.models import AggregationLayer, ValueCountResult
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
+from sentinel.models import Composite, SentinelTileAggregationLayer
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):
@@ -200,38 +200,6 @@ def create_composite_public_object(sender, instance, created, **kwargs):
     """
     if created:
         PublicComposite.objects.create(composite=instance)
-
-
-class ZoneOfInterestUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(ZoneOfInterest, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
-
-
-class ZoneOfInterestGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(ZoneOfInterest, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
-
-
-class PublicZoneOfInterest(models.Model):
-
-    zoneofinterest = models.OneToOneField(ZoneOfInterest, on_delete=models.CASCADE)
-    public = models.BooleanField(default=False)
-
-    def __str__(self):
-        return '{0} | {1}'.format(self.composite, 'public' if self.public else 'private')
-
-
-@receiver(post_save, sender=ZoneOfInterest, weak=False, dispatch_uid="create_zoneofinterest_public_object")
-def create_zoneofinterest_public_object(sender, instance, created, **kwargs):
-    """
-    Automatically create the public zoneofinterest object.
-    """
-    if created:
-        PublicZoneOfInterest.objects.create(zoneofinterest=instance)
 
 
 class SentinelTileAggregationLayerUserObjectPermission(UserObjectPermissionBase):

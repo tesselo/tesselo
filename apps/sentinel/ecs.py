@@ -64,5 +64,9 @@ def process_l2a(scene_id):
     return run_ecs_command(['process_l2a', scene_id])
 
 
-def build_composite(composite_id, tilex, tiley, tilez):
-    return run_ecs_command(['build_composite', composite_id, tilex, tiley, tilez])
+def process_compositetile(compositetile_id):
+    return run_ecs_command(['process_compositetile', compositetile_id])
+
+
+def composite_build_callback(compositebuild_id, initiate=False):
+    return run_ecs_command(['composite_build_callback', compositebuild_id, initiate])

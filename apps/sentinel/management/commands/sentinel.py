@@ -1,5 +1,8 @@
 from django.core.management.base import BaseCommand
-from sentinel.tasks import build_composite, drive_sentinel_bucket_parser, process_l2a, sync_sentinel_bucket_utm_zone
+from sentinel.tasks import (
+    composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
+    sync_sentinel_bucket_utm_zone
+)
 
 
 class Command(BaseCommand):
@@ -10,7 +13,8 @@ class Command(BaseCommand):
         'drive_sentinel_bucket_parser': drive_sentinel_bucket_parser,
         'sync_sentinel_bucket_utm_zone': sync_sentinel_bucket_utm_zone,
         'process_l2a': process_l2a,
-        'build_composite': build_composite,
+        'process_compositetile': process_compositetile,
+        'composite_build_callback': composite_build_callback,
     }
 
     def add_arguments(self, parser):

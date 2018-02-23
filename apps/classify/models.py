@@ -5,9 +5,6 @@ from raster.models import RasterLayer
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import HStoreField
 from sentinel.models import Composite, SentinelTile
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import LinearSVC
 
 
 class TrainingSample(models.Model):
@@ -38,10 +35,10 @@ class Classifier(models.Model):
         (NN, 'Neural Network'),
     )
 
-    ALGORITHM_CLASSES = {
-        SVM: LinearSVC,
-        RF: RandomForestClassifier,
-        NN: MLPClassifier,
+    ALGORITHM_MODULES = {
+        SVM: ('svm', 'LinearSVC'),
+        RF: ('ensemble', 'RandomForestClassifier'),
+        NN: ('neural_network', 'MLPClassifier'),
     }
 
     name = models.CharField(max_length=100)

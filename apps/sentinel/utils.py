@@ -9,7 +9,6 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from sentinel import const
-from sentinel.models import ZoneOfInterest
 
 
 def aggregate_tile(tile):
@@ -47,20 +46,21 @@ def get_composite_tile_indices(composite, zoom=const.ZOOM_LEVEL_WORLDLAYER):
     Get x-y-z tile indexes for all tiles intersecting over this compositeband's
     zones of interest.
     """
-    # Get all active zones of interest for this composite.
-    if composite.all_zones:
-        zones = ZoneOfInterest.objects.filter(active=True)
-    else:
-        zones = composite.zonesofinterest.filter(active=True)
+    # Create set to hold tile indexes.
+    indexranges = set()
+    # Loop through all aggregationareas in aggregationlayers.
+    for ctile in composite.compositetile_set.all():
+        for aggarea in ctile.aggregationlayer.aggregationarea_set.all():
+            # Get index range from aggregationarea.
+            geom = aggarea.geom.transform(WEB_MERCATOR_SRID, clone=True)
+            indexrange = tile_index_range(geom.extent, zoom, tolerance=1e-3)
+            # Add additional tiles to set.
+            for tilex in range(indexrange[0], indexrange[2] + 1):
+                for tiley in range(indexrange[1], indexrange[3] + 1):
+                    indexranges.add((tilex, tiley, zoom))
 
-    # Build composite tiles for each zone.
-    for zone in zones:
-        # Compute index range for this zone of interest.
-        indexrange = zone.index_range(zoom)
-
-        for tilex in range(indexrange[0], indexrange[2] + 1):
-            for tiley in range(indexrange[1], indexrange[3] + 1):
-                yield tilex, tiley, zoom
+    for combo in indexranges:
+        yield combo
 
 
 def get_sentinel_tile_indices(sentineltile, zoom=const.ZOOM_LEVEL_10M):

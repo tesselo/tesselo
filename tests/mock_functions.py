@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import io
 import os
 
@@ -7,12 +5,16 @@ import botocore
 import botocore.session
 import numpy
 from botocore.stub import Stubber
+from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID
-from raster.tiles.utils import tile_scale
+from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from django.contrib.gis.gdal import GDALRaster
+from django.core.files import File
 from django.utils import timezone
 from sentinel import const
+from sentinel.models import SentinelTile, SentinelTileBand
+from sentinel.tasks import process_compositetile
 
 
 def iterator_search(self, searchstring):
@@ -153,3 +155,71 @@ def get_numpy_tile(prefix, tilez, tilex, tiley):
         ],
     })
     return tile
+
+
+def patch_process_l2a(stile_id, run_callback=True):
+    # Get sentineltile.
+    stile = SentinelTile.objects.get(id=stile_id)
+    # Fake finished status on sentineltile.
+    stile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
+    # Ensure sentineltilebands exist.
+    for band, desc in const.BAND_CHOICES:
+        if not SentinelTileBand.objects.filter(band=band, tile=stile).exists():
+            rst = RasterLayer.objects.create(name='Test raster ' + band + ' 1')
+            SentinelTileBand.objects.create(band=band, tile=stile, layer=rst)
+    # Set bbox for writing fake tiles.
+    bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
+    # Create fake gdalraster tiles in sentinel tile bands.
+    for band in stile.sentineltileband_set.all():
+        # Get band resolution.
+        res = const.BAND_RESOLUTIONS[band.band]
+        if res == 10:
+            zoom = 14
+        elif res == 20:
+            zoom = 13
+        else:
+            zoom = 11
+        # Compute geotransform for this raster tile.
+        idxr = tile_index_range(bbox, zoom, tolerance=1e-3)
+        bounds = tile_bounds(idxr[0], idxr[1], zoom)
+        # Setup random data.
+        data = numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')
+        # Create raster.
+        dest = GDALRaster({
+            'width': 256,
+            'height': 256,
+            'origin': (bounds[0], bounds[1]),
+            'scale': [res, -res],
+            'srid': WEB_MERCATOR_SRID,
+            'datatype': 2,
+            'bands': [
+                {'nodata_value': 0, 'data': data},
+            ],
+        })
+        # Write raster tile.
+        dest = io.BytesIO(dest.vsi_buffer)
+        dest = File(dest, name='tile.tif')
+        RasterTile.objects.create(
+            rasterlayer=band.layer,
+            tilex=idxr[0],
+            tiley=idxr[1],
+            tilez=zoom,
+            rast=dest,
+        )
+
+
+def patch_run_ecs_command(command_input):
+    """
+    Execute a command on an ECS Fargate instance.
+    """
+    # List of available functions.
+    funks = {
+        'process_l2a': patch_process_l2a,
+        'process_compositetile': process_compositetile,
+    }
+    # Select function.
+    funk = funks[command_input[0]]
+    # Disable callbacks in test patch mode.
+    command_input += [False, ]
+    # Call function (this is usually called through management tasks on ECS.)
+    funk(*command_input[1:])

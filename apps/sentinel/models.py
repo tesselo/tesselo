@@ -8,6 +8,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MER
 from raster.tiles.utils import tile_index_range
 from raster_aggregation.models import AggregationLayer
 
+from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.contrib.gis.gdal import SpatialReference
 from django.db.models.signals import post_save
@@ -53,6 +54,18 @@ class SentinelTile(models.Model):
     """
     Sentinel-2 tiles.
     """
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    ST_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
     prefix = models.TextField(unique=True)
     datastrip = models.TextField()
     product_name = models.TextField()
@@ -65,20 +78,20 @@ class SentinelTile(models.Model):
     angle_azimuth = models.FloatField(default=0)
     angle_altitude = models.FloatField(default=0)
     level = models.CharField(max_length=10, choices=const.PROCESS_LEVELS, default=const.LEVEL_L1C)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    log = models.TextField(default='')
 
     def __str__(self):
         return '{0} {1}'.format(self.mgrstile.code, self.collected)
 
-    @property
-    def complete(self):
-        """
-        Return true if all sentinel tiles were parsed successfuly.
-        """
-        if not self.has_rasters:
-            return False
-        qs = self.sentineltileband_set.all()
-        all_finished = (band.layer.parsestatus.status == RasterLayerParseStatus.FINISHED for band in qs)
-        return sum(all_finished) == len(const.BAND_CHOICES)
+    def write(self, data, status=None, level=None):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
+        if level:
+            self.level = level
+        self.save()
 
     def get_source_url(self, band):
         if self.level == const.LEVEL_L1C:
@@ -162,7 +175,7 @@ class BucketParseLog(models.Model):
     )
 
     utm_zone = models.CharField(max_length=3)
-    schedulded = models.DateTimeField()
+    scheduled = models.DateTimeField()
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
     log = models.TextField(default='')
@@ -177,28 +190,16 @@ class BucketParseLog(models.Model):
         self.save()
 
 
-class ZoneOfInterest(models.Model):
-    """
-    Store zones for which sentinel data shall be ingested.
-    """
-    name = models.CharField(max_length=500)
-    geom = models.PolygonField()
-    active = models.BooleanField(default=True, help_text='If unchecked, this area will not be included in the parsing.')
-
-    def __str__(self):
-        return self.name
-
-    def index_range(self, zoom):
-        geom = self.geom.transform(WEB_MERCATOR_SRID, clone=True)
-        return tile_index_range(geom.extent, zoom, tolerance=1e-3)
-
-
 class CompositeBand(models.Model):
     """
     Register RasterLayers as rasterlayer_lookup.
     """
     band = models.CharField(max_length=7, choices=const.BAND_CHOICES)
     rasterlayer = models.ForeignKey(RasterLayer, on_delete=models.CASCADE)
+    composite = models.ForeignKey('Composite', on_delete=models.CASCADE, null=True)
+
+    class Meta:
+        unique_together = (("composite", "band"), )
 
     def __str__(self):
         return '{} - {}'.format(self.band, self.rasterlayer.name)
@@ -218,12 +219,6 @@ class Composite(models.Model):
     )
     # Name of the group.
     name = models.CharField(max_length=500)
-    # Zones of interest relevant for this group.
-    zonesofinterest = models.ManyToManyField(ZoneOfInterest, blank=True, help_text='What zones should this layer be built for?')
-    aggregationlayers = models.ManyToManyField(AggregationLayer, blank=True, help_text='What aggregation layers should this layer be built for?')
-    all_zones = models.BooleanField(default=False, help_text='If checked, this layer will be built for all zones of interest.')
-    # One raster layer for each band.
-    compositebands = models.ManyToManyField(CompositeBand, editable=False)
     # Defining parameters of the layer group.
     min_date = models.DateField(null=True, blank=True)
     max_date = models.DateField(null=True, blank=True)
@@ -239,7 +234,7 @@ class Composite(models.Model):
 
     @property
     def rasterlayer_lookup(self):
-        return {lyr.band: lyr.rasterlayer_id for lyr in self.compositebands.all()}
+        return {lyr.band: lyr.rasterlayer_id for lyr in self.compositeband_set.all()}
 
     def save(self, *args, **kwargs):
         """
@@ -307,25 +302,42 @@ def create_compositeband_layers(sender, instance, created, **kwargs):
         raster.parsestatus.status = RasterLayerParseStatus.FINISHED
         raster.parsestatus.save()
         # Create compositeband for this band.
-        world = CompositeBand.objects.create(band=band, rasterlayer=raster)
-        instance.compositebands.add(world)
+        CompositeBand.objects.create(band=band, rasterlayer=raster, composite=instance)
 
 
-class CompositeBuildLog(models.Model):
+class CompositeTile(models.Model):
     """
     Track parsing processes to prevent duplication.
     """
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    CT_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+
     composite = models.ForeignKey(Composite, on_delete=models.CASCADE)
 
     tilex = models.IntegerField()
     tiley = models.IntegerField()
     tilez = models.IntegerField()
 
+    scheduled = models.DateTimeField(null=True, blank=True)
     start = models.DateTimeField(null=True, blank=True)
     end = models.DateTimeField(null=True, blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
     log = models.TextField(default='')
+    status = models.CharField(max_length=20, choices=CT_STATUS_CHOICES, default=UNPROCESSED)
+
+    class Meta:
+        unique_together = (("composite", "tilez", "tilex", "tiley"), )
 
     def __str__(self):
         return '{0} - {1}/{2}/{3} - {4}'.format(
@@ -336,7 +348,74 @@ class CompositeBuildLog(models.Model):
             get_duration(self),
         )
 
-    def write(self, data):
+    def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
         self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
         self.save()
+
+
+class CompositeBuild(models.Model):
+    """
+    Build tracker for composites.
+    """
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    INGESTING_SCENES = 'Ingesting Scenes'
+    BUILDING_TILES = 'Building Composite Tiles'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    CB_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (INGESTING_SCENES, INGESTING_SCENES),
+        (BUILDING_TILES, BUILDING_TILES),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+    composite = models.ForeignKey(Composite, on_delete=models.CASCADE)
+    aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
+    log = models.TextField(default='')
+    status = models.CharField(max_length=50, choices=CB_STATUS_CHOICES, default=UNPROCESSED)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    sentineltiles = models.ManyToManyField(SentinelTile)
+    compositetiles = models.ManyToManyField(CompositeTile)
+
+    def write(self, data, status=None):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
+        self.save()
+
+    def set_sentineltiles(self):
+        # Get SentinelTiles that need processing.
+        sentineltiles = self.composite.get_sentineltiles()
+        # Build list of unique IDS for SentinelTiles that intersect with the
+        # aggregation layer.
+        for aggarea in self.aggregationlayer.aggregationarea_set.all():
+            for stile in sentineltiles.filter(tile_data_geom__bboverlaps=aggarea.geom):
+                self.sentineltiles.add(stile)
+
+    def set_compositetiles(self):
+        # Create set to hold tile indexes.
+        indexranges = set()
+        # Loop through all aggregationareas.
+        for aggarea in self.aggregationlayer.aggregationarea_set.all():
+            # Get index range from aggregationarea.
+            geom = aggarea.geom.transform(WEB_MERCATOR_SRID, clone=True)
+            indexrange = tile_index_range(geom.extent, const.ZOOM_LEVEL_WORLDLAYER, tolerance=1e-3)
+            # Add additional tiles to set.
+            for tilex in range(indexrange[0], indexrange[2] + 1):
+                for tiley in range(indexrange[1], indexrange[3] + 1):
+                    indexranges.add((tilex, tiley, const.ZOOM_LEVEL_WORLDLAYER))
+
+        for tilex, tiley, tilez in indexranges:
+            ctile, created = CompositeTile.objects.get_or_create(
+                composite=self.composite,
+                tilex=tilex,
+                tiley=tiley,
+                tilez=tilez,
+            )
+            self.compositetiles.add(ctile)

@@ -16,7 +16,7 @@ from rest_framework.serializers import (
 from django.contrib.auth.models import Group, User
 from django.contrib.gis.db.models import Extent
 from django.shortcuts import get_object_or_404
-from sentinel.models import Composite, SentinelTileAggregationLayer, ZoneOfInterest
+from sentinel.models import Composite, SentinelTileAggregationLayer
 
 
 class UserSerializer(ModelSerializer):
@@ -238,25 +238,17 @@ class CompositeSerializer(PermissionsModelSerializer):
     class Meta:
         model = Composite
         fields = (
-            'id', 'name', 'rasterlayer_lookup', 'zonesofinterest', 'all_zones',
-            'compositebands', 'min_date', 'max_date', 'interval', 'official',
-            'max_cloudy_pixel_percentage', 'active', 'start_week', 'interval',
-            'sentineltiles',
+            'id', 'name', 'rasterlayer_lookup', 'compositeband_set', 'min_date',
+            'max_date', 'interval', 'official', 'max_cloudy_pixel_percentage',
+            'active', 'start_week', 'interval', 'sentineltiles',
         )
         read_only_fields = (
-            'rasterlayer_lookup', 'compositebands', 'official', 'interval',
+            'rasterlayer_lookup', 'compositeband_set', 'official', 'interval',
             'sentineltiles',
         )
 
     def get_start_week(self, obj):
         return obj.min_date.isocalendar()[1]
-
-
-class ZoneOfInterestSerializer(PermissionsModelSerializer):
-
-    class Meta:
-        model = ZoneOfInterest
-        fields = ('id', 'name', 'geom', 'active', )
 
 
 class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):

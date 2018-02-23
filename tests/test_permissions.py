@@ -8,8 +8,8 @@ from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from django.contrib.auth.models import Group, User
-from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.urls import reverse
 from raster_api.views import LegendEntryViewSet, LegendViewSet
 from sentinel.models import Composite
 
@@ -325,13 +325,12 @@ class PermissionsTests(TestCase):
             'all_zones': False,
             'min_date': '2000-01-01',
             'max_date': '2001-01-01',
-            'zonesofinterest': [],
         }
         url = reverse('composite-list')
         self.client.login(username='michael', password='bananastand')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         self.world = Composite.objects.get(id=response.data['id'])
-        self.layer = self.world.compositebands.first().rasterlayer
+        self.layer = self.world.compositeband_set.first().rasterlayer
         url = reverse(
             'composite-invite',
             kwargs={'pk': self.world, 'action': 'invite', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
