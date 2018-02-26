@@ -25,6 +25,7 @@ class Command(BaseCommand):
         # Select task function to run.
         funk = self.funks[options['command'][0]]
         # Run function.
-        funk(*options['command_args'])
+        cmnd = funk(*options['command_args'])
         # Return success message.
         self.stdout.write(self.style.SUCCESS('Successfully scheduled task {} with args {}'.format(options['command'][0], options['command_args'])))
+        self.stdout.write(self.style.SUCCESS(''.format(cmnd)))
