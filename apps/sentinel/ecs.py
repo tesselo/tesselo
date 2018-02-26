@@ -2,9 +2,12 @@ import os
 
 import boto3
 
+TESSELO_TASK_SMALL = 'tesselo-sentinel-small'
+TESSELO_TASK_LARGE = 'tesselo-sentinel-large'
+
 FARGATE_COMMAND_BASE = {
     'cluster': 'tesselo-workers',
-    'taskDefinition': 'tesselo-process-l2a-8GB-2vCPU:1',
+    'taskDefinition': TESSELO_TASK_SMALL,
     'overrides': {
         'containerOverrides': [
             {
@@ -39,15 +42,20 @@ FARGATE_COMMAND_BASE = {
 }
 
 
-def run_ecs_command(command_input):
+def run_ecs_command(command_input, task_definition=None):
     """
     Execute a command on an ECS Fargate instance.
     """
     if not isinstance(command_input, list):
         raise ValueError('The command_input is required to be a list.')
-
+    # Ensure input is in string format (required for the container overrides).
+    command_input = [str(dat) for dat in command_input]
+    # Copy fargate base, set command to run.
     command = FARGATE_COMMAND_BASE.copy()
     command['overrides']['containerOverrides'][0]['command'] += command_input
+    # Change task definition if provided.
+    if task_definition:
+        command['taskDefinition'] = task_definition
     client = boto3.client('ecs', region_name='us-east-1')
     return client.run_task(**command)
 
@@ -61,7 +69,7 @@ def drive_sentinel_bucket_parser():
 
 
 def process_l2a(scene_id):
-    return run_ecs_command(['process_l2a', scene_id])
+    return run_ecs_command(['process_l2a', scene_id], TESSELO_TASK_LARGE)
 
 
 def process_compositetile(compositetile_id):

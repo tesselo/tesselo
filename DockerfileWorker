@@ -1,0 +1,18 @@
+FROM tesselo-zappa
+
+# Install ProductDownload
+RUN curl -O -L https://github.com/kraftek/awsdownload/releases/download/1.7.2/ProductDownload-1.7.2.zip &&\
+  unzip ProductDownload-1.7.2.zip -d / &&\
+  rm ProductDownload-1.7.2.zip
+
+# Install Sen2Cor
+# http://step.esa.int/main/third-party-plugins-2/sen2cor/
+RUN curl -O -L http://step.esa.int/thirdparties/sen2cor/2.4.0/Sen2Cor-2.4.0-Linux64.run &&\
+  chmod +x ./Sen2Cor-2.4.0-Linux64.run &&\
+  ./Sen2Cor-2.4.0-Linux64.run --target /Sen2Cor-2.4.0-Linux64 &&\
+  rm ./Sen2Cor-2.4.0-Linux64.run
+
+# Install the worker dependencies
+ADD requirements/workers.txt /code/requirements_workers.txt
+RUN source /var/venv/bin/activate && \
+  pip install -r /code/requirements_workers.txt
