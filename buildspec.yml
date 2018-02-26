@@ -16,5 +16,5 @@ phases:
       - echo Building the worker Docker image...
       - docker build -t tesselo-worker -f DockerfileWorker .
       - echo Pushing the Docker image to us-east-1...
-      - docker tag tesselo-worker:latest 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo-worker:$STAGE
-      - docker push 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo-worker:$STAGE
+      - docker tag tesselo-worker:latest 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:$STAGE
+      - docker push 595064993071.dkr.ecr.us-east-1.amazonaws.com/tesselo:$STAGE
