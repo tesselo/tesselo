@@ -7,7 +7,9 @@ RUN curl -O -L https://github.com/kraftek/awsdownload/releases/download/1.7.2/Pr
 
 # Install Sen2Cor
 # http://step.esa.int/main/third-party-plugins-2/sen2cor/
-RUN curl -O -L http://step.esa.int/thirdparties/sen2cor/2.4.0/Sen2Cor-2.4.0-Linux64.run &&\
+ARG AWS_SECRET_ACCESS_KEY
+ARG AWS_ACCESS_KEY_ID
+RUN aws s3 cp s3://Sen2Cor-2.4.0/Sen2Cor-2.4.0-Linux64.run . &&\
   chmod +x ./Sen2Cor-2.4.0-Linux64.run &&\
   ./Sen2Cor-2.4.0-Linux64.run --target /Sen2Cor-2.4.0-Linux64 &&\
   rm ./Sen2Cor-2.4.0-Linux64.run

@@ -494,7 +494,7 @@ def process_compositetile(compositetile_id, run_callback=True):
 
 
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
-SEN2COR_CMD_TMPL = '/home/mrdjango/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
+SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
 
 
 @task
