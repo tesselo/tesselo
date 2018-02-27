@@ -1,3 +1,4 @@
+import copy
 import os
 
 import boto3
@@ -54,7 +55,7 @@ def run_ecs_command(command_input, task_definition=TESSELO_TASK_SMALL):
     command_input = [str(dat) for dat in command_input]
 
     # Copy fargate base, set command to run.
-    command = FARGATE_COMMAND_BASE.copy()
+    command = copy.deepcopy(FARGATE_COMMAND_BASE)
     command['overrides']['containerOverrides'][0]['command'] += command_input
 
     # Select task definition to run tasks with stage dependent docker images.
