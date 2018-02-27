@@ -22,6 +22,7 @@ FARGATE_COMMAND_BASE = {
                     {"name": "DB_PASSWORD", "value": os.environ.get("DB_PASSWORD")},
                     {"name": "DB_HOST", "value": os.environ.get("DB_HOST")},
                     {"name": "DB_NAME", "value": os.environ.get("DB_NAME")},
+                    {"name": "ZAPPA", "value": "True"}
                 ]
             },
         ],
@@ -66,7 +67,7 @@ def run_ecs_command(command_input, task_definition=TESSELO_TASK_SMALL):
         stage = 'production'
 
     # Fill stage placeholder in task definition.
-    command['taskDefinition'] = task_definition.format(stage)
+    command['taskDefinition'] = task_definition.format(stage=stage)
     client = boto3.client('ecs', region_name='us-east-1')
     return client.run_task(**command)
 
