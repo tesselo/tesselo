@@ -22,10 +22,11 @@ class Command(BaseCommand):
         parser.add_argument('command_args', nargs='*', type=str)
 
     def handle(self, *args, **options):
+        # Write start message.
+        self.stdout.write(self.style.SUCCESS('Running task {} with args {}'.format(options['command'][0], options['command_args'])))
         # Select task function to run.
         funk = self.funks[options['command'][0]]
         # Run function.
-        cmnd = funk(*options['command_args'])
-        # Return success message.
-        self.stdout.write(self.style.SUCCESS('Successfully scheduled task {} with args {}'.format(options['command'][0], options['command_args'])))
-        self.stdout.write(self.style.SUCCESS(''.format(cmnd)))
+        funk(*options['command_args'])
+        # Write success message.
+        self.stdout.write(self.style.SUCCESS('Finnished task successfully.'))
