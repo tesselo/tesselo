@@ -14,7 +14,6 @@
             "DB_USER": "tesselo",
             "DB_NAME": "tesselo_dev"
         },
-        "aws_kms_key_arn": "arn:aws:kms:us-east-1:595064993071:key/a10d1542-69fd-4fd2-895b-5f578ea8c651",
         "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
         "domain": "dev.tesselo.com",
         "slim_handler": true,
@@ -26,7 +25,7 @@
           "AWS_REQUEST_PAYER": "requester",
           "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-staging",
           "AWS_STORAGE_BUCKET_NAME_STATIC": "staging.static.tesselo.com",
-          "AWS_DEFAULT_REGION": "eu-central-1",
+          "AWS_DEFAULT_REGION": "us-east-1",
           "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
           "DB_USER": "tesselo",
           "DB_NAME": "tesselo_staging"
@@ -39,10 +38,10 @@
           "AWS_REQUEST_PAYER": "requester",
           "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media",
           "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
-          "AWS_DEFAULT_REGION": "eu-central-1",
-          "DB_HOST": "tesselo-dev.cepyvetzz6ui.eu-central-1.rds.amazonaws.com",
-          "DB_PASSWORD": "hoppybhoppslb",
-          "DB_USER": "tesselo"
+          "AWS_DEFAULT_REGION": "us-east-1",
+          "DB_HOST": "tesselo-production.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
+          "DB_USER": "tesselo",
+          "DB_NAME": "tesselo_production"
       },
       "domain": "tesselo.com"
     }
