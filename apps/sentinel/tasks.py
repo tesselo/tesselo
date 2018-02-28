@@ -88,8 +88,7 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
 
     # Update start time and log.
     log.start = timezone.now()
-    log.save()
-    log.write('Started parsing utm zone "{0}".'.format(utm_zone))
+    log.write('Started parsing utm zone "{0}".'.format(utm_zone), BucketParseLog.PROCESSING)
 
     # Initiate anonymous boto session.
     session = boto3.session.Session()
@@ -194,10 +193,8 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
             log.write('Failed registering ' + tile_prefix + traceback.format_exc())
 
     # Log the end of the parsing process
-    log.write('Finished parsing, {0} tiles created.'.format(counter))
-    log.status == BucketParseLog.FINISHED
     log.end = timezone.now()
-    log.save()
+    log.write('Finished parsing, {0} tiles created.'.format(counter), BucketParseLog.FINISHED)
 
 
 def get_aggregation_area_scenes(aggregationarea_id):

@@ -50,6 +50,8 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
     def upgrade_to_l2a(self, request, queryset):
         for tile in queryset:
             ecs.process_l2a(tile.id)
+            tile.status = SentinelTile.PENDING
+            tile.save()
 
         self.message_user(request, 'Triggered L2A updates for scenes {}'.format([tile.id for tile in queryset]))
 

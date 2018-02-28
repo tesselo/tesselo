@@ -184,9 +184,11 @@ class BucketParseLog(models.Model):
     def __str__(self):
         return 'Utm Zone {0}, {1}'.format(self.utm_zone, get_duration(self))
 
-    def write(self, data):
+    def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
         self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
         self.save()
 
 
