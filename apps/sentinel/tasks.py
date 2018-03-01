@@ -570,7 +570,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
                 datatype=RasterLayer.CONTINUOUS,
                 nodata=const.SENTINEL_NODATA_VALUE,
                 max_zoom=zoom,
-                build_pyramid=True,
+                build_pyramid=False,
                 store_reprojected=False,
             )
 
@@ -609,31 +609,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
             bandpath = bandpath[0]
 
         try:
-            # Create workdir for parsing.
-            tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
-            pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-            intermediate_rst = os.path.join(tmpdir, band.band.split('.jp2')[0] + '.tif')
-            target_rst = os.path.join(tmpdir, 's2_' + '_'.join(tile.prefix.split('/')[1:]) + band.band.split('.jp2')[0] + '.tif')
-
-            # Transform raster into cloud optimized geotiff in Web Mercator.
-            os.system('gdalwarp -t_srs EPSG:{} {} {} -co TILED=YES -co BLOCKXSIZE=256 -co BLOCKYSIZE=256 -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
-                WEB_MERCATOR_SRID,
-                bandpath,
-                intermediate_rst,
-            ))
-
-            os.system('gdaladdo -r average {} 2 4 6 8 16 32'.format(
-                intermediate_rst,
-            ))
-
-            os.system('gdal_translate {} {} -co TILED=YES -co COPY_SRC_OVERVIEWS=YES -co COMPRESS=DEFLATE -co PREDICTOR=2'.format(
-                intermediate_rst,
-                target_rst,
-            ))
-            if push_rasters:
-                push_and_parse_rasters(tmpdir, band, target_rst)
-            else:
-                locally_parse_raster(tmpdir, band, target_rst, zoom)
+            locally_parse_raster(tmpdir, band, bandpath, zoom)
         except:
             tile.write('Failed processing band {}'.format(band), SentinelTile.FAILED)
 
@@ -648,23 +624,6 @@ def process_l2a(sentineltile_id, push_rasters=False):
     # Run callbacks to continue build chain.
     for cbuild in tile.compositebuild_set.filter(status=CompositeBuild.INGESTING_SCENES):
         composite_build_callback(cbuild.id)
-
-
-def push_and_parse_rasters(tmpdir, band, target_rst):
-    """
-    Stores the raster bands as RasterLayer files. This triggers regular parsing.
-    """
-    # Store cloud optimized tif as source in raster model. This triggers
-    # tiling automatically.
-    band.layer.rasterfile = File(
-        open(target_rst, 'rb'),
-        name=os.path.basename(target_rst)
-    )
-    band.layer.source_url = ''
-    band.layer.save()
-
-    # Remove intermediate files.
-    shutil.rmtree(tmpdir)
 
 
 def locally_parse_raster(tmpdir, band, target_rst, zoom):
@@ -683,9 +642,12 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
     parser.dataset = GDALRaster(target_rst)
     parser.extract_metadata()
 
+    # Reproject the rasterfile to web mercator.
+    parser.reproject_rasterfile()
+
     # Reproject and tile dataset.
     try:
-        parser.create_tiles(list(range(zoom + 1)))
+        parser.create_tiles(zoom)
         parser.send_success_signal()
     except:
         parser.log(
