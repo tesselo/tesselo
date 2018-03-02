@@ -612,6 +612,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
             locally_parse_raster(tmpdir, band, bandpath, zoom)
         except:
             tile.write('Failed processing band {}'.format(band), SentinelTile.FAILED)
+            return
 
         tile.write('Finished processing band {}'.format(band))
 
