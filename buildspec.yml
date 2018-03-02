@@ -8,6 +8,7 @@ phases:
       - apt-get install -y software-properties-common
       - add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
       - apt-get update
+      - apt-get -y upgrade
       - apt-get install -y postgresql-9.3-postgis-2.1
   build:
     commands:
