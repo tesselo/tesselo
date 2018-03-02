@@ -210,7 +210,7 @@ def patch_process_l2a(stile_id, run_callback=True):
 
 def patch_run_ecs_command(command_input):
     """
-    Execute a command on an ECS Fargate instance.
+    Execute a command on an ECS instance.
     """
     # List of available functions.
     funks = {

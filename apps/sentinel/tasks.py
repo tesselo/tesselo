@@ -609,15 +609,18 @@ def process_l2a(sentineltile_id, push_rasters=False):
             bandpath = bandpath[0]
 
         try:
+            tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
+            pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
             locally_parse_raster(tmpdir, band, bandpath, zoom)
         except:
-            tile.write('Failed processing band {}'.format(band), SentinelTile.FAILED)
-            return
+            tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
+            shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+            raise
 
         tile.write('Finished processing band {}'.format(band))
 
     # Remove main product files.
-    shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+    # shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
 
     # Update tile status.
     tile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
