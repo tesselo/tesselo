@@ -6,10 +6,12 @@ phases:
       - echo Installing postgis for local testing...
       - apt-get update
       - apt-get install -y software-properties-common
-      - add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+      - add-apt-repository -y ppa:ubuntugis
       - apt-get update
       - apt-get -y upgrade
-      - apt-get install -y postgresql-9.3-postgis-2.1
+      - apt-get install -y postgresql-9.3-postgis-2.2
+      - sed -i s/peer/trust/g /etc/postgresql/9.3/main/pg_hba.conf
+      - service postgresql restart
   build:
     commands:
       - echo Getting the Vue App Index file...
