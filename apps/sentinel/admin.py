@@ -8,10 +8,6 @@ from sentinel.models import (
 )
 
 
-class PatchedOSMGeoAdmin(admin.GeoModelAdmin):
-    openlayers_url = 'https://openlayers.org/api/2.13.1/OpenLayers.js'
-
-
 class BucketParseLogModelAdmin(admin.ModelAdmin):
     actions = ['parse_bucket', ]
     readonly_fields = ('utm_zone', 'start', 'end', 'log', )
@@ -34,7 +30,7 @@ class SentinelTileCompositeInline(admin.TabularInline):
     extra = 1
 
 
-class SentinelTileAdmin(PatchedOSMGeoAdmin):
+class SentinelTileAdmin(admin.OSMGeoAdmin):
     actions = ('upgrade_to_l2a', )
     readonly_fields = (
         'prefix', 'datastrip', 'product_name', 'angle_altitude',
@@ -56,7 +52,7 @@ class SentinelTileAdmin(PatchedOSMGeoAdmin):
         self.message_user(request, 'Triggered L2A updates for scenes {}'.format([tile.id for tile in queryset]))
 
 
-class MGRSTileAdmin(PatchedOSMGeoAdmin):
+class MGRSTileAdmin(admin.OSMGeoAdmin):
     listfilter = ('utm_zone', 'latitude_band')
     readonly_fields = (
         'utm_zone', 'latitude_band', 'grid_square',
