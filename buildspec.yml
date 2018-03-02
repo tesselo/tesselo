@@ -1,16 +1,20 @@
 version: 0.2
 
 phases:
+  install:
+    commands:
+      - echo Installing postgis for local testing...
+      - apt-get update
+      - apt-get install -y software-properties-common
+      - add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+      - apt-get update
+      - apt-get install -y postgresql-9.3-postgis-2.1
   build:
     commands:
       - echo Getting the Vue App Index file...
       - aws s3 cp s3://$BUCKET/index.html tesselo/templates/app.html
       - echo Building the Zappa deploy image...
       - docker build -t tesselo-zappa -f DockerfileZappa .
-      - echo Installing postgis for local testing...
-      - apt-get install -y software-properties-common
-      - add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-      - apt-get install -y postgresql-9.3-postgis-2.1
       - echo Running unit tests in zappa image...
       - docker run --rm --net=host --env ZAPPA=True tesselo-zappa ./manage.py test
       - echo Running management commands compress, collect, migrate...
