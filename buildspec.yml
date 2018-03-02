@@ -10,7 +10,9 @@ phases:
       - apt-get update
       - apt-get -y upgrade
       - apt-get install -y postgresql-9.3-postgis-2.2
+      - cat /etc/postgresql/9.3/main/pg_hba.conf
       - sed -i s/peer/trust/g /etc/postgresql/9.3/main/pg_hba.conf
+      - sed -i s/md5/trust/g /etc/postgresql/9.3/main/pg_hba.conf
       - service postgresql restart
   build:
     commands:
