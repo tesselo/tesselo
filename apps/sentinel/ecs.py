@@ -17,6 +17,7 @@ BATCH_JOB_BASE = {
             {'name': 'DB_PASSWORD', 'value': os.environ.get('DB_PASSWORD')},
             {'name': 'DB_HOST', 'value': os.environ.get('DB_HOST')},
             {'name': 'DB_NAME', 'value': os.environ.get('DB_NAME')},
+            {'name': 'ZAPPA', 'value': 'True'},
         ]
 
     },
