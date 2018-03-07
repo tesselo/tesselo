@@ -19,7 +19,6 @@ BATCH_JOB_BASE = {
             {'name': 'DB_NAME', 'value': os.environ.get('DB_NAME')},
             {'name': 'ZAPPA', 'value': 'True'},
         ]
-
     },
     'retryStrategy': {
         'attempts': None
@@ -80,7 +79,7 @@ def drive_sentinel_bucket_parser():
 
 
 def process_l2a(scene_id):
-    return run_ecs_command(['process_l2a', scene_id], memory=4096)
+    return run_ecs_command(['process_l2a', scene_id], memory=10000)
 
 
 def process_compositetile(compositetile_id):
