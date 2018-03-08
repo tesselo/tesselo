@@ -4,13 +4,14 @@ import os
 import boto3
 
 BATCH_JOB_BASE = {
+    'jobName': None,
     'jobQueue': 'tesselo-{stage}',
     'jobDefinition': 'tesselo-{stage}',
     'containerOverrides': {
-        'command': ['python', 'manage.py', 'sentinel', ],
+        'command': [],
         'environment': [
-            {'name': 'AWS_ACCESS_KEY_ID', 'value': os.environ.get('AWS_ACCESS_KEY_ID')},
-            {'name': 'AWS_SECRET_ACCESS_KEY', 'value': os.environ.get('AWS_SECRET_ACCESS_KEY')},
+            {'name': 'AWS_ACCESS_KEY_ID', 'value': os.environ.get('AWS_ACCESS_KEY_ID_ZAP')},
+            {'name': 'AWS_SECRET_ACCESS_KEY', 'value': os.environ.get('AWS_SECRET_ACCESS_KEY_ZAP')},
             {'name': 'AWS_STORAGE_BUCKET_NAME_MEDIA', 'value': os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')},
             {'name': 'AWS_STORAGE_BUCKET_NAME_STATIC', 'value': os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')},
             {'name': 'DB_USER', 'value': os.environ.get('DB_USER')},
@@ -28,11 +29,10 @@ BATCH_JOB_BASE = {
 
 def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1):
     '''
-    Execute a command on an ECS instance.
-    Execute a command on an ECS instance.
+    Execute a Batch command.
     '''
-    if not isinstance(command_input, list):
-        raise ValueError('The command_input is required to be a list.')
+    if not isinstance(command_input, (tuple, list)):
+        raise ValueError('The command_input is required to be a tuple or a list.')
 
     # Ensure input is in string format (required for the container overrides).
     command_input = [str(dat) for dat in command_input]
@@ -71,11 +71,11 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1):
 
 
 def sync_sentinel_bucket_utm_zone(utm_zone):
-    return run_ecs_command(['sync_sentinel_bucket_utm_zone', utm_zone], memory=512)
+    return run_ecs_command(['sync_sentinel_bucket_utm_zone', utm_zone], memory=1024)
 
 
 def drive_sentinel_bucket_parser():
-    return run_ecs_command(['drive_sentinel_bucket_parser', ], memory=512)
+    return run_ecs_command(['drive_sentinel_bucket_parser', ], memory=1024)
 
 
 def process_l2a(scene_id):
