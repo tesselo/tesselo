@@ -1,30 +1,40 @@
-import copy
 import os
 
 import boto3
 
-BATCH_JOB_BASE = {
-    'jobName': None,
-    'jobQueue': 'tesselo-{stage}',
-    'jobDefinition': 'tesselo-{stage}',
-    'containerOverrides': {
-        'command': [],
-        'environment': [
-            {'name': 'AWS_ACCESS_KEY_ID', 'value': os.environ.get('AWS_ACCESS_KEY_ID_ZAP')},
-            {'name': 'AWS_SECRET_ACCESS_KEY', 'value': os.environ.get('AWS_SECRET_ACCESS_KEY_ZAP')},
-            {'name': 'AWS_STORAGE_BUCKET_NAME_MEDIA', 'value': os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')},
-            {'name': 'AWS_STORAGE_BUCKET_NAME_STATIC', 'value': os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')},
-            {'name': 'DB_USER', 'value': os.environ.get('DB_USER')},
-            {'name': 'DB_PASSWORD', 'value': os.environ.get('DB_PASSWORD')},
-            {'name': 'DB_HOST', 'value': os.environ.get('DB_HOST')},
-            {'name': 'DB_NAME', 'value': os.environ.get('DB_NAME')},
-            {'name': 'ZAPPA', 'value': 'True'},
-        ]
-    },
-    'retryStrategy': {
-        'attempts': None
+
+def get_batch_job_base():
+    # Get AWS credentials.
+    aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID', None)
+    if not aws_key_id:
+        aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID_ZAP')
+
+    aws_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+    if not aws_key:
+        aws_key = os.environ.get('AWS_SECRET_ACCESS_KEY_ZAP')
+
+    return {
+        'jobName': None,
+        'jobQueue': 'tesselo-{stage}',
+        'jobDefinition': 'tesselo-{stage}',
+        'containerOverrides': {
+            'command': [],
+            'environment': [
+                {'name': 'AWS_ACCESS_KEY_ID', 'value': aws_key_id},
+                {'name': 'AWS_SECRET_ACCESS_KEY', 'value': aws_key},
+                {'name': 'AWS_STORAGE_BUCKET_NAME_MEDIA', 'value': os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')},
+                {'name': 'AWS_STORAGE_BUCKET_NAME_STATIC', 'value': os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')},
+                {'name': 'DB_USER', 'value': os.environ.get('DB_USER')},
+                {'name': 'DB_PASSWORD', 'value': os.environ.get('DB_PASSWORD')},
+                {'name': 'DB_HOST', 'value': os.environ.get('DB_HOST')},
+                {'name': 'DB_NAME', 'value': os.environ.get('DB_NAME')},
+                {'name': 'ZAPPA', 'value': 'True'},
+            ]
+        },
+        'retryStrategy': {
+            'attempts': None
+        }
     }
-}
 
 
 def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1):
@@ -38,7 +48,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1):
     command_input = [str(dat) for dat in command_input]
 
     # Copy base command.
-    command = copy.deepcopy(BATCH_JOB_BASE)
+    command = get_batch_job_base()
 
     # Write command name.
     command['jobName'] = '-'.join(command_input)[:128]
