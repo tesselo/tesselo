@@ -5,13 +5,13 @@ import boto3
 
 def get_batch_job_base():
     # Get AWS credentials.
-    aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID', None)
+    aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID_ZAP', None)
     if not aws_key_id:
-        aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID_ZAP')
+        aws_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
 
-    aws_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+    aws_key = os.environ.get('AWS_SECRET_ACCESS_KEY_ZAP', None)
     if not aws_key:
-        aws_key = os.environ.get('AWS_SECRET_ACCESS_KEY_ZAP')
+        aws_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
     return {
         'jobName': None,
