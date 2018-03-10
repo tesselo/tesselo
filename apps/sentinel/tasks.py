@@ -620,7 +620,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
         tile.write('Finished processing band {}'.format(band))
 
     # Remove main product files.
-    # shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+    shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
 
     # Update tile status.
     tile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
