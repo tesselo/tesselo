@@ -39,7 +39,7 @@ class SentinelTileAdmin(admin.OSMGeoAdmin):
     )
     raw_id_fields = ('mgrstile', )
     modifiable = False
-    list_filter = ('mgrstile__utm_zone', 'mgrstile__latitude_band', )
+    list_filter = ('mgrstile__utm_zone', 'mgrstile__latitude_band', 'status', )
     search_fields = ('prefix', )
     inlines = (SentinelTileCompositeInline, )
 
