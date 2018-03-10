@@ -78,6 +78,8 @@ class CompositeBuildAdmin(admin.ModelAdmin):
 
     def run_composite_build(self, request, queryset):
         for build in queryset:
+            build.status = CompositeBuild.PENDING
+            build.save()
             ecs.composite_build_callback(build.id, initiate=True)
 
 
