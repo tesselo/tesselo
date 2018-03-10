@@ -89,7 +89,7 @@ def drive_sentinel_bucket_parser():
 
 
 def process_l2a(scene_id):
-    return run_ecs_command(['process_l2a', scene_id], memory=10000)
+    return run_ecs_command(['process_l2a', scene_id], memory=14000)
 
 
 def process_compositetile(compositetile_id):
