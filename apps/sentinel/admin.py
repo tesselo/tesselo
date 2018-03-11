@@ -82,6 +82,8 @@ class CompositeBuildAdmin(admin.ModelAdmin):
             build.save()
             ecs.composite_build_callback(build.id, initiate=True)
 
+        self.message_user(request, 'Triggered Composite Builds {}'.format([build.id for build in queryset]))
+
 
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
 admin.site.register(SentinelTileBand, SentinelTileBandAdmin)
