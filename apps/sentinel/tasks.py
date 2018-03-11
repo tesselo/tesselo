@@ -4,9 +4,9 @@ import glob
 import io
 import json
 import logging
-import os
 import pathlib
 import shutil
+import subprocess
 import traceback
 import uuid
 
@@ -527,10 +527,10 @@ def process_l2a(sentineltile_id, push_rasters=False):
     # Download the scene.
     tile.write('Starting download of product data.')
     try:
-        os.system(productdownload_cmd)
-    except:
+        subprocess.run(productdownload_cmd, check=True)
+    except subprocess.CalledProcessError:
         tile.write('Failed download of product data.', SentinelTile.FAILED)
-        return
+        raise
     tile.write('Finished download of product data.')
 
     # Construct Sen2Cor command.
@@ -540,10 +540,10 @@ def process_l2a(sentineltile_id, push_rasters=False):
     # Apply atmoshperic correction.
     tile.write('Starting Sen2Cor algorithm.')
     try:
-        os.system(sen2cor_cmd)
-    except:
+        subprocess.run(sen2cor_cmd, check=True)
+    except subprocess.CalledProcessError:
         tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
-        return
+        raise
     tile.write('Finished applying Sen2Cor algorithm.')
 
     # Ingest the resulting rasters as tiles.
