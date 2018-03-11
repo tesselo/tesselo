@@ -385,7 +385,7 @@ class CompositeBuild(models.Model):
     compositetiles = models.ManyToManyField(CompositeTile)
 
     def __str__(self):
-        return '{} - {}'.format(self.composite, self.status)
+        return '{} - {} - {}'.format(self.composite, self.aggregationlayer, self.status)
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
