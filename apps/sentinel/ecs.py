@@ -89,7 +89,7 @@ def drive_sentinel_bucket_parser():
 
 
 def process_l2a(scene_id):
-    return run_ecs_command(['process_l2a', scene_id], vcpus=2, memory=14000, queue='tesselo-{stage}-process-l2a')
+    return run_ecs_command(['process_l2a', scene_id], vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
 
 
 def process_compositetile(compositetile_id):
