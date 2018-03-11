@@ -15,7 +15,7 @@ def get_batch_job_base():
 
     return {
         'jobName': None,
-        'jobQueue': 'tesselo-{stage}',
+        'jobQueue': None,
         'jobDefinition': 'tesselo-{stage}',
         'containerOverrides': {
             'command': [],
@@ -37,7 +37,7 @@ def get_batch_job_base():
     }
 
 
-def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1):
+def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo-{stage}'):
     '''
     Execute a Batch command.
     '''
@@ -69,7 +69,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1):
     else:
         stage = 'production'
 
-    command['jobQueue'] = command['jobQueue'].format(stage=stage)
+    command['jobQueue'] = queue.format(stage=stage)
     command['jobDefinition'] = command['jobDefinition'].format(stage=stage)
 
     # Set retry stragegy.
@@ -89,7 +89,7 @@ def drive_sentinel_bucket_parser():
 
 
 def process_l2a(scene_id):
-    return run_ecs_command(['process_l2a', scene_id], memory=14000)
+    return run_ecs_command(['process_l2a', scene_id], vcpus=2, memory=14000, queue='tesselo-{stage}-process-l2a')
 
 
 def process_compositetile(compositetile_id):
