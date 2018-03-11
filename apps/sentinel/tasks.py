@@ -527,8 +527,8 @@ def process_l2a(sentineltile_id, push_rasters=False):
     # Download the scene.
     tile.write('Starting download of product data.')
     try:
-        subprocess.run(productdownload_cmd, check=True)
-    except subprocess.CalledProcessError:
+        subprocess.run(productdownload_cmd, shell=True, check=True)
+    except:
         tile.write('Failed download of product data.', SentinelTile.FAILED)
         raise
     tile.write('Finished download of product data.')
@@ -540,8 +540,8 @@ def process_l2a(sentineltile_id, push_rasters=False):
     # Apply atmoshperic correction.
     tile.write('Starting Sen2Cor algorithm.')
     try:
-        subprocess.run(sen2cor_cmd, check=True)
-    except subprocess.CalledProcessError:
+        subprocess.run(sen2cor_cmd, shell=True, check=True)
+    except:
         tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
         raise
     tile.write('Finished applying Sen2Cor algorithm.')
