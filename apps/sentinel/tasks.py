@@ -220,9 +220,6 @@ def get_aggregation_area_scenes(aggregationarea_id):
             sentineltile=tile,
             aggregationlayer_id=area.aggregationlayer_id,
         )
-        # Ignore scenes that were already fetched.
-        if tile.sentineltileband_set.count() > 0:
-            continue
 
 
 @receiver(post_save, sender=AggregationArea)
