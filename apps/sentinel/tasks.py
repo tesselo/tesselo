@@ -47,9 +47,9 @@ boto3.set_stream_logger('boto3', logging.ERROR)
 
 
 @task
-def drive_sentinel_bucket_parser(max_keys=None):
+def drive_sentinel_bucket_parser():
     for utm_zone in range(1, const.NUMBER_OF_UTM_ZONES + 1):
-        if BucketParseLog.objects.filter(utm_zone=utm_zone, end__isnull=True).exists():
+        if BucketParseLog.objects.filter(utm_zone=utm_zone, status__in=(BucketParseLog.PENDING, BucketParseLog.PROCESSING)).exists():
             logger.info('UTM Zone {} is currently parsing, no new task scheduled.'.format(utm_zone))
         else:
             # Create bucket parse log.
@@ -63,7 +63,7 @@ def drive_sentinel_bucket_parser(max_keys=None):
 
 
 @task
-def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
+def sync_sentinel_bucket_utm_zone(utm_zone):
     """
     Synchronize the local database of sentinel scenes with the sentinel S3
     bucket.
@@ -110,9 +110,6 @@ def sync_sentinel_bucket_utm_zone(utm_zone, max_keys=None):
         if SentinelTile.objects.filter(prefix=tile_prefix).exists():
             continue
 
-        # Manual limiting of nr of objects.
-        if max_keys is not None and counter >= max_keys:
-            break
         counter += 1
 
         try:
