@@ -76,7 +76,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo
     command['retryStrategy']['attempts'] = retry
 
     # Instanciate batch client and submit job.
-    client = boto3.client('batch', region_name='us-east-1')
+    client = boto3.client('batch', region_name='eu-west-1')
     return client.submit_job(**command)
 
 

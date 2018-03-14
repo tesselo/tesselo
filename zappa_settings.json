@@ -1,15 +1,15 @@
 {
     "dev": {
-        "aws_region": "us-east-1",
+        "aws_region": "eu-west-1",
         "django_settings": "tesselo.settings",
         "project_name": "tesselo",
         "runtime": "python3.6",
-        "s3_bucket": "tesselo-zappa",
+        "s3_bucket": "tesselo-zappa-repo",
         "environment_variables": {
             "AWS_REQUEST_PAYER": "requester",
             "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-develop",
             "AWS_STORAGE_BUCKET_NAME_STATIC": "dev.static.tesselo.com",
-            "AWS_DEFAULT_REGION": "us-east-1",
+            "AWS_DEFAULT_REGION": "eu-west-1",
             "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
             "DB_USER": "tesselo",
             "DB_NAME": "tesselo_dev"
@@ -25,7 +25,7 @@
           "AWS_REQUEST_PAYER": "requester",
           "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-staging",
           "AWS_STORAGE_BUCKET_NAME_STATIC": "staging.static.tesselo.com",
-          "AWS_DEFAULT_REGION": "us-east-1",
+          "AWS_DEFAULT_REGION": "eu-west-1",
           "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
           "DB_USER": "tesselo",
           "DB_NAME": "tesselo_staging"
@@ -36,10 +36,10 @@
       "extends": "dev",
       "environment_variables": {
           "AWS_REQUEST_PAYER": "requester",
-          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media",
+          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production",
           "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
-          "AWS_DEFAULT_REGION": "us-east-1",
-          "DB_HOST": "tesselo-production.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
+          "AWS_DEFAULT_REGION": "eu-west-1",
+          "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
           "DB_USER": "tesselo",
           "DB_NAME": "tesselo_production"
       },
