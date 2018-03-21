@@ -4,7 +4,7 @@ from django.contrib.gis import admin
 from sentinel import ecs
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBand, CompositeBuild, CompositeTile, MGRSTile, SentinelTile,
-    SentinelTileAggregationLayer, SentinelTileBand
+    SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
 )
 
 
@@ -71,6 +71,10 @@ class SentinelTileAggregationLayerAdmin(admin.ModelAdmin):
     raw_id_fields = ('sentineltile', )
 
 
+class SentinelTileSceneClassAdmin(admin.ModelAdmin):
+    raw_id_fields = ('tile', 'layer', )
+
+
 class CompositeBuildAdmin(admin.ModelAdmin):
     model = CompositeBuild
     readonly_fields = ('sentineltiles', 'compositetiles', )
@@ -94,3 +98,4 @@ admin.site.register(CompositeTile)
 admin.site.register(CompositeBuild, CompositeBuildAdmin)
 admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)
+admin.site.register(SentinelTileSceneClass, SentinelTileSceneClassAdmin)

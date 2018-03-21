@@ -1,6 +1,6 @@
 import io
 import os
-from django.core.management import call_command
+
 import botocore
 import botocore.session
 import numpy
@@ -14,7 +14,6 @@ from django.core.files import File
 from django.utils import timezone
 from sentinel import const
 from sentinel.models import SentinelTile, SentinelTileBand, SentinelTileSceneClass
-from sentinel.tasks import process_compositetile
 
 
 def iterator_search(self, searchstring):
