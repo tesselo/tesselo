@@ -10,7 +10,7 @@
             "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-develop",
             "AWS_STORAGE_BUCKET_NAME_STATIC": "dev.static.tesselo.com",
             "AWS_DEFAULT_REGION": "eu-west-1",
-            "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
+            "DB_HOST": "tesselo-staging.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
             "DB_USER": "tesselo",
             "DB_NAME": "tesselo_dev"
         },
@@ -26,7 +26,7 @@
           "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-staging",
           "AWS_STORAGE_BUCKET_NAME_STATIC": "staging.static.tesselo.com",
           "AWS_DEFAULT_REGION": "eu-west-1",
-          "DB_HOST": "tesselo-staging.cptt2rzlvfli.us-east-1.rds.amazonaws.com",
+          "DB_HOST": "tesselo-staging.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
           "DB_USER": "tesselo",
           "DB_NAME": "tesselo_staging"
       },
