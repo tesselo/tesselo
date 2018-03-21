@@ -1,6 +1,6 @@
 import io
 import os
-
+from django.core.management import call_command
 import botocore
 import botocore.session
 import numpy
@@ -13,7 +13,7 @@ from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from django.utils import timezone
 from sentinel import const
-from sentinel.models import SentinelTile, SentinelTileBand
+from sentinel.models import SentinelTile, SentinelTileBand, SentinelTileSceneClass
 from sentinel.tasks import process_compositetile
 
 
@@ -157,7 +157,7 @@ def get_numpy_tile(prefix, tilez, tilex, tiley):
     return tile
 
 
-def patch_process_l2a(stile_id, run_callback=True):
+def patch_process_l2a(stile_id):
     # Get sentineltile.
     stile = SentinelTile.objects.get(id=stile_id)
     # Fake finished status on sentineltile.
@@ -206,20 +206,35 @@ def patch_process_l2a(stile_id, run_callback=True):
             tilez=zoom,
             rast=dest,
         )
-
-
-def patch_run_ecs_command(command_input):
-    """
-    Execute a command on an ECS instance.
-    """
-    # List of available functions.
-    funks = {
-        'process_l2a': patch_process_l2a,
-        'process_compositetile': process_compositetile,
-    }
-    # Select function.
-    funk = funks[command_input[0]]
-    # Disable callbacks in test patch mode.
-    command_input += [False, ]
-    # Call function (this is usually called through management tasks on ECS.)
-    funk(*command_input[1:])
+    # Ensure scene class exists.
+    if not hasattr(stile, 'sentineltilesceneclass'):
+        rst = RasterLayer.objects.create(name='Test raster sceneclass')
+        SentinelTileSceneClass.objects.create(tile=stile, layer=rst)
+    # Compute geotransform for this scene class.
+    zoom = 13
+    idxr = tile_index_range(bbox, zoom, tolerance=1e-3)
+    bounds = tile_bounds(idxr[0], idxr[1], zoom)
+    # Setup random data.
+    data = numpy.random.random_integers(0, 11, (256, 256)).astype('uint8')
+    # Create raster.
+    dest = GDALRaster({
+        'width': 256,
+        'height': 256,
+        'origin': (bounds[0], bounds[1]),
+        'scale': [res, -res],
+        'srid': WEB_MERCATOR_SRID,
+        'datatype': 1,
+        'bands': [
+            {'nodata_value': 0, 'data': data},
+        ],
+    })
+    # Write raster tile.
+    dest = io.BytesIO(dest.vsi_buffer)
+    dest = File(dest, name='tile.tif')
+    RasterTile.objects.create(
+        rasterlayer=stile.sentineltilesceneclass.layer,
+        tilex=idxr[0],
+        tiley=idxr[1],
+        tilez=zoom,
+        rast=dest,
+    )

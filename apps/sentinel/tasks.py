@@ -37,7 +37,7 @@ from sentinel.clouds.tables import clouds
 # from classify.clouds import clouds
 from sentinel.models import (
     BucketParseLog, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
-    SentinelTileBand
+    SentinelTileBand, SentinelTileSceneClass
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, write_raster_tile
 
@@ -332,7 +332,7 @@ def compositetile_stacks(ctile):
 
 
 @task
-def process_compositetile(compositetile_id, run_callback=True):
+def process_compositetile(compositetile_id):
     """
     Build a cloud free unified base layer for a given areas of interest and for
     each sentinel band.
@@ -479,9 +479,8 @@ def process_compositetile(compositetile_id, run_callback=True):
     ctile.write('Finished building composite tile.', CompositeTile.FINISHED)
 
     # Run callback for composite builds, allow disabling callbacks when testing.
-    if run_callback:
-        for cbuild in ctile.compositebuild_set.all():
-            composite_build_callback(cbuild.id)
+    for cbuild in ctile.compositebuild_set.all():
+        composite_build_callback(cbuild.id)
 
 
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
@@ -564,7 +563,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
                 datatype=RasterLayer.CONTINUOUS,
                 nodata=const.SENTINEL_NODATA_VALUE,
                 max_zoom=zoom,
-                build_pyramid=False,
+                build_pyramid=True,
                 store_reprojected=False,
             )
 
@@ -605,13 +604,16 @@ def process_l2a(sentineltile_id, push_rasters=False):
         try:
             tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
             pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-            locally_parse_raster(tmpdir, band, bandpath, zoom)
+            locally_parse_raster(tmpdir, band.layer_id, bandpath, zoom)
         except:
             tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
             shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
             raise
 
         tile.write('Finished processing band {}'.format(band))
+
+    # Ingest scene class file.
+    ingest_scene_class(tile)
 
     # Remove main product files.
     shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
@@ -624,14 +626,49 @@ def process_l2a(sentineltile_id, push_rasters=False):
         composite_build_callback(cbuild.id)
 
 
-def locally_parse_raster(tmpdir, band, target_rst, zoom):
+def ingest_scene_class(tile):
+    """
+    Ingest Sen2Cor SceneClass layer.
+    """
+    if not hasattr(tile, 'sentineltilesceneclass'):
+        # Create new raster layer.
+        layer = RasterLayer.objects.create(
+            name=tile.prefix + '_scene_class',
+            datatype=RasterLayer.CATEGORICAL,
+            nodata=const.SENTINEL_NODATA_VALUE,
+            max_zoom=const.ZOOM_LEVEL_20M,
+            build_pyramid=True,
+            store_reprojected=False,
+        )
+
+        # Make scene class layers available to all users.
+        layer.publicrasterlayer.public = True
+        layer.publicrasterlayer.save()
+
+        # Register raster layer as sentinel scene class.
+        SentinelTileSceneClass.objects.create(layer=layer, tile=tile)
+
+    tile.write('Ingesting Scene Classification Layer')
+    glob_pattern = '/rasterwd/products/{}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R20m/*_SCL_20m.jp2'.format(tile.id)
+    sceneclasspath = glob.glob(glob_pattern)
+    try:
+        tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
+        pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
+        locally_parse_raster(tmpdir, tile.sentineltilesceneclass.layer_id, sceneclasspath, const.ZOOM_LEVEL_20M)
+    except:
+        tile.write('Failed processing scene class {}. {}'.format(tile.sentineltilesceneclass, traceback.format_exc()), SentinelTile.FAILED)
+        shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+        raise
+
+
+def locally_parse_raster(tmpdir, rasterlayer_id, target_rst, zoom):
     """
     Instead of uploading the reprojected tif, we could parse the rasters right
     here. This would allow to never store the full tif files, but is more
     suceptible to random killing of spot instances.
     """
     # Open parser for the band, set tempdir and remove previous log.
-    parser = RasterLayerParser(band.layer_id)
+    parser = RasterLayerParser(rasterlayer_id)
     parser.tmpdir = tmpdir
     parser.rasterlayer.parsestatus.log = ''
     parser.rasterlayer.parsestatus.save()
@@ -643,9 +680,9 @@ def locally_parse_raster(tmpdir, band, target_rst, zoom):
     # Reproject the rasterfile to web mercator.
     parser.reproject_rasterfile()
 
-    # Reproject and tile dataset.
+    # Create tile pyramid.
     try:
-        parser.create_tiles(zoom)
+        parser.create_tiles(list(range(zoom + 1)))
         parser.send_success_signal()
     except:
         parser.log(
@@ -708,8 +745,11 @@ def composite_build_callback(compositebuild_id, initiate=False):
             compositetile.write('Scheduled composite builder, waiting for worker availability.', CompositeTile.PENDING)
             # Call build task.
             ecs.process_compositetile(compositetile.id)
-        # Abort here and wait for callbacks from process_compositetile.
-        return
+            # Break if composite builds have finished during the loop.
+            if not compositebuild.compositetiles.exclude(status=CompositeTile.FINISHED).exists():
+                compositebuild.status = CompositeBuild.FINISHED
+                compositebuild.save()
+                break
     else:
         # Composite build is complete, set status to "finished".
         compositebuild.status = CompositeBuild.FINISHED

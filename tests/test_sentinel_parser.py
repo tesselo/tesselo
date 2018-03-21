@@ -6,7 +6,7 @@ import tempfile
 import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import (
-    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_run_ecs_command, point_to_test_file
+    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
 )
 
 from django.conf import settings
@@ -22,9 +22,8 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
-@mock.patch('sentinel.ecs.run_ecs_command', patch_run_ecs_command)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelBucketParserTest(TestCase):
 
     def setUp(self):
@@ -59,7 +58,7 @@ class SentinelBucketParserTest(TestCase):
     def test_process_compositetile(self):
         sync_sentinel_bucket_utm_zone(1)
         # Calling build callback. In testing mode there are no internal
-        # callbacks, so this function needes to be called three times.
+        # callbacks, so this function needs to be called three times.
         # 1. Ingest scenes
         # 2. Build Composite Tiles
         # 3. Write success flag
@@ -67,9 +66,6 @@ class SentinelBucketParserTest(TestCase):
         composite_build_callback(self.build.id, initiate=True)
         self.build.refresh_from_db()
         self.assertEqual(self.build.status, CompositeBuild.INGESTING_SCENES)
-        composite_build_callback(self.build.id, initiate=False)
-        self.build.refresh_from_db()
-        self.assertEqual(self.build.status, CompositeBuild.BUILDING_TILES)
         composite_build_callback(self.build.id, initiate=False)
         self.build.refresh_from_db()
         self.assertEqual(self.build.status, CompositeBuild.FINISHED)

@@ -7,7 +7,7 @@ from unittest import skip
 import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import (
-    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_run_ecs_command, point_to_test_file
+    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
 )
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
@@ -29,9 +29,8 @@ from sklearn.svm import LinearSVC
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
-@mock.patch('sentinel.ecs.run_ecs_command', patch_run_ecs_command)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 
     def setUp(self):

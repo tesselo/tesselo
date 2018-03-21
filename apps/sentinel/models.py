@@ -147,6 +147,17 @@ class SentinelTileBand(models.Model):
         return const.BAND_RESOLUTIONS[self.band]
 
 
+class SentinelTileSceneClass(models.Model):
+    """
+    Sen2Cor Scene classification for a sentinel tile.
+    """
+    tile = models.OneToOneField(SentinelTile, on_delete=models.CASCADE)
+    layer = models.OneToOneField(RasterLayer, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return 'Tile {0} - SceneClass - Layer {1}'.format(self.tile.mgrstile, self.layer_id)
+
+
 class SentinelTileAggregationLayer(models.Model):
     sentineltile = models.ForeignKey(SentinelTile, on_delete=models.CASCADE)
     aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)

@@ -21,6 +21,10 @@ SECRET_KEY = 'j7$22brg^e@qpnnwtgw%1l@&=9=2yjbo-ky3ox-m_jgym*8iap'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', False) == 'True'
 
+# The local flag is used to run remote commands locally. This is for development
+# environments and testing.
+LOCAL = os.environ.get('LOCAL', False) == 'True' or DEBUG
+
 ALLOWED_HOSTS = ['*']
 
 LOGIN_REDIRECT_URL = '/'

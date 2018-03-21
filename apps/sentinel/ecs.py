@@ -2,6 +2,9 @@ import os
 
 import boto3
 
+from django.conf import settings
+from django.core.management import call_command
+
 
 def get_batch_job_base():
     # Get AWS credentials.
@@ -43,6 +46,11 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo
     '''
     if not isinstance(command_input, (tuple, list)):
         raise ValueError('The command_input is required to be a tuple or a list.')
+
+    # Run locally if in debug mode.
+    if settings.LOCAL:
+        call_command('sentinel', *command_input, verbosity=1)
+        return
 
     # Ensure input is in string format (required for the container overrides).
     command_input = [str(dat) for dat in command_input]
