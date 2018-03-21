@@ -649,8 +649,8 @@ def ingest_scene_class(tile):
         SentinelTileSceneClass.objects.create(layer=layer, tile=tile)
 
     tile.write('Ingesting Scene Classification Layer')
-    glob_pattern = '/rasterwd/products/{}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R20m/*_SCL_20m.jp2'.format(tile.id)
-    sceneclasspath = glob.glob(glob_pattern)
+    glob_pattern = '/rasterwd/products/{}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R20m/*SCL_20m.jp2'.format(tile.id)
+    sceneclasspath = glob.glob(glob_pattern)[0]
     try:
         tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
         pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
