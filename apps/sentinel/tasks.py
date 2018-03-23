@@ -4,6 +4,7 @@ import glob
 import io
 import json
 import logging
+import os
 import pathlib
 import shutil
 import subprocess
@@ -499,11 +500,167 @@ def process_l2a(sentineltile_id, push_rasters=False):
     else:
         tile.write('Started processing tile for L2A upgrade.', SentinelTile.PROCESSING)
 
-    # TODO: Over Europe, L2A data may exist already. In that case ingest L2A
-    # data directly from AWS PDS bucket.
-    # if tile.collected.date() >= const.L2A_AVAILABILITY_DATE:
-    #     Direct ingestion mode.
+    # Check if L2A product already exists.
+    s3 = boto3.resource('s3')
+    obj = s3.Object('sentinel-s2-l2a', '{prefix}productInfo.json'.format(prefix=tile.prefix))
+    try:
+        obj.get(RequestPayer='requester')
+    except s3.meta.client.exceptions.NoSuchKey:
+        run_sen2cor(tile)
+    else:
+        download_l2a(tile)
 
+    # Ingest the resulting rasters as tiles.
+    for band, zoom, rasterlayer_id in generate_bands_and_sceneclass(tile):
+        bandpath = '/rasterwd/products/{tile_id}/{band}'.format(tile_id=tile.id, band=band)
+        try:
+            tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
+            pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
+            locally_parse_raster(tmpdir, rasterlayer_id, bandpath, zoom)
+        except:
+            tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
+            shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+            raise
+
+        tile.write('Finished processing band {}'.format(band))
+
+    # Remove main product files.
+    shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+
+    # Update tile status.
+    tile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
+
+    # Run callbacks to continue build chain.
+    for cbuild in tile.compositebuild_set.filter(status=CompositeBuild.INGESTING_SCENES):
+        composite_build_callback(cbuild.id)
+
+
+def generate_bands_and_sceneclass(tile):
+    """
+    Ensure SentinelTileBand and SentinelTileSceneClass objects exist.
+    """
+    for filename, description in const.BAND_CHOICES:
+        # Fix zoom level by band to ensure consistency.
+        if filename in const.BANDS_10M:
+            zoom = const.ZOOM_LEVEL_10M
+        elif filename in const.BANDS_20M:
+            zoom = const.ZOOM_LEVEL_20M
+        else:
+            zoom = const.ZOOM_LEVEL_60M
+
+        # Check if this band already exists.
+        band = SentinelTileBand.objects.filter(band=filename, tile=tile).first()
+
+        if not band:
+            # Create new raster layer and register it as sentinel band.
+            layer = RasterLayer.objects.create(
+                name=tile.prefix + filename,
+                datatype=RasterLayer.CONTINUOUS,
+                nodata=const.SENTINEL_NODATA_VALUE,
+                max_zoom=zoom,
+                build_pyramid=True,
+                store_reprojected=False,
+            )
+
+            # Make sentinel bands available to all users.
+            layer.publicrasterlayer.public = True
+            layer.publicrasterlayer.save()
+
+            # Register raster layer as sentinel tile band.
+            band = SentinelTileBand.objects.create(
+                layer=layer,
+                band=filename,
+                tile=tile,
+            )
+
+        yield filename, zoom, band.layer.id
+
+    if not hasattr(tile, 'sentineltilesceneclass'):
+        # Create new raster layer.
+        layer = RasterLayer.objects.create(
+            name=tile.prefix + '_scene_class',
+            datatype=RasterLayer.CATEGORICAL,
+            nodata=const.SENTINEL_NODATA_VALUE,
+            max_zoom=const.ZOOM_LEVEL_20M,
+            build_pyramid=True,
+            store_reprojected=False,
+        )
+
+        # Make scene class layers available to all users.
+        layer.publicrasterlayer.public = True
+        layer.publicrasterlayer.save()
+
+        # Register raster layer as sentinel scene class.
+        SentinelTileSceneClass.objects.create(layer=layer, tile=tile)
+        sceneclass_layer_id = layer.id
+    else:
+        sceneclass_layer_id = tile.sentineltilesceneclass.layer_id
+
+    yield 'SCL.jp2', const.ZOOM_LEVEL_20M, sceneclass_layer_id
+
+
+def download_l2a(tile):
+    tile.write('Found existing L2A product, downloading data.')
+    # Prepare data dirs.
+    os.makedirs('/rasterwd/products/{}'.format(tile.id))
+    # Download each band and scene class.
+    layers = {'SCL.jp2': 20}
+    layers.update(const.BAND_RESOLUTIONS)
+    for band, resolution in layers.items():
+        # Band 10 is not kept in L2A as it does not contain surface
+        # information (its fully absorbed in atmosphere, any reflectance
+        # is due to atmospheric scattering).
+        if band == const.BD10:
+            bucket = 'sentinel-s2-l1c'
+            prefix = '{prefix}{band}'.format(
+                prefix=tile.prefix,
+                band=band,
+            )
+        else:
+            bucket = 'sentinel-s2-l2a'
+            prefix = '{prefix}R{resolution}m/{band}'.format(
+                prefix=tile.prefix,
+                resolution=resolution,
+                band=band,
+            )
+        dest = '/rasterwd/products/{tile_id}/{band}'.format(
+            tile_id=tile.id,
+            resolution=resolution,
+            band=band,
+        )
+        tile.write('Downloading file ' + band)
+        s3 = boto3.resource('s3')
+        try:
+            s3.Object(bucket, prefix).download_file(dest, ExtraArgs={'RequestPayer': 'requester'})
+        except:
+            tile.write('Failed download of L2A data.', SentinelTile.FAILED)
+            raise
+
+        # L2A data in sentinel-s2-l2a bucket does not have an srid and wrong
+        # geotransform params. So move data to tif with correct specs.
+        original_data = GDALRaster(dest).bands[0].data()
+        original_datatype = GDALRaster(dest).bands[0].datatype()
+        original_extent = tile.tile_geom.transform(tile.srid, clone=True).extent
+        # Overwrite original file, to keep naming convention (this writes tif
+        # files with jp2 extension).
+        GDALRaster({
+            'name': dest,
+            'srid': tile.srid,
+            'driver': 'tif',
+            'datatype': original_datatype,
+            'origin': (original_extent[0], original_extent[3]),
+            'width': original_data.shape[1],
+            'height': original_data.shape[0],
+            'scale': [resolution, -resolution],
+            'bands': [{'nodata_value': const.SENTINEL_NODATA_VALUE, 'data': original_data}],
+        })
+    tile.write('Finished L2A product download.')
+
+
+def run_sen2cor(tile):
+    """
+    Get L1C data and run Sen2Cor to upgrade to L2A.
+    """
     # Construct download command.
     mgrs_code = '{0}{1}{2}'.format(
         tile.mgrstile.utm_zone,
@@ -537,131 +694,42 @@ def process_l2a(sentineltile_id, push_rasters=False):
     except:
         tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
         raise
-    tile.write('Finished applying Sen2Cor algorithm.')
 
-    # Ingest the resulting rasters as tiles.
+    # Move files to parent dir, remove intermediate ones.
     for filename, description in const.BAND_CHOICES:
-
         # Fix zoom level by band to ensure consistency.
         if filename in const.BANDS_10M:
             resolution = '10'
-            zoom = const.ZOOM_LEVEL_10M
         elif filename in const.BANDS_20M:
             resolution = '20'
-            zoom = const.ZOOM_LEVEL_20M
         else:
             resolution = '60'
-            zoom = const.ZOOM_LEVEL_60M
-
-        # Check if this band already exists.
-        band = SentinelTileBand.objects.filter(band=filename, tile=tile).first()
-
-        if not band:
-            # Create new raster layer and register it as sentinel band.
-            layer = RasterLayer.objects.create(
-                name=tile.prefix + filename,
-                datatype=RasterLayer.CONTINUOUS,
-                nodata=const.SENTINEL_NODATA_VALUE,
-                max_zoom=zoom,
-                build_pyramid=True,
-                store_reprojected=False,
-            )
-
-            # Make sentinel bands available to all users.
-            layer.publicrasterlayer.public = True
-            layer.publicrasterlayer.save()
-
-            # Register raster layer as sentinel tile band.
-            band = SentinelTileBand.objects.create(
-                layer=layer,
-                band=filename,
-                tile=tile,
-            )
-
         # Get path of corrected image for this band, use uncorrected for 60m.
         if resolution == '60':
             glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL1C*.SAFE/GRANULE/*/IMG_DATA/*{band}'.format(
                 tile_id=tile.id,
-                band=band.band,
+                band=filename,
             )
             bandpath = glob.glob(glob_pattern)
         else:
             glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R{resolution}m/*{band}_{resolution}m.jp2'.format(
                 tile_id=tile.id,
-                band=band.band.split('.jp2')[0],
+                band=filename.split('.jp2')[0],
                 resolution=resolution,
             )
             bandpath = glob.glob(glob_pattern)
 
-        # Continue if file has not been created.
-        if not len(bandpath):
-            tile.write('No source found for band {}, continuing.'.format(band.band))
-            continue
-        else:
-            tile.write('Processing band {}.'.format(band))
-            bandpath = bandpath[0]
+        shutil.move(bandpath[0], '/rasterwd/products/{tile_id}/{band}'.format())
 
-        try:
-            tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
-            pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-            locally_parse_raster(tmpdir, band.layer_id, bandpath, zoom)
-        except:
-            tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
-            shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
-            raise
+    # Remove unnecessary data.
+    glob_pattern = '/rasterwd/products/{tile_id}/S2*.SAFE'.format(tile_id=tile.id)
+    for path in glob.glob(glob_pattern):
+        shutil.rmtree(path)
 
-        tile.write('Finished processing band {}'.format(band))
-
-    # Ingest scene class file.
-    ingest_scene_class(tile)
-
-    # Remove main product files.
-    shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
-
-    # Update tile status.
-    tile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
-
-    # Run callbacks to continue build chain.
-    for cbuild in tile.compositebuild_set.filter(status=CompositeBuild.INGESTING_SCENES):
-        composite_build_callback(cbuild.id)
+    tile.write('Finished applying Sen2Cor algorithm.')
 
 
-def ingest_scene_class(tile):
-    """
-    Ingest Sen2Cor SceneClass layer.
-    """
-    if not hasattr(tile, 'sentineltilesceneclass'):
-        # Create new raster layer.
-        layer = RasterLayer.objects.create(
-            name=tile.prefix + '_scene_class',
-            datatype=RasterLayer.CATEGORICAL,
-            nodata=const.SENTINEL_NODATA_VALUE,
-            max_zoom=const.ZOOM_LEVEL_20M,
-            build_pyramid=True,
-            store_reprojected=False,
-        )
-
-        # Make scene class layers available to all users.
-        layer.publicrasterlayer.public = True
-        layer.publicrasterlayer.save()
-
-        # Register raster layer as sentinel scene class.
-        SentinelTileSceneClass.objects.create(layer=layer, tile=tile)
-
-    tile.write('Ingesting Scene Classification Layer')
-    glob_pattern = '/rasterwd/products/{}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R20m/*SCL_20m.jp2'.format(tile.id)
-    sceneclasspath = glob.glob(glob_pattern)[0]
-    try:
-        tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
-        pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-        locally_parse_raster(tmpdir, tile.sentineltilesceneclass.layer_id, sceneclasspath, const.ZOOM_LEVEL_20M)
-    except:
-        tile.write('Failed processing scene class {}. {}'.format(tile.sentineltilesceneclass, traceback.format_exc()), SentinelTile.FAILED)
-        shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
-        raise
-
-
-def locally_parse_raster(tmpdir, rasterlayer_id, target_rst, zoom):
+def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom):
     """
     Instead of uploading the reprojected tif, we could parse the rasters right
     here. This would allow to never store the full tif files, but is more
@@ -674,7 +742,7 @@ def locally_parse_raster(tmpdir, rasterlayer_id, target_rst, zoom):
     parser.rasterlayer.parsestatus.save()
 
     # Open rasterlayer as GDALRaster, assign to parser attribute.
-    parser.dataset = GDALRaster(target_rst)
+    parser.dataset = GDALRaster(src_rst)
     parser.extract_metadata()
 
     # Reproject the rasterfile to web mercator.

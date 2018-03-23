@@ -127,6 +127,15 @@ class SentinelTile(models.Model):
     def rasterlayer_lookup(self):
         return {band.band: band.layer_id for band in self.sentineltileband_set.all()}
 
+    @property
+    def srid(self):
+        """
+        The raster srid is in the 32600 range if in the northern hemisphere,
+        otherwise 32700. The last two digits is the UTM zone number.
+        """
+        srid = 32600 if self.tile_geom.extent[3] > 0 else 32700
+        return srid + int(self.mgrstile.utm_zone)
+
 
 class SentinelTileBand(models.Model):
     """

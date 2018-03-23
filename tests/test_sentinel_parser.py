@@ -15,7 +15,7 @@ from django.test import TestCase, override_settings
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
 )
-from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
+from sentinel.tasks import composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
 
 
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
@@ -108,3 +108,24 @@ class SentinelBucketParserTest(TestCase):
         sync_sentinel_bucket_utm_zone(1)
         for tile in SentinelTileBand.objects.all():
             self.assertTrue(tile.layer.publicrasterlayer.public)
+
+    def test_filelist_generator(self):
+        sync_sentinel_bucket_utm_zone(1)
+        tile = SentinelTile.objects.first()
+        layer_list = [dat[:2] for dat in generate_bands_and_sceneclass(tile)]
+        self.assertEqual(layer_list, [
+            ('B01.jp2', 11),
+            ('B02.jp2', 14),
+            ('B03.jp2', 14),
+            ('B04.jp2', 14),
+            ('B05.jp2', 13),
+            ('B06.jp2', 13),
+            ('B07.jp2', 13),
+            ('B08.jp2', 14),
+            ('B8A.jp2', 13),
+            ('B09.jp2', 11),
+            ('B10.jp2', 11),
+            ('B11.jp2', 13),
+            ('B12.jp2', 13),
+            ('SCL.jp2', 13),
+        ])
