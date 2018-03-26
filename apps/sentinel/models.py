@@ -417,6 +417,14 @@ class CompositeBuild(models.Model):
     def set_sentineltiles(self):
         # Get SentinelTiles that need processing.
         sentineltiles = self.composite.get_sentineltiles()
+        # Remove the first and last UTM Zone. The geometries there need fixing
+        # bacause they span the whole world, instead of wrap around the timezone
+        # horizon.
+        sentineltiles = sentineltiles.exclude(
+            prefix__startswith='tiles/1/',
+        ).exclude(
+            prefix__startswith='tiles/60/',
+        )
         # Build list of unique IDS for SentinelTiles that intersect with the
         # aggregation layer.
         for aggarea in self.aggregationlayer.aggregationarea_set.all():
