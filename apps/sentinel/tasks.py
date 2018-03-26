@@ -246,7 +246,6 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
                 continue
             if not tile:
                 continue
-            # tile = get_tile(sentineltile + band, tilez, tilex, tiley)
             tiles.append((sentineltile, band, tile.rast.bands[0].data()))
     return tiles
 
@@ -578,7 +577,7 @@ def generate_bands_and_sceneclass(tile):
     if not hasattr(tile, 'sentineltilesceneclass'):
         # Create new raster layer.
         layer = RasterLayer.objects.create(
-            name=tile.prefix + '_scene_class',
+            name=tile.prefix + 'SCL.jp2',
             datatype=RasterLayer.CATEGORICAL,
             nodata=const.SENTINEL_NODATA_VALUE,
             max_zoom=const.ZOOM_LEVEL_20M,
@@ -695,31 +694,26 @@ def run_sen2cor(tile):
         tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
         raise
 
-    # Move files to parent dir, remove intermediate ones.
-    for filename, description in const.BAND_CHOICES:
-        # Fix zoom level by band to ensure consistency.
-        if filename in const.BANDS_10M:
-            resolution = '10'
-        elif filename in const.BANDS_20M:
-            resolution = '20'
-        else:
-            resolution = '60'
+    # Move files to parent dir.
+    layers = {'SCL.jp2': 20}
+    layers.update(const.BAND_RESOLUTIONS)
+    for band, resolution in layers.items():
         # Get path of corrected image for this band, use uncorrected for 60m.
-        if resolution == '60':
+        if resolution == 60:
             glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL1C*.SAFE/GRANULE/*/IMG_DATA/*{band}'.format(
                 tile_id=tile.id,
-                band=filename,
+                band=band,
             )
-            bandpath = glob.glob(glob_pattern)
+            bandpath = glob.glob(glob_pattern)[0]
         else:
             glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R{resolution}m/*{band}_{resolution}m.jp2'.format(
                 tile_id=tile.id,
-                band=filename.split('.jp2')[0],
+                band=band.split('.jp2')[0],
                 resolution=resolution,
             )
-            bandpath = glob.glob(glob_pattern)
+            bandpath = glob.glob(glob_pattern)[0]
 
-        shutil.move(bandpath[0], '/rasterwd/products/{tile_id}/{band}'.format())
+        shutil.move(bandpath, '/rasterwd/products/{tile_id}/{band}'.format(tile_id=tile.id, band=band))
 
     # Remove unnecessary data.
     glob_pattern = '/rasterwd/products/{tile_id}/S2*.SAFE'.format(tile_id=tile.id)
