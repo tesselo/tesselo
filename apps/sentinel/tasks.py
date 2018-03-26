@@ -247,6 +247,16 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
             if not tile:
                 continue
             tiles.append((sentineltile, band, tile.rast.bands[0].data()))
+
+        if tilez == const.ZOOM_LEVEL_20M:
+            try:
+                tile = get_raster_tile(SentinelTileSceneClass.objects.get(tile__prefix=sentineltile).layer_id, tilez, tilex, tiley)
+            except SentinelTileSceneClass.DoesNotExist:
+                continue
+            if not tile:
+                continue
+            tiles.append((sentineltile, const.SCL, tile.rast.bands[0].data()))
+
     return tiles
 
 
@@ -317,9 +327,9 @@ def compositetile_stacks(ctile):
                                     stacks_length[scene] += 1
                                 stacks[scene][band] = tile
 
-                            # Drop incomplete stacks.
+                            # Drop incomplete stacks, total number of bands plus SCL layer.
                             for key, count in stacks_length.items():
-                                if count != const.NR_OF_BANDS:
+                                if count != const.NR_OF_BANDS + 1:
                                     del stacks[key]
 
                             # Skp if no complete stack is available for this tile.
@@ -353,8 +363,15 @@ def process_compositetile(compositetile_id):
         # Compute the cloud probabilities for each avaiable scene band stack.
         cloud_probs = [clouds(stack) for stack in stacks]
 
+        # Remove the SCL Layers from the stacks.
+        for stack in stacks:
+            stack.pop(const.SCL, None)
+
         # Compute an array of scene indices with the lowest cloud probability.
         selector_index = numpy.argmin(cloud_probs, axis=0)
+
+        # Compute mask for pixels where all stacks had a exclude value.
+        exclude = numpy.min(cloud_probs, axis=0) == const.EXCLUDE_VALUE
 
         # Create a copy of the generic results dict before updating values.
         result_dict = const.RESULT_DICT.copy()
@@ -370,6 +387,9 @@ def process_compositetile(compositetile_id):
 
             # Construct final composite band array from selector index.
             composite_data = bnds[selector_index, const.CLOUD_IDX1, const.CLOUD_IDX2]
+
+            # Exclude bad pixels.
+            composite_data[exclude] = const.SENTINEL_NODATA_VALUE
 
             # Update results dict with data, using a random name for the in
             # memory raster.
@@ -577,7 +597,7 @@ def generate_bands_and_sceneclass(tile):
     if not hasattr(tile, 'sentineltilesceneclass'):
         # Create new raster layer.
         layer = RasterLayer.objects.create(
-            name=tile.prefix + 'SCL.jp2',
+            name=tile.prefix + const.SCL,
             datatype=RasterLayer.CATEGORICAL,
             nodata=const.SENTINEL_NODATA_VALUE,
             max_zoom=const.ZOOM_LEVEL_20M,
@@ -595,7 +615,7 @@ def generate_bands_and_sceneclass(tile):
     else:
         sceneclass_layer_id = tile.sentineltilesceneclass.layer_id
 
-    yield 'SCL.jp2', const.ZOOM_LEVEL_20M, sceneclass_layer_id
+    yield const.SCL, const.ZOOM_LEVEL_20M, sceneclass_layer_id
 
 
 def download_l2a(tile):
@@ -603,7 +623,7 @@ def download_l2a(tile):
     # Prepare data dirs.
     os.makedirs('/rasterwd/products/{}'.format(tile.id))
     # Download each band and scene class.
-    layers = {'SCL.jp2': 20}
+    layers = {const.SCL: 20}
     layers.update(const.BAND_RESOLUTIONS)
     for band, resolution in layers.items():
         # Band 10 is not kept in L2A as it does not contain surface
@@ -695,7 +715,7 @@ def run_sen2cor(tile):
         raise
 
     # Move files to parent dir.
-    layers = {'SCL.jp2': 20}
+    layers = {const.SCL: 20}
     layers.update(const.BAND_RESOLUTIONS)
     for band, resolution in layers.items():
         # Get path of corrected image for this band, use uncorrected for 60m.

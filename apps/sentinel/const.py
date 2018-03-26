@@ -51,7 +51,7 @@ RESULT_DICT = {
     'scale': [TILESCALE, -TILESCALE],
     'srid': WEB_MERCATOR_SRID,
     'datatype': 2,
-    'bands': [{'nodata_value': 0, }, ],
+    'bands': [{'nodata_value': SENTINEL_NODATA_VALUE, }, ],
 }
 
 # Cloud Extraction Indices, these are range indices for 2d arrays that are
@@ -76,6 +76,7 @@ BD9 = 'B09.jp2'
 BD10 = 'B10.jp2'
 BD11 = 'B11.jp2'
 BD12 = 'B12.jp2'
+SCL = 'SCL.jp2'
 
 # Band choices to be used in models.
 BAND_CHOICES = (
@@ -134,3 +135,25 @@ PROCESS_LEVELS = (
     (LEVEL_L1C, 'Level 1C'),
     (LEVEL_L2A, 'Level 2A'),
 )
+
+# Sen2Cor Scene Classification parameters.
+SCENE_CLASS_LEGEND = {
+    0: 'NO_DATA',
+    1: 'SATURATED_OR_DEFECTIVE',
+    2: 'DARK_AREA_PIXELS',
+    3: 'CLOUD_SHADOWS',
+    4: 'VEGETATION',
+    5: 'NOT_VEGETATED',
+    6: 'WATER',
+    7: 'UNCLASSIFIED',
+    8: 'CLOUD_MEDIUM_PROBABILITY',
+    9: 'CLOUD_HIGH_PROBABILITY',
+    10: 'THIN_CIRRUS',
+    11: 'SNOW',
+}
+
+SCENE_CLASS_EXCLUDE = (0, 1, 3, 7, 8, 9, 10, 11, )
+SCENE_CLASS_DEPREORITIZE = (2, 11)
+SCENE_CLASS_KEEP = (4, 5, 6, )
+
+EXCLUDE_VALUE = 99

@@ -119,8 +119,13 @@ def point_to_test_file(source_url, filepath):
         size = gensize * 8
         scale = tile_scale(const.ZOOM_LEVEL_10M) + 1
 
+    if band == const.SCL:
+        max_val = 11
+    else:
+        max_val = 10000
+
     # Create a file based raster of the desired scale.
-    data = numpy.random.random_integers(0, 10000, size * size).reshape(size, size).astype(numpy.int16)
+    data = numpy.random.random_integers(0, max_val, size * size).reshape(size, size).astype(numpy.int16)
 
     GDALRaster({
         'name': filepath,
