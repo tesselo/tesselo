@@ -29,4 +29,4 @@ class Command(BaseCommand):
         # Run function.
         funk(*options['command_args'])
         # Write success message.
-        self.stdout.write(self.style.SUCCESS('Finnished task successfully.'))
+        self.stdout.write(self.style.SUCCESS('Finished task successfully.'))

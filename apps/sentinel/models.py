@@ -415,6 +415,8 @@ class CompositeBuild(models.Model):
         self.save()
 
     def set_sentineltiles(self):
+        # Clear current set of sentineltiles.
+        self.sentineltiles.clear()
         # Get SentinelTiles that need processing.
         sentineltiles = self.composite.get_sentineltiles()
         # Remove the first and last UTM Zone. The geometries there need fixing
