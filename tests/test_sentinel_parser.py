@@ -48,7 +48,7 @@ class SentinelBucketParserTest(TestCase):
     def test_sentinelbuild_set_sentineltiles(self):
         sync_sentinel_bucket_utm_zone(1)
         self.build.set_sentineltiles()
-        self.assertEqual(self.build.sentineltiles.count(), 4)
+        self.assertEqual(self.build.sentineltiles.count(), 3)
 
     def test_sentinelbuild_set_compositetiles(self):
         sync_sentinel_bucket_utm_zone(1)
