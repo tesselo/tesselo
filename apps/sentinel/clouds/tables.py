@@ -23,12 +23,20 @@ def scale_array(arr, vmin, vmax):
 
 
 def clouds(stack):
+    # Scipy is only installed on workers. So import it when used only.
+    from scipy.ndimage import maximum_filter
+
     # Use SCL layer to select pixels.
     exclude = const.EXCLUDE_VALUE * numpy.isin(stack[const.SCL], const.SCENE_CLASS_EXCLUDE)
     depreoritize = 2 * numpy.isin(stack[const.SCL], const.SCENE_CLASS_DEPREORITIZE)
     keep = 1 * numpy.isin(stack[const.SCL], const.SCENE_CLASS_KEEP)
 
+    # Combine the three layers.
     cloud_probs = keep + depreoritize + exclude
+
+    # Add a maximum filter, to buffer cloudy pixels along the edge by 100m.
+    cloud_probs = maximum_filter(cloud_probs, (10, 10))
+
     cloud_probs[nodata_mask(stack)] = const.EXCLUDE_VALUE
 
     return cloud_probs
