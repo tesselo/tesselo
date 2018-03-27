@@ -21,9 +21,9 @@ from sentinel import const
 def get_duration(obj):
         if obj.end:
             if not obj.start:
-                return 'Completed'
+                return ''
             else:
-                return 'Completed in {0}'.format(obj.end - obj.start)
+                return '{0}'.format(obj.end - obj.start)
         elif obj.start:
             return 'Running since {0}'.format(timezone.now() - obj.start)
         else:
@@ -202,7 +202,7 @@ class BucketParseLog(models.Model):
     status = models.CharField(max_length=20, choices=BUCKET_PARSE_STATUS_CHOICES)
 
     def __str__(self):
-        return 'Utm Zone {0}, {1}'.format(self.utm_zone, get_duration(self))
+        return 'Utm Zone {0}, Completed in {1}'.format(self.utm_zone, get_duration(self))
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
@@ -362,11 +362,12 @@ class CompositeTile(models.Model):
         unique_together = (("composite", "tilez", "tilex", "tiley"), )
 
     def __str__(self):
-        return '{0} - {1}/{2}/{3} - {4}'.format(
+        return '{0} - {1}/{2}/{3} - {4} - Ran for {5}'.format(
             self.composite.name,
             self.tilez,
             self.tilex,
             self.tiley,
+            self.status,
             get_duration(self),
         )
 
