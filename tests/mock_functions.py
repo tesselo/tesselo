@@ -143,11 +143,8 @@ def point_to_test_file(source_url, filepath):
 
 
 def get_numpy_tile(prefix, tilez, tilex, tiley):
-    class FakeTile(object):
-        rast = None
-    tile = FakeTile()
     data = numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')
-    tile.rast = GDALRaster({
+    return GDALRaster({
         'width': 256,
         'height': 256,
         'origin': (11843687, -458452),
@@ -158,7 +155,6 @@ def get_numpy_tile(prefix, tilez, tilex, tiley):
             {'nodata_value': 0, 'data': data},
         ],
     })
-    return tile
 
 
 def patch_process_l2a(stile_id):

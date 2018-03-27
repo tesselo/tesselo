@@ -246,7 +246,7 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
                 continue
             if not tile:
                 continue
-            tiles.append((sentineltile, band, tile.rast.bands[0].data()))
+            tiles.append((sentineltile, band, tile.bands[0].data()))
 
         if tilez == const.ZOOM_LEVEL_20M:
             try:
@@ -255,7 +255,7 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
                 continue
             if not tile:
                 continue
-            tiles.append((sentineltile, const.SCL, tile.rast.bands[0].data()))
+            tiles.append((sentineltile, const.SCL, tile.bands[0].data()))
 
     return tiles
 
