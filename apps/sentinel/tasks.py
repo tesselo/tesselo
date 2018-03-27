@@ -351,6 +351,7 @@ def process_compositetile(compositetile_id):
     """
     ctile = CompositeTile.objects.get(id=compositetile_id)
     ctile.start = timezone.now()
+    ctile.end = None
     ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
 
     # Get the list of master layers for all 13 bands.
