@@ -446,7 +446,9 @@ class CompositeBuild(models.Model):
             for tilex in range(indexrange[0], indexrange[2] + 1):
                 for tiley in range(indexrange[1], indexrange[3] + 1):
                     indexranges.add((tilex, tiley, const.ZOOM_LEVEL_WORLDLAYER))
-
+        # Clear current set of compositetiles.
+        self.compositetiles.clear()
+        # Assign the required composite tiles.
         for tilex, tiley, tilez in indexranges:
             ctile, created = CompositeTile.objects.get_or_create(
                 composite=self.composite,
