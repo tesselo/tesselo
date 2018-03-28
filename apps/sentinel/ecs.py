@@ -104,5 +104,5 @@ def process_compositetile(compositetile_id):
     return run_ecs_command(['process_compositetile', compositetile_id])
 
 
-def composite_build_callback(compositebuild_id, initiate=False):
-    return run_ecs_command(['composite_build_callback', compositebuild_id, initiate])
+def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
+    return run_ecs_command(['composite_build_callback', compositebuild_id, initiate, rebuild])
