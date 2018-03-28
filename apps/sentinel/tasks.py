@@ -778,7 +778,7 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom):
         shutil.rmtree(parser.tmpdir)
 
 
-def composite_build_callback(compositebuild_id, initiate=False):
+def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
     """
     Initiate and update composite builds.
     """
@@ -788,6 +788,11 @@ def composite_build_callback(compositebuild_id, initiate=False):
     if initiate:
         compositebuild.set_sentineltiles()
         compositebuild.set_compositetiles()
+
+    # Enforce re-building of composite tiles.
+    if rebuild:
+        for ctile in compositebuild.compositetiles.filter(status__in=(CompositeTile.FINISHED, CompositeTile.FAILED)):
+            ctile.write('Rebuilding composite tile, setting status to unprocessed.', CompositeTile.UNPROCESSED)
 
     # Flag to check scene status.
     scene_ingestion_complete = not compositebuild.sentineltiles.exclude(status=SentinelTile.FINISHED).exists()

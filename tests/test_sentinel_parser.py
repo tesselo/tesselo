@@ -63,7 +63,7 @@ class SentinelBucketParserTest(TestCase):
         # 2. Build Composite Tiles
         # 3. Write success flag
         self.assertEqual(self.build.status, CompositeBuild.UNPROCESSED)
-        composite_build_callback(self.build.id, initiate=True)
+        composite_build_callback(self.build.id, initiate=True, rebuild=True)
         self.build.refresh_from_db()
         self.assertEqual(self.build.status, CompositeBuild.INGESTING_SCENES)
         composite_build_callback(self.build.id, initiate=False)

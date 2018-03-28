@@ -71,7 +71,7 @@ class SentinelClassifierTest(TestCase):
 
     def _get_data(self):
         sync_sentinel_bucket_utm_zone(1)
-        composite_build_callback(self.build.id, initiate=True)
+        composite_build_callback(self.build.id, initiate=True, rebuild=True)
         tile = SentinelTile.objects.first()
         self.cloud.sentineltile = tile
         self.cloud.save()

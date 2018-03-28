@@ -84,7 +84,7 @@ class CompositeBuildAdmin(admin.ModelAdmin):
         for build in queryset:
             build.status = CompositeBuild.PENDING
             build.save()
-            ecs.composite_build_callback(build.id, initiate=True)
+            ecs.composite_build_callback(build.id, initiate=True, rebuild=True)
 
         self.message_user(request, 'Triggered Composite Builds {}'.format([build.id for build in queryset]))
 
