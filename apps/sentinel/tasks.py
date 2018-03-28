@@ -505,7 +505,7 @@ def process_compositetile(compositetile_id):
 
 
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
-SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process --resolution 10 {product_path}'
+SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process {product_path}'
 
 
 @task
@@ -719,20 +719,22 @@ def run_sen2cor(tile):
     layers = {const.SCL: 20}
     layers.update(const.BAND_RESOLUTIONS)
     for band, resolution in layers.items():
-        # Get path of corrected image for this band, use uncorrected for 60m.
-        if resolution == 60:
-            glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL1C*.SAFE/GRANULE/*/IMG_DATA/*{band}'.format(
+        # Band 10 is not kept in L2A as it does not contain surface
+        # information (its fully absorbed in atmosphere, any reflectance
+        # is due to atmospheric scattering).
+        if band == const.BD10:
+            glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL1C*.SAFE/GRANULE/**/*{band}'.format(
                 tile_id=tile.id,
                 band=band,
             )
-            bandpath = glob.glob(glob_pattern)[0]
+            bandpath = glob.glob(glob_pattern, recursive=True)[0]
         else:
-            glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/*/IMG_DATA/R{resolution}m/*{band}_{resolution}m.jp2'.format(
+            glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/**/*{band}*{resolution}m.jp2'.format(
                 tile_id=tile.id,
                 band=band.split('.jp2')[0],
                 resolution=resolution,
             )
-            bandpath = glob.glob(glob_pattern)[0]
+            bandpath = glob.glob(glob_pattern, recursive=True)[0]
 
         shutil.move(bandpath, '/rasterwd/products/{tile_id}/{band}'.format(tile_id=tile.id, band=band))
 
