@@ -765,6 +765,9 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom):
     # Reproject the rasterfile to web mercator.
     parser.reproject_rasterfile()
 
+    # Clear current tiles.
+    parser.drop_all_tiles()
+
     # Create tile pyramid.
     try:
         parser.create_tiles(list(range(zoom + 1)))
