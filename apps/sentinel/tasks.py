@@ -371,8 +371,8 @@ def process_compositetile(compositetile_id):
         # Compute an array of scene indices with the lowest cloud probability.
         selector_index = numpy.argmin(cloud_probs, axis=0)
 
-        # Compute mask for pixels where all stacks had a exclude value.
-        exclude = numpy.min(cloud_probs, axis=0) == const.EXCLUDE_VALUE
+        # Compute mask for pixels where all stacks are over the exclude value.
+        exclude = numpy.min(cloud_probs, axis=0) >= const.EXCLUDE_VALUE
 
         # Create a copy of the generic results dict before updating values.
         result_dict = const.RESULT_DICT.copy()

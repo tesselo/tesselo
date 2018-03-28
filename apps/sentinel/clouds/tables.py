@@ -37,7 +37,25 @@ def clouds(stack):
     # Add a maximum filter, to buffer cloudy pixels along the edge by 100m.
     cloud_probs = maximum_filter(cloud_probs, (10, 10))
 
+    # Ensure nodata pixels have the exclude value.
     cloud_probs[nodata_mask(stack)] = const.EXCLUDE_VALUE
+
+    # Convert cloud probs to float.
+    cloud_probs = cloud_probs.astype('float')
+
+    # Compute NDVI, avoiding zero division.
+    B4 = stack[const.BD4].astype('float')
+    B8 = stack[const.BD8].astype('float')
+    ndvi_diff = B8 - B4
+    ndvi_sum = B8 + B4
+    ndvi_sum[ndvi_sum == 0] = 1
+    ndvi = ndvi_diff / ndvi_sum
+
+    # Add inverted and scaled NDVI values to the decimal range of the cloud
+    # probs. This ensures that within acceptable pixels, the one with the
+    # highest NDVI is selected.
+    scaled_ndvi = (1 - ndvi) / 100
+    cloud_probs += scaled_ndvi
 
     return cloud_probs
 
