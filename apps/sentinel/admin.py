@@ -79,6 +79,7 @@ class CompositeBuildAdmin(admin.ModelAdmin):
     model = CompositeBuild
     readonly_fields = ('sentineltiles', 'compositetiles', )
     actions = ('run_composite_build', )
+    list_filter = ('status', )
 
     def run_composite_build(self, request, queryset):
         for build in queryset:
@@ -89,12 +90,16 @@ class CompositeBuildAdmin(admin.ModelAdmin):
         self.message_user(request, 'Triggered Composite Builds {}'.format([build.id for build in queryset]))
 
 
+class CompositeTileAdmin(admin.ModelAdmin):
+    list_filter = ('status', )
+
+
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
 admin.site.register(SentinelTileBand, SentinelTileBandAdmin)
 admin.site.register(SentinelTile, SentinelTileAdmin)
 admin.site.register(MGRSTile, MGRSTileAdmin)
 admin.site.register(CompositeBand)
-admin.site.register(CompositeTile)
+admin.site.register(CompositeTile, CompositeTileAdmin)
 admin.site.register(CompositeBuild, CompositeBuildAdmin)
 admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)
