@@ -478,7 +478,21 @@ def process_compositetile(compositetile_id):
                         ).first()
                         if tile:
                             none_found = False
-                            agg = aggregate_tile(tile.rast.bands[0].data())
+                            # Try to get tile, in some cases, the underlying file
+                            # might have been already overwritten by another task.
+                            # So have multiple try/except loops.
+                            RETRIES = 3
+                            for i in range(RETRIES):
+                                try:
+                                    agg = aggregate_tile(tile.rast.bands[0].data())
+                                except IOError:
+                                    if i == (RETRIES - 1):
+                                        raise
+                                    else:
+                                        tile.refresh_from_db()
+                                        continue
+                                else:
+                                    break
                         else:
                             size = WEB_MERCATOR_TILESIZE // 2
                             agg = numpy.zeros((size, size), dtype=numpy.int16)
