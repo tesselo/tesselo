@@ -92,6 +92,15 @@ class CompositeBuildAdmin(admin.ModelAdmin):
 
 class CompositeTileAdmin(admin.ModelAdmin):
     list_filter = ('status', )
+    actions = ('build_composite_tile', )
+
+    def build_composite_tile(self, request, queryset):
+        for ctile in queryset:
+            ctile.status = CompositeTile.PENDING
+            ctile.save()
+            ecs.process_compositetile(ctile.id)
+
+        self.message_user(request, 'Triggered Composite Tile Builds {}'.format([ctile.id for ctile in queryset]))
 
 
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
