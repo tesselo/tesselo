@@ -15,6 +15,7 @@ from rest_framework.serializers import (
 
 from django.contrib.auth.models import Group, User
 from django.contrib.gis.db.models import Extent
+from django.contrib.gis.geos import Polygon
 from django.shortcuts import get_object_or_404
 from sentinel.models import Composite, SentinelTileAggregationLayer
 
@@ -285,8 +286,11 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
         read_only_fields = ('nr_of_areas', )
 
     def get_extent(self, obj):
-        from django.contrib.gis.geos import Polygon
         extent = obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
+        # If this aggregation area does not have any geometries, return global
+        # view as placeholder.
+        if not extent:
+            return -180, -90, 180, 90
         extent = Polygon.from_bbox(extent)
         extent.srid = WEB_MERCATOR_SRID
         extent.transform(4326)

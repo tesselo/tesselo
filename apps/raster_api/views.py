@@ -270,6 +270,11 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
     _model = 'valuecountresult'
 
     def perform_create(self, serializer):
+        """
+        A patched perform create, most of this code is a copy of the
+        raster-aggregation package version, except for the value count task
+        call, which was adopted to zappa tasks here.
+        """
         # Get list of rasterlayers based on layer names dict.
         rasterlayers = [RasterLayer.objects.get(id=pk) for pk in set(serializer.validated_data.get('layer_names').values())]
 
