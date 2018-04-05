@@ -270,7 +270,7 @@ class Composite(models.Model):
         if isinstance(max_date, str):
             max_date = parse_date(max_date)
 
-        if min_date.day == 1 and max_date.day == calendar.monthrange(max_date.year, max_date.month)[1]:
+        if min_date.day == 1 and max_date.day == calendar.monthrange(max_date.year, max_date.month)[1] and min_date.month == max_date.month:
             self.interval = self.MONTHLY
         elif calendar.weekday(min_date.year, min_date.month, min_date.day) == calendar.MONDAY and calendar.weekday(max_date.year, max_date.month, max_date.day) == calendar.SUNDAY:
             self.interval = self.WEEKLY
