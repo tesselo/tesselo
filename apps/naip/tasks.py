@@ -1,3 +1,7 @@
+import os
+
+import boto3
+
 from naip.models import NAIPQuadrangle
 
 
@@ -52,8 +56,14 @@ def ingest_naip_prefix(prefix):
         raise
 
 
-def ingest_naip_index(path):
-    with open(path) as fl:
+def ingest_naip_index():
+    # Get current manifest file.
+    s3 = boto3.resource('s3')
+    s3.Object('aws-naip', 'manifest.txt').download_file('/tmp/manifest.txt', ExtraArgs={'RequestPayer': 'requester'})
+    # Delete all existing naip quadrangles.
+    NAIPQuadrangle.objects.all().delete()
+    # Ingest naip quadrangles line by line.
+    with open('/tmp/manifest.txt') as fl:
         bulk = []
         counter = 0
         for line in fl:
@@ -68,3 +78,5 @@ def ingest_naip_index(path):
                 bulk = []
         # Create the remaining objects.
         NAIPQuadrangle.objects.bulk_create(bulk)
+    # Remove naip manifest.
+    os.remove('/tmp/manifest.txt')

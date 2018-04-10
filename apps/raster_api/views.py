@@ -388,14 +388,10 @@ class RemoveAuthToken(APIView):
         return Response({'logout': 'Successfully logged out.'})
 
 
-def get_tile(prefix, tilez, tilex, tiley):
+def get_tile(prefix, bounds, scale):
     """
     Returns tile data for the given Sentinel-2 scene over the input TMS tile.
     """
-    # Compute bounds, scale and size of tile.
-    bounds = tile_bounds(int(tilex), int(tiley), int(tilez))
-    tilescale = tile_scale(int(tilez))
-
     # Open raster on s3.
     path = '/vsis3/{}'.format(prefix)
     rst = GDALRaster(path)
@@ -406,7 +402,7 @@ def get_tile(prefix, tilez, tilex, tiley):
         'srid': WEB_MERCATOR_SRID,
         'width': WEB_MERCATOR_TILESIZE,
         'height': WEB_MERCATOR_TILESIZE,
-        'scale': [tilescale, -tilescale],
+        'scale': [scale, -scale],
         'origin': [bounds[0], bounds[3]],
     })
 
@@ -414,7 +410,7 @@ def get_tile(prefix, tilez, tilex, tiley):
     data = [{'data': band.data(), 'nodata_value': band.nodata_value} for band in target.bands]
     dtype = target.bands[0].datatype()
 
-    return tilescale, dtype, (bounds[0], bounds[3]), data
+    return dtype, data
 
 
 class LambdaView(AlgebraView, RasterAPIView):
@@ -507,8 +503,6 @@ class LambdaView(AlgebraView, RasterAPIView):
 
                 )
         elif 'naip' in self.kwargs:
-            from naip.models import NAIPQuadrangle
-            
             vsis3path = 'aws-naip/{state}/{year}/{resolution}/{img_src}/{quadrangle}/{scene}.tif'.format(
                 state=self.kwargs.get('state'),
                 year=self.kwargs.get('year'),
@@ -524,19 +518,32 @@ class LambdaView(AlgebraView, RasterAPIView):
         # Get layer ids
         ids = self.get_ids()
 
+        # Prepare unique list of layer ids to be efficient if the same layer
+        # is used multiple times (for band access for instance).
+        layerids = set(ids.values())
+        print(ids, layerids)
+
         # Get tile indices from the request url parameters.
         tilez = int(self.kwargs.get('z'))
         tilex = int(self.kwargs.get('x'))
         tiley = int(self.kwargs.get('y'))
 
-        # VSIS3 path
-        vsis3path = self.get_vsi_path()
+        # Compute bounds, scale and size of tile.
+        bounds = tile_bounds(int(tilex), int(tiley), int(tilez))
+        origin = (bounds[0], bounds[3])
+        scale = tile_scale(int(tilez))
 
-        # Prepare unique list of layer ids to be efficient if the same layer
-        # is used multiple times (for band access for instance).
-        layerids = set(ids.values())
-
-        tile_results = [get_tile(vsis3path.format(band=band_name), tilez, tilex, tiley) for band_name in layerids]
+        # Handle naip case.
+        if 'naip' in self.kwargs and 'state' not in self.kwargs:
+            from naip.views import get_naip_tile
+            tile_results = get_naip_tile(tilez, tilex, tiley)
+            print('tr', tile_results)
+        else:
+            # VSIS3 path
+            vsis3path = self.get_vsi_path()
+            # Get tile data.
+            tile_results = [get_tile(vsis3path.format(band=band_name), bounds, scale) for band_name in layerids]
+            print('tr', tile_results)
 
         # Reconstruct raster objects from data.
         tile_results = [GDALRaster({
@@ -548,7 +555,7 @@ class LambdaView(AlgebraView, RasterAPIView):
             'origin': origin,
             'datatype': dtype,
             'bands': data,
-        }) for scale, dtype, origin, data in tile_results]
+        }) for dtype, data in tile_results]
 
         # Construct tiles dict.
         tiles = dict(zip(layerids, tile_results))
