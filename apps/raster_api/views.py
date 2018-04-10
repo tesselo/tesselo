@@ -31,6 +31,7 @@ from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from naip.views import get_naip_tile
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
@@ -521,7 +522,6 @@ class LambdaView(AlgebraView, RasterAPIView):
         # Prepare unique list of layer ids to be efficient if the same layer
         # is used multiple times (for band access for instance).
         layerids = set(ids.values())
-        print(ids, layerids)
 
         # Get tile indices from the request url parameters.
         tilez = int(self.kwargs.get('z'))
@@ -535,15 +535,12 @@ class LambdaView(AlgebraView, RasterAPIView):
 
         # Handle naip case.
         if 'naip' in self.kwargs and 'state' not in self.kwargs:
-            from naip.views import get_naip_tile
             tile_results = get_naip_tile(tilez, tilex, tiley)
-            print('tr', tile_results)
         else:
             # VSIS3 path
             vsis3path = self.get_vsi_path()
             # Get tile data.
             tile_results = [get_tile(vsis3path.format(band=band_name), bounds, scale) for band_name in layerids]
-            print('tr', tile_results)
 
         # Reconstruct raster objects from data.
         tile_results = [GDALRaster({

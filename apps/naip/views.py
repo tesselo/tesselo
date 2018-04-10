@@ -6,7 +6,6 @@ from raster.tiles.utils import tile_bounds, tile_scale
 
 from django.contrib.gis.gdal import OGRGeometry
 from naip.models import NAIPQuadrangle
-from raster_api.views import get_tile
 
 # Quadrangles are 8 x 8 Squares of a 1x1 Lat/Lon box. The NAIP tiles are
 # quarters of the quadrangles.
@@ -49,6 +48,7 @@ def get_naip_tile(tilez, tilex, tiley):
     """
     Construct a naip tile from tms indices.
     """
+    from raster_api.views import get_tile
     # Get tile coords and bounds.
     bounds = tile_bounds(tilex, tiley, tilez)
     scale = tile_scale(int(tilez))
