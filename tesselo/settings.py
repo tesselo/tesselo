@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'sentinel',
     'classify',
     'formulary',
+    'naip',
 ]
 
 MIDDLEWARE = [

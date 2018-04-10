@@ -507,14 +507,16 @@ class LambdaView(AlgebraView, RasterAPIView):
 
                 )
         elif 'naip' in self.kwargs:
-                vsis3path = 'aws-naip/{state}/{year}/{resolution}/{img_src}/{quadrangle}/{scene}.tif'.format(
-                    state=self.kwargs.get('state'),
-                    year=self.kwargs.get('year'),
-                    resolution=self.kwargs.get('resolution'),
-                    img_src=self.kwargs.get('img_src'),
-                    quadrangle=self.kwargs.get('quadrangle'),
-                    scene=self.kwargs.get('scene'),
-                )
+            from naip.models import NAIPQuadrangle
+            
+            vsis3path = 'aws-naip/{state}/{year}/{resolution}/{img_src}/{quadrangle}/{scene}.tif'.format(
+                state=self.kwargs.get('state'),
+                year=self.kwargs.get('year'),
+                resolution=self.kwargs.get('resolution'),
+                img_src=self.kwargs.get('img_src'),
+                quadrangle=self.kwargs.get('quadrangle'),
+                scene=self.kwargs.get('scene'),
+            )
 
         return vsis3path
 
