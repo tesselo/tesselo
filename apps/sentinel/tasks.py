@@ -31,7 +31,6 @@ from django.core.files import File
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-# from raster_api.views import get_tile
 from sentinel import const, ecs
 from sentinel.clouds.sun_angle import sun
 from sentinel.clouds.tables import clouds
