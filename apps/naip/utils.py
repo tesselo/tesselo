@@ -93,7 +93,7 @@ def get_naip_tile(tilez, tilex, tiley, source):
     # moment. Make them unique by using set.
     for prefix in set(quad_prefixes):
         # Compute tile bounds and scale.
-        dtype, tile_data = get_tile('aws-naip/{}'.format(quad.prefix), bounds, scale)
+        dtype, tile_data = get_tile('aws-naip/{}'.format(prefix), bounds, scale)
         red[red == 0] = tile_data[0]['data'][red == 0]
         green[green == 0] = tile_data[1]['data'][green == 0]
         blue[blue == 0] = tile_data[2]['data'][blue == 0]
