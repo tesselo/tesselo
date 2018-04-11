@@ -31,7 +31,8 @@ from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from naip.views import get_naip_tile
+from naip.models import NAIPQuadrangle
+from naip.utils import get_naip_tile
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
@@ -471,7 +472,6 @@ class LambdaView(AlgebraView, RasterAPIView):
                     'r:0': 'RGB',
                     'g:1': 'RGB',
                     'b:2': 'RGB',
-
                 }
 
     def get_vsi_path(self):
@@ -535,7 +535,12 @@ class LambdaView(AlgebraView, RasterAPIView):
 
         # Handle naip case.
         if 'naip' in self.kwargs and 'state' not in self.kwargs:
-            tile_results = get_naip_tile(tilez, tilex, tiley)
+            if 'formula' in self.request.GET:
+                source = NAIPQuadrangle.RGBIR
+            else:
+                source = NAIPQuadrangle.RGB
+
+            tile_results = get_naip_tile(tilez, tilex, tiley, source)
         else:
             # VSIS3 path
             vsis3path = self.get_vsi_path()

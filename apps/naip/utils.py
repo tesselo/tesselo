@@ -44,7 +44,7 @@ def get_quadrangles_from_coords(x, y):
     )
 
 
-def get_naip_tile(tilez, tilex, tiley):
+def get_naip_tile(tilez, tilex, tiley, source):
     """
     Construct a naip tile from tms indices.
     """
@@ -57,27 +57,17 @@ def get_naip_tile(tilez, tilex, tiley):
     bbox.srid = WEB_MERCATOR_SRID
     bbox.transform(4326)
     bounds_wgs84 = bbox.extent
-    # Prepare array with naip quads.
-    quads = []
-    red = numpy.zeros((256, 256)).astype('uint8')
-    green = numpy.zeros((256, 256)).astype('uint8')
-    blue = numpy.zeros((256, 256)).astype('uint8')
+    # Prepare array with naip quad prefixes.
+    quad_prefixes = []
     # Step through lat/lon quad bounds that intersect with this tile.
     step_x = bounds_wgs84[0]
     while step_x <= bounds_wgs84[2]:
         step_y = bounds_wgs84[1]
         while step_y <= bounds_wgs84[3]:
-            print('Stepping', step_x, step_y)
             # Get quadrangle for this step.
-            quad = get_quadrangles_from_coords(step_x, step_y).filter(source=NAIPQuadrangle.RGB).order_by('-date').first()
+            quad = get_quadrangles_from_coords(step_x, step_y).filter(source=source).order_by('-date').first()
             if quad:
-                print(quad.prefix)
-                # Compute tile bounds and scale.
-                dtype, tile_data = get_tile('aws-naip/{}'.format(quad.prefix), bounds, scale)
-                red[red == 0] = tile_data[0]['data'][red == 0]
-                green[green == 0] = tile_data[1]['data'][green == 0]
-                blue[blue == 0] = tile_data[2]['data'][blue == 0]
-                quads.append(tile_data)
+                quad_prefixes.append(quad.prefix)
             # Check if at last step.
             if step_y == bounds_wgs84[3]:
                 break
@@ -93,6 +83,28 @@ def get_naip_tile(tilez, tilex, tiley):
         # Ensure there is no overstepping of the max bounds.
         step_x = min(step_x, bounds_wgs84[2])
 
+    red = numpy.zeros((256, 256), 'uint8')
+    green = numpy.zeros((256, 256), 'uint8')
+    blue = numpy.zeros((256, 256), 'uint8')
+    if source == NAIPQuadrangle.RGBIR:
+        ir = numpy.zeros((256, 256), 'uint8')
+
+    # The quad lookup might include some quads at the boundary twice at the
+    # moment. Make them unique by using set.
+    for prefix in set(quad_prefixes):
+        # Compute tile bounds and scale.
+        dtype, tile_data = get_tile('aws-naip/{}'.format(quad.prefix), bounds, scale)
+        red[red == 0] = tile_data[0]['data'][red == 0]
+        green[green == 0] = tile_data[1]['data'][green == 0]
+        blue[blue == 0] = tile_data[2]['data'][blue == 0]
+        # If IR band is present, add that one too.
+        if source == NAIPQuadrangle.RGBIR:
+            ir[ir == 0] = tile_data[3]['data'][ir == 0]
+
+    result = [{'data': red, 'nodata_value': None}, {'data': green, 'nodata_value': None}, {'data': blue, 'nodata_value': None}]
+    if source == NAIPQuadrangle.RGBIR:
+        result.append({'data': ir, 'nodata_value': None})
+
     return [
-        (dtype, ({'data': red, 'nodata_value': 0}, {'data': green, 'nodata_value': 0}, {'data': blue, 'nodata_value': 0}))
+        (dtype, result)
     ]
