@@ -3,7 +3,7 @@ import datetime
 from django.test import TestCase
 from naip.models import NAIPQuadrangle
 from naip.tasks import ingest_naip_prefix
-from naip.views import get_quadrangles_from_coords
+from naip.utils import get_quadrangles_from_coords
 
 
 class NAIPQuadrangleTests(TestCase):
