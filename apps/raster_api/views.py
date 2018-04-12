@@ -15,7 +15,7 @@ from rest_framework import renderers
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.pagination import PageNumberPagination
@@ -535,6 +535,9 @@ class LambdaView(AlgebraView, RasterAPIView):
 
         # Handle naip case.
         if 'naip' in self.kwargs and 'state' not in self.kwargs:
+            # Limit access to high zoom levels.
+            if tilez < 14:
+                raise NotFound('Zoom {} too low. NAIP endpoint is only accessible for zoom levels 14 and above.'.format(tilez))
             if 'formula' in self.request.GET:
                 source = NAIPQuadrangle.RGBIR
             else:
