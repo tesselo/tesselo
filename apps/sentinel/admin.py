@@ -11,6 +11,7 @@ from sentinel.models import (
 class BucketParseLogModelAdmin(admin.ModelAdmin):
     actions = ['parse_bucket', ]
     readonly_fields = ('utm_zone', 'start', 'end', 'log', )
+    list_filter = ('status', )
 
     def parse_bucket(self, request, queryset):
         """
