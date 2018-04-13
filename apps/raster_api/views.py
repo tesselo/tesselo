@@ -15,7 +15,7 @@ from rest_framework import renderers
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.pagination import PageNumberPagination
@@ -542,8 +542,10 @@ class LambdaView(AlgebraView, RasterAPIView):
                 source = NAIPQuadrangle.RGBIR
             else:
                 source = NAIPQuadrangle.RGB
-
-            tile_results = get_naip_tile(tilez, tilex, tiley, source)
+            year = self.kwargs.get('year', None)
+            tile_results = get_naip_tile(tilez, tilex, tiley, source, year)
+            if not tile_results:
+                return self.get_empty()
         else:
             # VSIS3 path
             vsis3path = self.get_vsi_path()

@@ -44,7 +44,7 @@ def get_quadrangles_from_coords(x, y):
     )
 
 
-def get_naip_tile(tilez, tilex, tiley, source):
+def get_naip_tile(tilez, tilex, tiley, source, year=None):
     """
     Construct a naip tile from tms indices.
     """
@@ -65,7 +65,11 @@ def get_naip_tile(tilez, tilex, tiley, source):
         step_y = bounds_wgs84[1]
         while step_y <= bounds_wgs84[3]:
             # Get quadrangle for this step.
-            quad = get_quadrangles_from_coords(step_x, step_y).filter(source=source).order_by('-date').first()
+            if year:
+                quad = get_quadrangles_from_coords(step_x, step_y).filter(source=source, date__year=year).first()
+            else:
+                quad = get_quadrangles_from_coords(step_x, step_y).filter(source=source).order_by('-date').first()
+            # Add quadrangle to candidates list.
             if quad:
                 quad_prefixes.append(quad.prefix)
             # Check if at last step.
@@ -83,6 +87,9 @@ def get_naip_tile(tilez, tilex, tiley, source):
         # Ensure there is no overstepping of the max bounds.
         step_x = min(step_x, bounds_wgs84[2])
 
+    # Return empty if not prefixes were found.
+    if not len(quad_prefixes):
+        return
     red = numpy.zeros((256, 256), 'uint8')
     green = numpy.zeros((256, 256), 'uint8')
     blue = numpy.zeros((256, 256), 'uint8')

@@ -68,6 +68,11 @@ router.register(
     LambdaView,
     base_name='naip_auto',
 )
+router.register(
+    r'(?P<naip>naip)/(?P<year>2011|2012|2013|2014|2015|2016)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    LambdaView,
+    base_name='naip_auto',
+)
 router.register(r'aggregationlayer', AggregationLayerViewSet)
 router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
