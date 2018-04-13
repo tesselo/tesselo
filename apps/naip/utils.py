@@ -79,17 +79,20 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
             step_y += 1 / NAIP_QUADRANGLE_SIZE
             # Ensure there is no overstepping of the max bounds.
             step_y = min(step_y, bounds_wgs84[3])
+            print(step_x, step_y)
         # Check if at last step.
         if step_x == bounds_wgs84[2]:
             break
         # Increase coodinates by one quadrangle width.
         step_x += 1 / NAIP_QUADRANGLE_SIZE
         # Ensure there is no overstepping of the max bounds.
-        step_x = min(step_x, bounds_wgs84[2])
+        step_x = min(abs(step_x), abs(bounds_wgs84[2]))
 
     # Return empty if not prefixes were found.
     if not len(quad_prefixes):
         return
+
+    # Prepare image data arrays.
     red = numpy.zeros((256, 256), 'uint8')
     green = numpy.zeros((256, 256), 'uint8')
     blue = numpy.zeros((256, 256), 'uint8')
