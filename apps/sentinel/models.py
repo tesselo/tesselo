@@ -202,7 +202,13 @@ class BucketParseLog(models.Model):
     status = models.CharField(max_length=20, choices=BUCKET_PARSE_STATUS_CHOICES)
 
     def __str__(self):
-        return 'Utm Zone {0}, Completed in {1}'.format(self.utm_zone, get_duration(self))
+        dat = 'Utm Zone {0} {1}'.format(self.utm_zone, self.status)
+        if self.status == self.FINISHED:
+            if self.end:
+                dat += ' (completed in {0})'.format(get_duration(self))
+            else:
+                dat += ' (no end time)'
+        return dat
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
