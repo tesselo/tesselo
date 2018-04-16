@@ -360,6 +360,9 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
     url with a username and password field. The tokens will be valid for 14
     days. Returns the token and its expiry date.
     """
+
+    authentication_classes = []
+
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data,
                                            context={'request': request})
