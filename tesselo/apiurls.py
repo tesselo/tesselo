@@ -1,6 +1,7 @@
 from rest_framework import routers
 
 from django.conf.urls import include, url
+from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaViewSet, WMTSLayerViewSet
 from formulary.wmts import WMTSAPIView
 from raster_api.views import (
@@ -86,7 +87,7 @@ router.register(r'wmtslayer', WMTSLayerViewSet, base_name='wmtslayer')
 
 
 apiurlpatterns = [
-    url(r'^api/token-auth/', ObtainExpiringAuthToken.as_view()),
+    url(r'^api/token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view())),
     url(r'^api/token-logout/', RemoveAuthToken.as_view()),
     url(r'^api/wmts/', WMTSAPIView.as_view()),
     url(r'^api/', include(router.urls)),
