@@ -79,7 +79,6 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
             step_y += 1 / NAIP_QUADRANGLE_SIZE
             # Ensure there is no overstepping of the max bounds.
             step_y = min(step_y, bounds_wgs84[3])
-            print(step_x, step_y)
         # Check if at last step.
         if step_x == bounds_wgs84[2]:
             break
