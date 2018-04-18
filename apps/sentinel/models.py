@@ -25,7 +25,7 @@ def get_duration(obj):
             else:
                 return '{0}'.format(obj.end - obj.start)
         elif obj.start:
-            return 'Running since {0}'.format(timezone.now() - obj.start)
+            return '{0}'.format(timezone.now() - obj.start)
         else:
             return 'Not started yet'
 
