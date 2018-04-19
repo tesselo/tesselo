@@ -111,80 +111,8 @@ def sync_sentinel_bucket_utm_zone(utm_zone):
             continue
 
         counter += 1
-
         try:
-            # Get tile info json data
-            tileinfo = client.get_object(Key=tileinfo_key, Bucket=const.BUCKET_NAME)
-            tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
-
-            # Get or create MGRS tile for this sentinel tile
-            mgrs, created = MGRSTile.objects.get_or_create(
-                grid_square=tileinfo['gridSquare'],
-                utm_zone=tileinfo['utmZone'],
-                latitude_band=tileinfo['latitudeBand'],
-            )
-
-            # For new MGRS tiles, set geometry from tile info
-            if created:
-                mgrs.geom = OGRGeometry(json.dumps(tileinfo['tileGeometry'])).geos
-                mgrs.save()
-
-            # Tile
-            if 'tileGeometry' in tileinfo:
-                tile_geom = OGRGeometry(str(tileinfo['tileGeometry'])).geos
-
-                if not isinstance(tile_geom, Polygon):
-                    tile_geom = Polygon(tile_geom, srid=tile_geom.srid)
-
-                # Set geom to none if tile data geom is not valid.
-                if not tile_geom.valid:
-                    log.write('Found invalid geom for {0}. Valid Reason: {1}'.format(
-                        tile_prefix,
-                        tile_geom.valid_reason,
-                    ))
-                    tile_geom = None
-            else:
-                tile_geom = None
-
-            # Get tile data geometry and make sure its a multi polygon.
-            if 'tileDataGeometry' in tileinfo:
-                tile_data_geom = OGRGeometry(str(tileinfo['tileDataGeometry'])).geos
-
-                if not isinstance(tile_data_geom, MultiPolygon):
-                    tile_data_geom = MultiPolygon(tile_data_geom, srid=tile_data_geom.srid)
-
-                # Set geom to none if tile data geom is not valid.
-                if not tile_data_geom.valid:
-                    log.write('Found invalid geom for {0}. Valid Reason: {1}'.format(
-                        tile_prefix,
-                        tile_data_geom.valid_reason,
-                    ))
-                    tile_data_geom = None
-            else:
-                tile_data_geom = None
-
-            # Assume data coverage is zero if info is not available.
-            data_coverage_percentage = tileinfo.get('dataCoveragePercentage', 0)
-
-            # Compute sun angle at center of tile.
-            cen = mgrs.geom.centroid.transform(4326, clone=True)
-            date = parser.parse(tileinfo['timestamp'])
-            alt, azim = sun(date.strftime('%y-%m-%d %H:%M:%S'), cen.y, cen.x)
-
-            # Register tile, log error if creation failed.
-            SentinelTile.objects.create(
-                prefix=tile_prefix,
-                datastrip=tileinfo['datastrip']['id'],
-                product_name=tileinfo['productName'],
-                mgrstile=mgrs,
-                tile_geom=tile_geom,
-                tile_data_geom=tile_data_geom,
-                collected=date,
-                cloudy_pixel_percentage=tileinfo['cloudyPixelPercentage'],
-                data_coverage_percentage=data_coverage_percentage,
-                angle_azimuth=azim,
-                angle_altitude=alt,
-            )
+            ingest_tile_from_prefix(tile_prefix, client)
             log.write('Registered ' + tile_prefix)
         except:
             log.write('Failed registering ' + tile_prefix + traceback.format_exc())
@@ -192,6 +120,81 @@ def sync_sentinel_bucket_utm_zone(utm_zone):
     # Log the end of the parsing process
     log.end = timezone.now()
     log.write('Finished parsing, {0} tiles created.'.format(counter), BucketParseLog.FINISHED)
+
+
+def ingest_tile_from_prefix(tile_prefix, client=None):
+    if not client:
+        # Initiate anonymous boto session.
+        session = boto3.session.Session()
+        config = Config(signature_version=botocore.UNSIGNED)
+        client = session.client(const.CLIENT_TYPE, config=config)
+
+    # Construct TileInfo file key.
+    tileinfo_key = tile_prefix + const.TILE_INFO_FILE
+
+    # Get tile info json data.
+    tileinfo = client.get_object(Key=tileinfo_key, Bucket=const.BUCKET_NAME)
+    tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
+
+    # Get or create MGRS tile for this sentinel tile.
+    mgrs, created = MGRSTile.objects.get_or_create(
+        grid_square=tileinfo['gridSquare'],
+        utm_zone=tileinfo['utmZone'],
+        latitude_band=tileinfo['latitudeBand'],
+    )
+
+    # For new MGRS tiles, set geometry from tile info.
+    if created:
+        mgrs.geom = OGRGeometry(json.dumps(tileinfo['tileGeometry'])).geos
+        mgrs.save()
+
+    if 'tileGeometry' in tileinfo:
+        tile_geom = OGRGeometry(str(tileinfo['tileGeometry'])).geos
+
+        if not isinstance(tile_geom, Polygon):
+            tile_geom = Polygon(tile_geom, srid=tile_geom.srid)
+
+        # Set geom to none if tile data geom is not valid.
+        if not tile_geom.valid:
+            tile_geom = None
+    else:
+        tile_geom = None
+
+    # Get tile data geometry and make sure its a multi polygon.
+    if 'tileDataGeometry' in tileinfo:
+        tile_data_geom = OGRGeometry(str(tileinfo['tileDataGeometry'])).geos
+
+        if not isinstance(tile_data_geom, MultiPolygon):
+            tile_data_geom = MultiPolygon(tile_data_geom, srid=tile_data_geom.srid)
+
+        # Set geom to none if tile data geom is not valid.
+        if not tile_data_geom.valid:
+            tile_data_geom = None
+    else:
+        tile_data_geom = None
+
+    # Assume data coverage is zero if info is not available.
+    data_coverage_percentage = tileinfo.get('dataCoveragePercentage', 0)
+
+    # Compute sun angle at center of tile.
+    cen = mgrs.geom.centroid.transform(4326, clone=True)
+    date = parser.parse(tileinfo['timestamp'])
+    alt, azim = sun(date.strftime('%y-%m-%d %H:%M:%S'), cen.y, cen.x)
+
+    # Register tile, log error if creation failed.
+    SentinelTile.objects.create(
+        prefix=tile_prefix,
+        datastrip=tileinfo['datastrip']['id'],
+        product_name=tileinfo['productName'],
+        mgrstile=mgrs,
+        tile_geom=tile_geom,
+        tile_data_geom=tile_data_geom,
+        collected=date,
+        cloudy_pixel_percentage=tileinfo['cloudyPixelPercentage'],
+        data_coverage_percentage=data_coverage_percentage,
+        angle_azimuth=azim,
+        angle_altitude=alt,
+    )
 
 
 def get_aggregation_area_scenes(aggregationarea_id):
