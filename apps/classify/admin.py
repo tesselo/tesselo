@@ -20,8 +20,7 @@ class TrainingSmapleForm(forms.ModelForm):
                 blue = self.instance.sentineltile.sentineltileband_set.get(band=const.BD2).layer_id
             else:
                 return
-
-            url = '/api/algebra/${z}/${x}/${y}.png?' + 'layers=r={red},g={green},b={blue}&scale=3e3'.format(
+            url = '/api/algebra/${z}/${x}/${y}.png?' + 'layers=r={red},g={green},b={blue}&scale=0,4e3&alpha&enhance_brightness=1.6&enhance_sharpness=1.2&enhance_color=1.2&enhance_contrast=1.1'.format(
                 red=red, green=green, blue=blue
             )
             self.fields['geom'].widget.params['tileurl'] = url
