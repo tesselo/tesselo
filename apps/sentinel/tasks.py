@@ -863,3 +863,25 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         # Composite build is complete, set status to "finished".
         compositebuild.status = CompositeBuild.FINISHED
         compositebuild.save()
+
+
+def process_sentinel_sns_message(event, context):
+    """
+    Ingest tile data based on notifications from SNS topic
+    arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product
+    """
+    message = json.loads(event['Records'][0]['Sns']['Message'])
+
+    for tile in message['tiles']:
+        # Get prefix for this tile.
+        tile_prefix = tile['path']
+
+        # Ensure prefix has trailing slash.
+        if not tile_prefix.endswith('/'):
+            tile_prefix += '/'
+
+        # Skip this tile if it's already registered.
+        if SentinelTile.objects.filter(prefix=tile_prefix).exists():
+            continue
+
+        ingest_tile_from_prefix(tile_prefix)

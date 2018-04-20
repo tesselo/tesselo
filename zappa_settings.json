@@ -17,7 +17,16 @@
         "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
         "domain": "dev.tesselo.com",
         "slim_handler": true,
-        "memory_size": 1024
+        "memory_size": 1024,
+        "events": [{
+            "function": "apps.sentinel.tasks.process_sentinel_sns_message",
+            "event_source": {
+                "arn":  "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
+                "events": [
+                    "sns:Publish",
+                ]
+            }
+        }],
     },
     "staging": {
       "extends": "dev",
