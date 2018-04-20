@@ -13,5 +13,5 @@ ADD . /code/
 # Build frontend.
 RUN r.js -o frontend/js/build.js
 
-# Make compress collect migrate script executable.
-RUN chmod +x /code/compress_collect_migrate.sh
+# Make collect and migrate script executable.
+RUN chmod +x /code/collect_migrate.sh

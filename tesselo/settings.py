@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     'django.contrib.gis',
 
     'storages',
-    'compressor',
     'django_cleanup',
     'rest_framework',
     'rest_framework.authtoken',
@@ -182,15 +181,14 @@ AWS_S3_URL_PROTOCOL = 'https'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'django.contrib.staticfiles.finders.FileSystemFinder',
-    'compressor.finders.CompressorFinder',
 )
 
 STATIC_ROOT = '/tmp/staticfiles'
 if DEBUG:
     STATIC_URL = '/static/'
 else:
-    # Storage class for static files and compressor.
-    STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootCachedS3Boto3Storage'
+    # Storage class for static files.
+    STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootS3Boto3Storage'
     # Get S3 bucket name.
     AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
     # Set the url to the bucket for serving files.
@@ -203,26 +201,6 @@ else:
     elif AWS_STORAGE_BUCKET_NAME_STATIC == 'static.tesselo.com':
         STATIC_URL = 'https://static.tesselo.com/'
         AWS_S3_CUSTOM_DOMAIN = 'static.tesselo.com'
-    # Define the storage class and url for compression.
-    COMPRESS_STORAGE = STATICFILES_STORAGE
-    COMPRESS_URL = STATIC_URL
-
-# Compressor settings
-COMPRESS_JS_FILTERS = [
-    'compressor.filters.jsmin.JSMinFilter',
-]
-
-COMPRESS_CSS_FILTERS = [
-    'compressor.filters.css_default.CssAbsoluteFilter',
-    'compressor.filters.cssmin.CSSMinFilter',
-]
-
-COMPRESS_PRECOMPILERS = (
-    ('text/scss', 'sass {infile} {outfile}'),
-    ('text/less', 'less {infile} > {outfile}'),
-)
-
-COMPRESS_OFFLINE = True
 
 # Storage settings
 if DEBUG:

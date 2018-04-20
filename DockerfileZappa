@@ -15,5 +15,5 @@ ADD tesselo /code/tesselo
 ADD manage.py /code/manage.py
 ADD zappa_settings.json /code/zappa_settings.json
 
-ADD compress_collect_migrate.sh /code/compress_collect_migrate.sh
-RUN chmod +x compress_collect_migrate.sh
+ADD collect_migrate.sh /code/collect_migrate.sh
+RUN chmod +x collect_migrate.sh
