@@ -53,7 +53,6 @@ class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
     permission_classes = (IsAuthenticated, RasterTilePermission, )
     renderer_classes = (BinaryRenderer, )
     pagination_class = None
-    queryset = RasterTile.objects.all()
 
     def dispatch(self, *args, **kwargs):
         response = super(RasterAPIView, self).dispatch(*args, **kwargs)
@@ -107,7 +106,7 @@ class PermissionsModelViewSet(ModelViewSet):
             # Filter queryset.
             qs = qs.filter(has_user_permission | has_group_permission | is_public_obj)
 
-        return qs.distinct().order_by('id')
+        return qs.distinct()
 
     def _assign_perms(self, obj, model=None):
         if not model:
