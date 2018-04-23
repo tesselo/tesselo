@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
-from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer, RasterTile
+from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_scale
 from raster.views import AlgebraView, ExportView, RasterView
