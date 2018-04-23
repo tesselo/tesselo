@@ -18,15 +18,27 @@
         "domain": "dev.tesselo.com",
         "slim_handler": true,
         "memory_size": 1024,
-        "events": [{
-            "function": "apps.sentinel.tasks.process_sentinel_sns_message",
-            "event_source": {
-                "arn":  "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
-                "events": [
-                    "sns:Publish",
-                ]
-            }
-        }],
+        "events": [
+            {
+                "function": "apps.sentinel.tasks.process_sentinel_sns_message",
+                "event_source": {
+                    "arn":  "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
+                    "events": [
+                        "sns:Publish",
+                    ]
+                }
+            },
+            {
+                "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
+                "event_source": {
+                    "arn":  "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
+                    "events": [
+                        "sns:Publish",
+                    ]
+                }
+            },
+
+        ],
     },
     "staging": {
       "extends": "dev",

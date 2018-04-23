@@ -71,6 +71,7 @@ INSTALLED_APPS = [
 
     'raster_api',
     'sentinel',
+    'sentinel_1',
     'classify',
     'formulary',
     'naip',
