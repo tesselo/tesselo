@@ -327,7 +327,7 @@ class CompositeViewSet(PermissionsModelViewSet):
     serializer_class = CompositeSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     filter_class = CompositeFilter
-    search_fields = ('name', 'description', )
+    search_fields = ('name', )
     pagination_class = LargeResultsSetPagination
 
     _model = 'composite'
