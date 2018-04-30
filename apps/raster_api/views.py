@@ -44,7 +44,7 @@ from raster_api.serializers import (
     LegendSerializer, RasterLayerSerializer, SentinelTileAggregationLayerSerializer, UserSerializer,
     ValueCountResultSerializer
 )
-from raster_api.tasks import compute_single_value_count_result
+from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer
 
@@ -306,7 +306,11 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
             raise DuplicateError()
 
         # Push value count task to queue.
-        compute_single_value_count_result(obj.id)
+        if 'synchronous' in self.request.GET:
+            compute_single_value_count_result(obj.id)
+            obj.refresh_from_db()
+        else:
+            compute_single_value_count_result_async(obj.id)
 
         # Manually assign permissions after object was created.
         self._assign_perms(serializer.instance)
