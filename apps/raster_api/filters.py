@@ -1,4 +1,4 @@
-from django_filters.rest_framework import FilterSet, NumberFilter
+from django_filters.rest_framework import DateFromToRangeFilter, FilterSet, NumberFilter
 
 from sentinel.models import Composite, SentinelTileAggregationLayer
 
@@ -6,10 +6,11 @@ from sentinel.models import Composite, SentinelTileAggregationLayer
 class CompositeFilter(FilterSet):
 
     year = NumberFilter(name='min_date', method='year_filter', label='Filter by year')
+    min_date = DateFromToRangeFilter()
 
     class Meta:
         model = Composite
-        fields = ('active', 'official', 'interval', 'year', )
+        fields = ('active', 'official', 'interval', 'year', 'min_date', )
 
     def year_filter(self, queryset, name, value):
         return queryset.filter(**{
