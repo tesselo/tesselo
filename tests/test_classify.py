@@ -6,6 +6,9 @@ from unittest import skip
 
 import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import LinearSVC
 from tests.mock_functions import (
     client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
 )
@@ -19,9 +22,6 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild, SentinelTile
 from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import LinearSVC
 
 
 @skip('The classifier needs to be updated to use ECS services instead of Celery.')

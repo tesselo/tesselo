@@ -2,10 +2,10 @@ import os
 import pickle
 from collections import OrderedDict
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import misc, signal
 
-import matplotlib.pyplot as plt
 import statsmodels
 import tesselate
 from django.contrib.gis.gdal import GDALRaster
