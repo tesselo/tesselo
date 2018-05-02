@@ -5,10 +5,10 @@ from django.contrib.gis import admin
 from sentinel import const
 
 
-class TrainingSmapleForm(forms.ModelForm):
+class TrainingSampleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
-        super(TrainingSmapleForm, self).__init__(*args, **kwargs)
+        super(TrainingSampleForm, self).__init__(*args, **kwargs)
         if hasattr(self, 'instance'):
             if self.instance.composite:
                 red = self.instance.composite.compositeband_set.get(band=const.BD4).rasterlayer_id
@@ -29,7 +29,7 @@ class TrainingSmapleForm(forms.ModelForm):
 class TrainingSampleAdmin(admin.OSMGeoAdmin):
     map_template = 'classify/osm.html'
     raw_id_fields = ('composite', 'sentineltile', )
-    form = TrainingSmapleForm
+    form = TrainingSampleForm
 
 
 class ClassifierAdmin(admin.ModelAdmin):
