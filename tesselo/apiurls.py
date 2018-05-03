@@ -1,6 +1,6 @@
 from rest_framework import routers
 
-from classify.views import ClassifierViewSet, TrainingSampleViewSet
+from classify.views import ClassifierViewSet, PredictedLayerViewSet, TrainingSampleViewSet
 from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaViewSet, WMTSLayerViewSet
@@ -88,6 +88,7 @@ router.register(r'wmtslayer', WMTSLayerViewSet, base_name='wmtslayer')
 
 router.register(r'trainingsample', TrainingSampleViewSet, base_name='trainingsample')
 router.register(r'classifier', ClassifierViewSet, base_name='classifier')
+router.register(r'predictedlayer', PredictedLayerViewSet, base_name='predictedlayer')
 
 
 apiurlpatterns = [
