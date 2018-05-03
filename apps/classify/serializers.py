@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
 
 from classify.models import Classifier, TrainingSample
 
@@ -11,6 +11,8 @@ class TrainingSampleSerializer(ModelSerializer):
 
 
 class ClassifierSerializer(ModelSerializer):
+
+    trainingsamples = PrimaryKeyRelatedField(queryset=TrainingSample.objects.all(), many=True, required=False)
 
     class Meta:
         model = Classifier
