@@ -4,7 +4,6 @@ import io
 import pickle
 
 import numpy
-from celery import task
 from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
@@ -51,7 +50,6 @@ def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     return numpy.array(result).T
 
 
-@task
 def train_sentinel_classifier(classifier_id):
     """
     Trains a classifier based on the registered tiles and sample data.
@@ -122,7 +120,6 @@ def train_sentinel_classifier(classifier_id):
     classifier.save()
 
 
-@task
 def predict_sentinel_layer(predicted_layer_id):
     """
     Use a classifier to predict data onto a rasterlayer. The PredictedLayer
@@ -145,11 +142,11 @@ def predict_sentinel_layer(predicted_layer_id):
         chunks.append(tile_index)
         counter += 1
         if counter % 50 == 0:
-            predict_sentinel_chunks.delay(pred.id, rasterlayer_lookup, chunks)
+            # TODO: Make this part asynchronous.
+            predict_sentinel_chunks(pred.id, rasterlayer_lookup, chunks)
             chunks = []
 
 
-@task
 def predict_sentinel_chunks(predicted_layer_id, rasterlayer_lookup, chunks):
     """
     Predict over a group of tiles.

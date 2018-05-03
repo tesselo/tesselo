@@ -1,8 +1,7 @@
 from classify.models import Classifier, PredictedLayer, TrainingSample
-from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from django import forms
 from django.contrib.gis import admin
-from sentinel import const
+from sentinel import const, ecs
 
 
 class TrainingSampleForm(forms.ModelForm):
@@ -41,7 +40,7 @@ class ClassifierAdmin(admin.ModelAdmin):
         Admin action to train classifiers.
         """
         for clf in queryset:
-            train_sentinel_classifier.delay(clf.id)
+            ecs.train_sentinel_classifier(clf.id)
         self.message_user(request, 'Started training classifiers.')
 
 
@@ -51,7 +50,7 @@ class PredictedLayerAdmin(admin.ModelAdmin):
 
     def predict_layer(self, request, queryset):
         for pred in queryset:
-            predict_sentinel_layer.delay(pred.id)
+            ecs.predict_sentinel_layer(pred.id)
         self.message_user(request, 'Started predicting layer.')
 
 

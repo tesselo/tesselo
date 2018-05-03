@@ -89,11 +89,11 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo
 
 
 def sync_sentinel_bucket_utm_zone(utm_zone):
-    return run_ecs_command(['sync_sentinel_bucket_utm_zone', utm_zone], memory=1024)
+    return run_ecs_command(['sync_sentinel_bucket_utm_zone', utm_zone])
 
 
 def drive_sentinel_bucket_parser():
-    return run_ecs_command(['drive_sentinel_bucket_parser', ], memory=1024)
+    return run_ecs_command(['drive_sentinel_bucket_parser', ])
 
 
 def process_l2a(scene_id):
@@ -106,3 +106,11 @@ def process_compositetile(compositetile_id):
 
 def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
     return run_ecs_command(['composite_build_callback', compositebuild_id, initiate, rebuild])
+
+
+def train_sentinel_classifier(classifier_id):
+    return run_ecs_command(['train_sentinel_classifier', classifier_id])
+
+
+def predict_sentinel_layer(predicted_layer_id):
+    return run_ecs_command(['predict_sentinel_layer', predicted_layer_id])
