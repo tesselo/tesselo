@@ -24,7 +24,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from django.contrib.auth.models import Group, User
 from django.contrib.gis.gdal import GDALRaster
@@ -47,6 +47,20 @@ from raster_api.serializers import (
 from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer
+
+
+class UserViewSet(ReadOnlyModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    filter_backends = (SearchFilter, )
+    search_fields = ('username', )
+
+
+class GroupViewSet(ReadOnlyModelViewSet):
+    serializer_class = GroupSerializer
+    queryset = Group.objects.all()
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', )
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):

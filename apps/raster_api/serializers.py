@@ -10,7 +10,7 @@ from raster_aggregation.models import AggregationLayer
 from raster_aggregation.serializers import AggregationLayerSerializer as AggregationLayerSerializerOriginal
 from raster_aggregation.serializers import ValueCountResultSerializer as ValueCountResultSerializerOriginal
 from rest_framework.serializers import (
-    CharField, FileField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
+    CharField, FileField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField,
 )
 
 from django.contrib.auth.models import Group, User
