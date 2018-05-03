@@ -1,6 +1,7 @@
 from classify.models import Classifier, TrainingSample
 from classify.serializers import ClassifierSerializer, TrainingSampleSerializer
 from raster_api.views import PermissionsModelViewSet
+from rest_framework.filters import SearchFilter
 
 
 class TrainingSampleViewSet(PermissionsModelViewSet):
@@ -16,6 +17,8 @@ class TrainingSampleViewSet(PermissionsModelViewSet):
 class ClassifierViewSet(PermissionsModelViewSet):
 
     serializer_class = ClassifierSerializer
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', 'algorithm', )
 
     _model = 'classifier'
 
