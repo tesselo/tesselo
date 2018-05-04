@@ -4,7 +4,6 @@ import io
 import pickle
 
 import numpy
-from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
@@ -36,12 +35,6 @@ def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     result = []
     for band in BAND_NAMES:
         layer_id = rasterlayer_lookup.get(band)
-        tile = RasterTile.objects.filter(
-            tilex=tilex,
-            tiley=tiley,
-            tilez=tilez,
-            rasterlayer_id=layer_id,
-        )
         tile = get_raster_tile(layer_id, tilez=tilez, tilex=tilex, tiley=tiley)
         if not tile:
             return
@@ -109,7 +102,7 @@ def train_sentinel_classifier(classifier_id):
                 X = numpy.vstack([data, X])
 
     # Instanciate and fit the classifier.
-    clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]()
+    clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]
     clf_mod = importlib.import_module('sklearn.' + clf_mod)
     clf = getattr(clf_mod, clf_class)()
     clf.fit(X, Y)

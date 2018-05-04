@@ -50,14 +50,13 @@ def get_composite_tile_indices(composite, zoom=const.ZOOM_LEVEL_WORLDLAYER):
     indexranges = set()
     # Loop through all aggregationareas in aggregationlayers.
     for ctile in composite.compositetile_set.all():
-        for aggarea in ctile.aggregationlayer.aggregationarea_set.all():
-            # Get index range from aggregationarea.
-            geom = aggarea.geom.transform(WEB_MERCATOR_SRID, clone=True)
-            indexrange = tile_index_range(geom.extent, zoom, tolerance=1e-3)
-            # Add additional tiles to set.
-            for tilex in range(indexrange[0], indexrange[2] + 1):
-                for tiley in range(indexrange[1], indexrange[3] + 1):
-                    indexranges.add((tilex, tiley, zoom))
+        # Get index range from sentinel tile index.
+        extent = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
+        indexrange = tile_index_range(extent, zoom, tolerance=1e-3)
+        # Add additional tiles to set.
+        for tilex in range(indexrange[0], indexrange[2] + 1):
+            for tiley in range(indexrange[1], indexrange[3] + 1):
+                indexranges.add((tilex, tiley, zoom))
 
     for combo in indexranges:
         yield combo

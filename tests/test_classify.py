@@ -24,7 +24,6 @@ from sentinel.models import Composite, CompositeBuild, SentinelTile
 from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
 
 
-@skip('The classifier needs to be updated to use ECS services instead of Celery.')
 @mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
@@ -69,19 +68,19 @@ class SentinelClassifierTest(TestCase):
         self.clf.trainingsamples.add(self.shadow)
         self.clf.trainingsamples.add(self.cloudfree)
 
+    def tearDown(self):
+        shutil.rmtree(settings.MEDIA_ROOT)
+
     def _get_data(self):
         sync_sentinel_bucket_utm_zone(1)
         composite_build_callback(self.build.id, initiate=True, rebuild=True)
-        tile = SentinelTile.objects.first()
-        self.cloud.sentineltile = tile
+        composite_build_callback(self.build.id, initiate=False)
+        self.cloud.composite = self.composite
         self.cloud.save()
-        self.shadow.sentineltile = tile
+        self.shadow.composite = self.composite
         self.shadow.save()
-        self.cloudfree.sentineltile = tile
+        self.cloudfree.composite = self.composite
         self.cloudfree.save()
-
-    def tearDown(self):
-        shutil.rmtree(settings.MEDIA_ROOT)
 
     def test_classifier_training(self):
         self._get_data()
@@ -109,6 +108,7 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(isinstance(self.clf.clf, MLPClassifier))
         cache.clear()
 
+    @skip('This test setup does not populate the sentineltiles yet.')
     def test_classifier_prediction_sentineltile(self):
         self._get_data()
         pred = PredictedLayer.objects.create(
@@ -135,6 +135,7 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
         cache.clear()
 
+    @skip('Cloud view is outdated.')
     def test_cloud_view(self):
         self._get_data()
         scene = SentinelTile.objects.filter(sentineltileband__isnull=False).first()
