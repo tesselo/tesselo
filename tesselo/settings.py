@@ -184,14 +184,16 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
 )
 
+# Get S3 bucket name.
+AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
+# Set static root.
 STATIC_ROOT = '/tmp/staticfiles'
-if DEBUG:
+# Set static url.
+if DEBUG or not AWS_STORAGE_BUCKET_NAME_STATIC:
     STATIC_URL = '/static/'
 else:
     # Storage class for static files.
     STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootS3Boto3Storage'
-    # Get S3 bucket name.
-    AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
     # Set the url to the bucket for serving files.
     if AWS_STORAGE_BUCKET_NAME_STATIC == 'dev.static.tesselo.com':
         STATIC_URL = 'https://devstatic.tesselo.com/'
@@ -230,6 +232,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend', ),
 }
+
 
 # Celery settings.
 if DEBUG:
