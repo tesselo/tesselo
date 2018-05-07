@@ -233,14 +233,7 @@ REST_FRAMEWORK = {
 
 
 # Celery settings.
-if DEBUG:
-    CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-else:
-    CELERY_BROKER_URL = 'redis://tesselo-redis-broker.xu1tb1.0001.euc1.cache.amazonaws.com:6379'
-    CELERY_BROKER_TRANSPORT_OPTIONS = {
-        'visibility_timeout': 2 * 60 * 60,  # 2 hours.
-        'queue_name_prefix': 'tesselo-',
-    }
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
