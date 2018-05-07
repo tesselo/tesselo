@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 from django.contrib.gis.db import models

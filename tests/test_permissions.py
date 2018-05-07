@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 
 from guardian.shortcuts import assign_perm

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import Legend, LegendSemantics, RasterLayer
 from raster_aggregation.models import AggregationLayer, ValueCountResult

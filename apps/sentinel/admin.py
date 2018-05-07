@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.gis import admin
 from sentinel import ecs
 from sentinel.models import (

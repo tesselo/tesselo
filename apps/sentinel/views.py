@@ -10,10 +10,11 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from raster_api.views import PermissionsModelViewSet
 from sentinel.clouds.tables import clouds
 from sentinel.filters import SentinelTileFilter
-from sentinel.models import SentinelTile
-from sentinel.serializers import SentinelTileSerializer
+from sentinel.models import CompositeBuild, SentinelTile
+from sentinel.serializers import CompositeBuildSerializer, SentinelTileSerializer
 
 
 class SentinelTilePageNumberPagination(PageNumberPagination):
@@ -72,3 +73,13 @@ class CloudView(RasterView):
         img = Image.fromarray(rgba.astype('uint8'))
 
         return self.write_img_to_response(img, {})
+
+
+class CompositeBuildViewSet(PermissionsModelViewSet):
+
+    serializer_class = CompositeBuildSerializer
+
+    _model = 'compositebuild'
+
+    def get_queryset(self):
+        return CompositeBuild.objects.all().order_by('id')
