@@ -62,8 +62,6 @@ INSTALLED_APPS = [
     'django_filters',
     'guardian',
     'django_extensions',
-    'django_celery_results',
-    'django_celery_beat',
     'corsheaders',
 
     'raster',
