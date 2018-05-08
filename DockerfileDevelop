@@ -1,0 +1,6 @@
+FROM tesselo-worker
+
+# Install the dev dependencies
+ADD requirements/develop.txt /code/requirements_develop.txt
+RUN source /var/venv/bin/activate && \
+  pip install -r /code/requirements_develop.txt
