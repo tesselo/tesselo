@@ -249,7 +249,7 @@ class PermissionsTests(TestCase):
             response = self.client.post(url)
             # Invite User
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertTrue(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
             # Exclude User
             url = reverse(
@@ -257,7 +257,7 @@ class PermissionsTests(TestCase):
                 kwargs={'pk': self.legend_michael.id, 'action': 'exclude', 'model': 'user', 'permission': perm, 'invitee': self.lucille.id},
             )
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertFalse(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
 
             # Check permissions manage endpoint for groups.
@@ -267,7 +267,7 @@ class PermissionsTests(TestCase):
                 kwargs={'pk': self.legend_michael.id, 'action': 'invite', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
             )
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertTrue(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
             # Exclude group
             url = reverse(
@@ -275,7 +275,7 @@ class PermissionsTests(TestCase):
                 kwargs={'pk': self.legend_michael.id, 'action': 'exclude', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
             )
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertFalse(self.lucille.has_perm('{0}_legend'.format(perm), self.legend_michael))
 
     def test_legend_toggle_public(self):
@@ -289,13 +289,14 @@ class PermissionsTests(TestCase):
         # Michael can publish his legend after getting permission.
         assign_perm('delete_legend', self.michael, self.legend_michael)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.legend_michael.publiclegend.refresh_from_db()
         self.assertTrue(self.legend_michael.publiclegend.public)
+        self.assertEqual(response.data['success'], 'Made legend {} public'.format(self.legend_michael.id))
 
         # Michael can unpublish his legend after getting permission.
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.legend_michael.publiclegend.refresh_from_db()
         self.assertFalse(self.legend_michael.publiclegend.public)
 
@@ -353,7 +354,7 @@ class PermissionsTests(TestCase):
             response = self.client.post(url)
             # Invite User
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertTrue(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertTrue(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
             # Exclude User
@@ -362,7 +363,7 @@ class PermissionsTests(TestCase):
                 kwargs={'pk': self.world.id, 'action': 'exclude', 'model': 'user', 'permission': perm, 'invitee': self.lucille.id},
             )
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertFalse(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertFalse(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
 
@@ -373,7 +374,7 @@ class PermissionsTests(TestCase):
                 kwargs={'pk': self.world.id, 'action': 'invite', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
             )
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertTrue(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertTrue(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
             # Exclude group
@@ -382,6 +383,6 @@ class PermissionsTests(TestCase):
                 kwargs={'pk': self.world.id, 'action': 'exclude', 'model': 'group', 'permission': perm, 'invitee': self.group.id},
             )
             response = self.client.post(url)
-            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertFalse(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertFalse(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
