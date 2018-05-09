@@ -3,15 +3,19 @@ from django_filters.rest_framework import DjangoFilterBackend
 from PIL import Image
 from raster.tiles.lookup import get_raster_tile
 from raster.views import RasterView
+from rest_framework.decorators import detail_route
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from raster_api.permissions import DependentObjectPermission
+from raster_api.permissions import ChangePermissionObjectPermission, DependentObjectPermission
 from raster_api.views import PermissionsModelViewSet
+from sentinel import ecs
 from sentinel.clouds.tables import clouds
 from sentinel.filters import SentinelTileFilter
 from sentinel.models import CompositeBuild, CompositeTile, SentinelTile
@@ -85,9 +89,42 @@ class CompositeBuildViewSet(PermissionsModelViewSet):
     def get_queryset(self):
         return CompositeBuild.objects.all().order_by('id')
 
+    @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def build(self, request, pk):
+        """
+        Schedule a composite build task to build this composite.
+        """
+        # Get composite build object.
+        cbuild = self.get_object()
+        if cbuild.status in (CompositeBuild.PENDING, CompositeBuild.INGESTING_SCENES, CompositeBuild.BUILDING_TILES):
+            return Response(
+                {'error': 'Composite Build is already in process. Wait until build finishes before triggering a new build.'},
+                status=HTTP_400_BAD_REQUEST,
+            )
+        # Trigger build.
+        cbuild.status = CompositeBuild.PENDING
+        cbuild.save()
+        ecs.composite_build_callback(cbuild.id, initiate=True, rebuild=True)
+
+        return Response({'success': 'Triggered Composite Build {}'.format(cbuild.id)})
+
 
 class CompositeTileViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated, DependentObjectPermission)
     queryset = CompositeTile.objects.all().order_by('id')
     serializer_class = CompositeTileSerializer
     _parent_model = 'composite'
+
+    @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def build(self, request, pk):
+        """
+        Manually force a new composite tile build. Should only be necessary in
+        special cases. Normally this happens automatically through the composite
+        build object.
+        """
+        ctile = self.get_object()
+        ctile.status = CompositeTile.PENDING
+        ctile.save()
+        ecs.process_compositetile(ctile.id)
+
+        return Response({'success': 'Triggered Composite Tile Build {}'.format(ctile.id)})

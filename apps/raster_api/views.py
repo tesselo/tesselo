@@ -20,7 +20,6 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
-from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
@@ -160,7 +159,7 @@ class PermissionsModelViewSet(ModelViewSet):
             for wlayer in obj.compositeband_set.all():
                 funk('{perm}_rasterlayer'.format(perm=permission), invitee, wlayer.rasterlayer)
 
-        return Response(status=HTTP_204_NO_CONTENT)
+        return Response('{}d {} {} to {} {} {}'.format(action, model, invitee.id, permission, self._model, obj.id))
 
     @detail_route(methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def publish(self, request, pk=None):
@@ -178,7 +177,7 @@ class PermissionsModelViewSet(ModelViewSet):
                 child = wlayer.rasterlayer.publicrasterlayer
                 child.public = not child.public
                 child.save()
-        return Response(status=HTTP_204_NO_CONTENT)
+        return Response('Made {} {} {}'.format(self._model, obj.id, 'public' if obj.public else 'private'))
 
     @detail_route(methods=['get'])
     def groups(self, request, pk=None):
