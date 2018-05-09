@@ -167,9 +167,9 @@ class PermissionsModelViewSet(ModelViewSet):
         Publish this object.
         """
         obj = self.get_object()
-        child = getattr(obj, 'public{0}'.format(self._model.lower()))
-        child.public = not child.public
-        child.save()
+        public_obj = getattr(obj, 'public{0}'.format(self._model.lower()))
+        public_obj.public = not public_obj.public
+        public_obj.save()
 
         # Handle compositeband case.
         if self._model == 'composite':
@@ -177,7 +177,7 @@ class PermissionsModelViewSet(ModelViewSet):
                 child = wlayer.rasterlayer.publicrasterlayer
                 child.public = not child.public
                 child.save()
-        return Response('Made {} {} {}'.format(self._model, obj.id, 'public' if obj.public else 'private'))
+        return Response({'success': 'Made {} {} {}'.format(self._model, obj.id, 'public' if public_obj.public else 'private')})
 
     @detail_route(methods=['get'])
     def groups(self, request, pk=None):
