@@ -33,8 +33,8 @@ from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
-    AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterObjectPermission,
-    RasterTilePermission, ValueCountResultCreatePermission
+    AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterTilePermission,
+    TesseloObjectPermission, ValueCountResultCreatePermission
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
@@ -91,7 +91,7 @@ class ExportAPIView(ExportView, RasterAPIView):
 
 class PermissionsModelViewSet(ModelViewSet):
 
-    permission_classes = (IsAuthenticated, RasterObjectPermission)
+    permission_classes = (IsAuthenticated, TesseloObjectPermission)
 
     def get_queryset(self):
         """
@@ -274,7 +274,7 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
 
     permission_classes = (
         IsAuthenticated,
-        RasterObjectPermission,
+        TesseloObjectPermission,
         ValueCountResultCreatePermission,
     )
     queryset = ValueCountResult.objects.all().order_by('id')

@@ -11,7 +11,7 @@ from raster_api.views import (
     LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet, RemoveAuthToken, SentinelTileAggregationLayerViewSet,
     UserViewSet, ValueCountResultViewSet
 )
-from sentinel.views import CompositeBuildViewSet, SentinelTileViewSet
+from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
 
 router = routers.DefaultRouter(trailing_slash=False)
 
@@ -80,6 +80,7 @@ router.register(r'aggregationarea', AggregationAreaViewSet)
 router.register(r'valuecountresult', ValueCountResultViewSet)
 
 router.register(r'composite', CompositeViewSet, base_name='composite')
+router.register(r'compositetile', CompositeTileViewSet, base_name='compositetile')
 router.register(r'compositebuild', CompositeBuildViewSet, base_name='compositebuild')
 router.register(r'sentineltileaggregationlayer', SentinelTileAggregationLayerViewSet, base_name='sentineltileaggregationlayer')
 router.register(r'sentineltile', SentinelTileViewSet, base_name='sentineltile')

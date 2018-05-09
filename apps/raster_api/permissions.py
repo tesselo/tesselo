@@ -55,7 +55,7 @@ class ValueCountResultCreatePermission(permissions.BasePermission):
         return view_all_rasters and view_agg
 
 
-class RasterObjectPermission(permissions.DjangoObjectPermissions):
+class TesseloObjectPermission(permissions.DjangoObjectPermissions):
     """
     Check if a user can see a raster layer.
     """
@@ -82,7 +82,7 @@ class RasterObjectPermission(permissions.DjangoObjectPermissions):
         # For public rasters, dont require object permissions.
         if self._public and method in permissions.SAFE_METHODS:
             return []
-        return super(RasterObjectPermission, self).get_required_object_permissions(method, model_cls)
+        return super().get_required_object_permissions(method, model_cls)
 
     def has_object_permission(self, request, view, obj):
         """
@@ -90,7 +90,7 @@ class RasterObjectPermission(permissions.DjangoObjectPermissions):
         """
         # Set public raster flag for object permission checking.
         self._public = hasattr(obj, 'public{0}'.format(view._model)) and getattr(obj, 'public{0}'.format(view._model)).public
-        return super(RasterObjectPermission, self).has_object_permission(request, view, obj)
+        return super().has_object_permission(request, view, obj)
 
 
 class ChangePermissionObjectPermission(permissions.DjangoObjectPermissions):
