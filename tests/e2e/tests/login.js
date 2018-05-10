@@ -1,6 +1,8 @@
+const setup = require('../setup')
+
 casper.test.begin('Tesselo login form works (currently mainly disabled)', 1, function suite(test) {
 
-    casper.start("https://staging.tesselo.com/app/login", function() {
+    casper.start(setup.get_base_url(casper) + "app/login", function() {
       // this.sendKeys('input[name="username"]', "lucille@bluth.com", {keepFocus: true})
       // this.sendKeys('input[name="password"]', "iloveshawnparmegian23", {keepFocus: true})
       // this.sendKeys('input[name="password"]', casper.page.event.key.Enter, {keepFocus: true});
