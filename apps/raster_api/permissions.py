@@ -1,3 +1,5 @@
+import json
+
 from raster.models import RasterLayer
 from raster_aggregation.exceptions import MissingQueryParameter
 from raster_aggregation.models import AggregationLayer
@@ -25,34 +27,51 @@ class RasterTilePermission(permissions.BasePermission):
         return all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
 
 
-class ValueCountResultCreatePermission(permissions.BasePermission):
+class ValueCountResultPermission(permissions.DjangoObjectPermissions):
     """
-    Checks if a user can create a value count result object.
+    Check if a user can request a value count result object.
 
-    This permission only checks layer and aggregation area dependencies
-    upon create (POST). All other cases are handled by the objec level
-    permissions.
+    This permission checks rasterlayer and aggregation area dependencies.
 
-    The rationale for this is that the dependent objects are only needed
-    on creation. The results are owned by the creator even if the layers
-    or aggregation area permissions are unset.
+    The rationale for this is that a user can only see or create value counts as
+    long as he or she has access to the underlying data.
     """
-    def has_permission(self, request, view):
-        # This check is for creation only.
-        if request.method != 'POST':
-            return True
-        # The user can view all raster layers.
-        # qs = RasterLayer.objects.filter(id__in=view.get_ids().values()).only('id').distinct()
-        # view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
-        view_all_rasters = True
+    def _check(self, request, raster_ids, aggarea_id):
+        # List all private raster layers from the request.
+        qs = RasterLayer.objects.filter(
+            id__in=raster_ids,
+            publicrasterlayer__public=False
+        ).only('id').distinct()
+
+        # Check permissions on raster layers.
+        view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
+
         # Check for permission on aggregation area through aggregationlayer.
-        aggarea_id = view.request.data.get('aggregationarea', None)
-        # If not aggarea was provided, grant access (aggregation package will raise error later).
-        if aggarea_id is None:
-            return True
         agglyr = AggregationLayer.objects.get(aggregationarea=aggarea_id)
         view_agg = request.user.has_perm('view_aggregationlayer', agglyr)
+
         return view_all_rasters and view_agg
+
+    def has_object_permission(self, request, view, obj):
+        return self._check(request, obj.layer_names.values(), obj.aggregationarea.id)
+
+    def has_permission(self, request, view):
+        # Handle create case.
+        if request.method == 'POST':
+            return self._check(
+                request,
+                request.data.get('layer_names', {}).values(),
+                request.data.get('aggregationarea', None),
+            )
+        # Handle list case.
+        elif request.method == 'GET' and 'pk' not in view.kwargs:
+            raster_ids = json.loads(request.GET.get('layer_names', '{}')).values()
+            aggarea_id = request.GET.get('aggregationarea', None)
+            if not raster_ids or not aggarea_id:
+                raise MissingQueryParameter(detail='Missing query parameter: layer_names and aggregationarea are required.')
+            return self._check(request, raster_ids, aggarea_id)
+        else:
+            return True
 
 
 class TesseloObjectPermission(permissions.DjangoObjectPermissions):

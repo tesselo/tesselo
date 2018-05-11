@@ -33,7 +33,7 @@ from naip.utils import get_naip_tile
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterTilePermission,
-    TesseloObjectPermission, ValueCountResultCreatePermission
+    TesseloObjectPermission, ValueCountResultPermission
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
@@ -269,17 +269,11 @@ class AggregationAreaViewSet(ModelViewSet):
     _parent_model = 'aggregationlayer'
 
 
-class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewSet):
+class ValueCountResultViewSet(ValueCountResultViewSetOrig):
 
-    permission_classes = (
-        IsAuthenticated,
-        TesseloObjectPermission,
-        ValueCountResultCreatePermission,
-    )
+    permission_classes = (IsAuthenticated, ValueCountResultPermission, )
     queryset = ValueCountResult.objects.all().order_by('id')
     serializer_class = ValueCountResultSerializer
-
-    _model = 'valuecountresult'
 
     def perform_create(self, serializer):
         """
@@ -322,9 +316,6 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig, PermissionsModelViewS
             obj.refresh_from_db()
         else:
             compute_single_value_count_result_async(obj.id)
-
-        # Manually assign permissions after object was created.
-        self._assign_perms(serializer.instance)
 
     def get_ids(self):
         return self.request.data.get('layer_names', {})

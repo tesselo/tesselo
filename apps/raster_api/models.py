@@ -1,6 +1,6 @@
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import Legend, LegendSemantics, RasterLayer
-from raster_aggregation.models import AggregationLayer, ValueCountResult
+from raster_aggregation.models import AggregationLayer
 
 from django.db import models
 from django.db.models.signals import post_save
@@ -134,38 +134,6 @@ def create_aggregationlayer_public_object(sender, instance, created, **kwargs):
     """
     if created:
         PublicAggregationLayer.objects.create(aggregationlayer=instance)
-
-
-class ValueCountResultUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(ValueCountResult, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
-
-
-class ValueCountResultGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(ValueCountResult, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
-
-
-class PublicValueCountResult(models.Model):
-
-    valuecountresult = models.OneToOneField(ValueCountResult, on_delete=models.CASCADE)
-    public = models.BooleanField(default=False)
-
-    def __str__(self):
-        return '{0} | {1}'.format(self.valuecountresult, 'public' if self.public else 'private')
-
-
-@receiver(post_save, sender=ValueCountResult, weak=False, dispatch_uid="create_valuecountresult_public_object")
-def create_valuecountresult_public_object(sender, instance, created, **kwargs):
-    """
-    Automatically create the public valuecountresult object.
-    """
-    if created:
-        PublicValueCountResult.objects.create(valuecountresult=instance)
 
 
 class CompositeUserObjectPermission(UserObjectPermissionBase):

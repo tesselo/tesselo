@@ -1,4 +1,6 @@
+import copy
 import json
+from urllib.parse import urlencode
 
 from guardian.shortcuts import assign_perm
 from raster.models import RasterLayer
@@ -59,7 +61,7 @@ class SentinelViewsTests(TestCase):
         self.assertEqual(result['count'], 0)
 
     def test_create_valuecountresult(self):
-        # Create a composite.
+        # Create necessary objects for valuecount.
         url = reverse('composite-list')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         agglyr = AggregationLayer.objects.create(name='test')
@@ -70,10 +72,13 @@ class SentinelViewsTests(TestCase):
             geom='SRID=4326;MULTIPOLYGON(((0 0, 0 0.00001, 0.00001 0.00001, 0.00001 0, 0 0)))'
         )
         rst = RasterLayer.objects.first()
+        rst.publicrasterlayer.public = False
+        rst.publicrasterlayer.save()
+        # Create value count object.
         url = reverse('valuecountresult-list')
         dat = {
             'formula': 'x',
-            'layer_names': {'x': RasterLayer.objects.first().id},
+            'layer_names': {'x': rst.id},
             'zoom': 5,
             'grouping': 'auto',
             'aggregationarea': agg.id,
@@ -84,6 +89,23 @@ class SentinelViewsTests(TestCase):
         self.assertEqual(result['rasterlayers'], [rst.id])
         self.assertEqual(result['formula'], 'x')
         self.assertEqual(result['status'], 'Scheduled')
+        valuecount_id = result['id']
+
+        # Construct get url with query paramerers.
+        dat_get = copy.deepcopy(dat)
+        dat_get['layer_names'] = json.dumps(dat_get['layer_names'])
+        dat_get = urlencode(dat_get)
+        url_get = url + '?' + dat_get
+
+        # Try to get object.
+        response = self.client.get(url_get)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['count'], 1)
+        self.assertEqual(response.json()['results'][0]['id'], valuecount_id)
+        # Try with pk.
+        response = self.client.get(url + '/{}'.format(valuecount_id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['id'], valuecount_id)
 
         # Lucille can not see the result.
         lucille = User.objects.create_user(
@@ -92,23 +114,28 @@ class SentinelViewsTests(TestCase):
             password='bananastand'
         )
         self.client.login(username='lucille', password='bananastand')
-        url = reverse('valuecountresult-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        result = json.loads(response.content.decode())
-        self.assertEqual(result['count'], 0)
+
+        # Try to get object.
+        response = self.client.get(url_get)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Try with pk.
+        response = self.client.get(url + '/{}'.format(valuecount_id))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Try deleting.
+        response = self.client.delete(url + '/{}'.format(valuecount_id))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Michael can delete object.
+        self.client.login(username='michael', password='bananastand')
+        response = self.client.delete(url + '/{}'.format(valuecount_id))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(ValueCountResult.objects.all().count(), 0)
+        response = self.client.delete(url + '/{}'.format(valuecount_id))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # Lucille can not request creating the valuecount result
         # because she does not own the rasterlayers.
-        ValueCountResult.objects.all().delete()
-        url = reverse('valuecountresult-list')
-        dat = {
-            'formula': 'x',
-            'layer_names': {'x': rst.id},
-            'zoom': 5,
-            'grouping': 'auto',
-            'aggregationarea': agg.id,
-        }
+        self.client.login(username='lucille', password='bananastand')
         response = self.client.post(url, json.dumps(dat), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
