@@ -3,13 +3,16 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo Installing postgis for local testing...
       - apt-get update
+      - curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+      - apt-get install -y nodejs
+      - npm install -g casperjs phantomjs@1.9.20
+      - echo Installing postgis for local testing...
       - apt-get install -y software-properties-common
       - add-apt-repository -y ppa:ubuntugis
       - apt-get update
       - apt-get -y upgrade
-      - apt-get install -y postgresql-9.3-postgis-2.2 npm
+      - apt-get install -y postgresql-9.3-postgis-2.2
       - sed -i s/peer/trust/g /etc/postgresql/9.3/main/pg_hba.conf
       - sed -i s/md5/trust/g /etc/postgresql/9.3/main/pg_hba.conf
       - cat /etc/postgresql/9.3/main/pg_hba.conf
@@ -17,6 +20,7 @@ phases:
 
   build:
     commands:
+      # - casperjs test --stage=$STAGE tests/e2e/tests
       - echo Getting the Vue App Index file...
       - aws s3 cp s3://$BUCKET/index.html tesselo/templates/app.html
       - echo Building the Zappa deploy image...
@@ -31,8 +35,6 @@ phases:
       - docker run --rm -v $PWD/frontend:/code/frontend --env ZAPPA=True --env AWS_ACCESS_KEY_ID_ZAP=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY_ZAP=$AWS_SECRET_ACCESS_KEY --env DB_USER=$DB_USER --env DB_PASSWORD=$DB_PASSWORD --env DB_HOST=$DB_HOST --env DB_NAME=$DB_NAME --env AWS_STORAGE_BUCKET_NAME_STATIC=$AWS_STORAGE_BUCKET_NAME_STATIC --env AWS_STORAGE_BUCKET_NAME_MEDIA=$AWS_STORAGE_BUCKET_NAME_MEDIA tesselo-zappa /code/collect_migrate.sh
       - echo Deploying App to Lambda Stage $STAGE
       - docker run --rm --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY --env AWS_STORAGE_BUCKET_NAME_STATIC=$BUCKET tesselo-zappa zappa update $STAGE
-      - if [ "$STAGE" = "dev" ]; then npm install phantomjs casperjs; fi
-      - if [ "$STAGE" = "dev" ]; then casperjs test tests/e2e/tests; fi
       - echo Logging in to Amazon ECR on eu-west-1...
       - $(aws ecr get-login --region eu-west-1 --no-include-email)
       - echo Pushing the Docker image to eu-west-1...
