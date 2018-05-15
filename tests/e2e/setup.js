@@ -3,10 +3,20 @@ module.exports = {
     const stage = casper.cli.get('stage')
     if ( stage == 'dev' || stage == 'staging') {
       const url = 'https://' + stage + '.tesselo.com/'
+    } else if (stage == 'localhost') {
+      const url = 'http://localhost/'
     } else {
       const url = 'https://tesselo.com/'
     }
     casper.echo('Using ' + url)
     return url
+  },
+  get_creds: function(casper) {
+    const usr = casper.cli.get('username');
+    const pw = casper.cli.get('password')
+    return {
+      username: usr,
+      password: pw
+    }
   }
 }

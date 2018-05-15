@@ -40,4 +40,4 @@ phases:
       - docker tag tesselo-worker:latest 595064993071.dkr.ecr.eu-west-1.amazonaws.com/tesselo:$STAGE
       - docker push 595064993071.dkr.ecr.eu-west-1.amazonaws.com/tesselo:$STAGE
       - echo Running e2e casperjs tests...
-      - casperjs test --stage=$STAGE tests/e2e/tests
+      - casperjs test --stage=$STAGE --username=$TEST_USER --password=$TEST_PASSWORD tests/e2e/tests
