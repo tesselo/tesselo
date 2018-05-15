@@ -6,7 +6,7 @@ from raster.tiles.utils import tile_bounds, tile_scale
 from raster.views import AlgebraView, ExportView, RasterView
 from raster_aggregation.exceptions import DuplicateError
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
-from raster_aggregation.serializers import AggregationAreaSimplifiedSerializer
+from raster_aggregation.serializers import AggregationAreaSerializer
 from raster_aggregation.views import AggregationLayerVectorTilesViewSet as AggregationLayerVectorTilesViewSetOrig
 from raster_aggregation.views import ValueCountResultViewSet as ValueCountResultViewSetOrig
 from rest_framework import renderers
@@ -262,7 +262,7 @@ class AggregationLayerVectorTilesViewSet(AggregationLayerVectorTilesViewSetOrig,
 class AggregationAreaViewSet(ModelViewSet):
 
     queryset = AggregationArea.objects.all().order_by('id')
-    serializer_class = AggregationAreaSimplifiedSerializer
+    serializer_class = AggregationAreaSerializer
     permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
     filter_fields = ('aggregationlayer', )
 
