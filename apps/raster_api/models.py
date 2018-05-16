@@ -5,7 +5,7 @@ from raster_aggregation.models import AggregationLayer
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from sentinel.models import Composite, SentinelTileAggregationLayer
+from sentinel.models import Composite, CompositeBuild, SentinelTileAggregationLayer
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):
@@ -198,3 +198,35 @@ def create_sentineltileaggregationlayer_public_object(sender, instance, created,
     """
     if created:
         PublicSentinelTileAggregationLayer.objects.create(sentineltileaggregationlayer=instance)
+
+
+class CompositeBuildUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(CompositeBuild, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
+
+
+class CompositeBuildGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(CompositeBuild, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
+
+
+class PublicCompositeBuild(models.Model):
+
+    compositebuild = models.OneToOneField(CompositeBuild, on_delete=models.CASCADE)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.compositebuild, 'public' if self.public else 'private')
+
+
+@receiver(post_save, sender=CompositeBuild, weak=False, dispatch_uid="create_compositebuild_public_object")
+def create_compositebuild_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public compositebuild object.
+    """
+    if created:
+        PublicCompositeBuild.objects.create(compositebuild=instance)
