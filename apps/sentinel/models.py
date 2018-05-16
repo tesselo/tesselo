@@ -77,7 +77,7 @@ class SentinelTile(models.Model):
     angle_altitude = models.FloatField(default=0)
     level = models.CharField(max_length=10, choices=const.PROCESS_LEVELS, default=const.LEVEL_L1C)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
-    log = models.TextField(default='')
+    log = models.TextField(default='', blank=True)
 
     def __str__(self):
         return '{0} {1}'.format(self.mgrstile.code, self.collected)
@@ -196,7 +196,7 @@ class BucketParseLog(models.Model):
     scheduled = models.DateTimeField()
     start = models.DateTimeField(null=True)
     end = models.DateTimeField(null=True)
-    log = models.TextField(default='')
+    log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=BUCKET_PARSE_STATUS_CHOICES)
 
     def __str__(self):
@@ -359,7 +359,7 @@ class CompositeTile(models.Model):
     end = models.DateTimeField(null=True, blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
-    log = models.TextField(default='')
+    log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=CT_STATUS_CHOICES, default=UNPROCESSED)
 
     class Meta:
@@ -403,7 +403,7 @@ class CompositeBuild(models.Model):
     )
     composite = models.ForeignKey(Composite, on_delete=models.CASCADE)
     aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
-    log = models.TextField(default='')
+    log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=50, choices=CB_STATUS_CHOICES, default=UNPROCESSED)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     sentineltiles = models.ManyToManyField(SentinelTile)
