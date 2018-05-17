@@ -404,7 +404,7 @@ class CompositeBuild(models.Model):
     composite = models.ForeignKey(Composite, on_delete=models.CASCADE)
     aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
-    status = models.CharField(max_length=50, choices=CB_STATUS_CHOICES, default=UNPROCESSED)
+    status = models.CharField(max_length=50, choices=CB_STATUS_CHOICES, default=UNPROCESSED, blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     sentineltiles = models.ManyToManyField(SentinelTile)
     compositetiles = models.ManyToManyField(CompositeTile)
