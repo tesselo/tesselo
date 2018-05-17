@@ -83,6 +83,7 @@ class CloudView(RasterView):
 class CompositeBuildViewSet(PermissionsModelViewSet):
 
     serializer_class = CompositeBuildSerializer
+    filter_fields = ('composite', 'aggregationlayer', 'status', )
 
     _model = 'compositebuild'
 
