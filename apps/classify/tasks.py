@@ -12,6 +12,7 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 from classify.models import Classifier, PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
+from sentinel import ecs
 from sentinel.utils import get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
 
 ZOOM = 14
@@ -129,32 +130,62 @@ def predict_sentinel_layer(predicted_layer_id):
         tiles = get_sentinel_tile_indices(pred.sentineltile, ZOOM)
         rasterlayer_lookup = pred.sentineltile.rasterlayer_lookup
 
-    counter = 0
-    chunks = []
     for tile_index in tiles:
-        chunks.append(tile_index)
-        counter += 1
-        if counter % 50 == 0:
-            # TODO: Make this part asynchronous.
-            predict_sentinel_chunks(pred.id, rasterlayer_lookup, chunks)
-            chunks = []
+        ecs.predict_sentinel_chunk(
+            pred.id,
+            tile_index[0],
+            tile_index[1],
+            tile_index[2],
+            rasterlayer_lookup['B01.jp2'],
+            rasterlayer_lookup['B02.jp2'],
+            rasterlayer_lookup['B03.jp2'],
+            rasterlayer_lookup['B04.jp2'],
+            rasterlayer_lookup['B05.jp2'],
+            rasterlayer_lookup['B06.jp2'],
+            rasterlayer_lookup['B07.jp2'],
+            rasterlayer_lookup['B08.jp2'],
+            rasterlayer_lookup['B8A.jp2'],
+            rasterlayer_lookup['B09.jp2'],
+            rasterlayer_lookup['B10.jp2'],
+            rasterlayer_lookup['B11.jp2'],
+            rasterlayer_lookup['B12.jp2'],
+        )
 
 
-def predict_sentinel_chunks(predicted_layer_id, rasterlayer_lookup, chunks):
+def predict_sentinel_chunk(predicted_layer_id, tilex, tiley, tilez, B1, B2, B3, B4, B5, B6, B7, B8, B8A, B9, B10, B11, B12):
     """
     Predict over a group of tiles.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
-    for tilex, tiley, tilez in chunks:
-        # Get data from tiles for prediction.
-        data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
-        if data is None:
-            continue
-        # Predict classes.
-        predicted = pred.classifier.clf.predict(data).astype('uint8')
-        # Write predicted pixels into a tile and store in DB.
-        write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
 
-    pred.refresh_from_db()
-    pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), chunks[0], chunks[-1])
-    pred.save()
+    # Convert tile indices to integers.
+    tilex, tiley, tilez = int(tilex), int(tiley), int(tilez)
+
+    rasterlayer_lookup = {
+        'B01.jp2': B1,
+        'B02.jp2': B2,
+        'B03.jp2': B3,
+        'B04.jp2': B4,
+        'B05.jp2': B5,
+        'B06.jp2': B6,
+        'B07.jp2': B7,
+        'B08.jp2': B8,
+        'B8A.jp2': B8A,
+        'B09.jp2': B9,
+        'B10.jp2': B10,
+        'B11.jp2': B11,
+        'B12.jp2': B12,
+    }
+
+    # Get data from tiles for prediction.
+    data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
+    if data is None:
+        return
+    # Predict classes.
+    predicted = pred.classifier.clf.predict(data).astype('uint8')
+    # Write predicted pixels into a tile and store in DB.
+    write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
+
+    # pred.refresh_from_db()
+    # pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), chunks[0], chunks[-1])
+    # pred.save()
