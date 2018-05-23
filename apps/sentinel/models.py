@@ -361,6 +361,7 @@ class CompositeTile(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=CT_STATUS_CHOICES, default=UNPROCESSED)
+    cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
 
     class Meta:
         unique_together = (("composite", "tilez", "tilex", "tiley"), )
@@ -408,6 +409,7 @@ class CompositeBuild(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     sentineltiles = models.ManyToManyField(SentinelTile)
     compositetiles = models.ManyToManyField(CompositeTile)
+    cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
 
     def __str__(self):
         return '{} - {} - {}'.format(self.composite, self.aggregationlayer, self.status)

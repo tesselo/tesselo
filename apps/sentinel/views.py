@@ -15,8 +15,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from raster_api.permissions import ChangePermissionObjectPermission, DependentObjectPermission
 from raster_api.views import PermissionsModelViewSet
-from sentinel import ecs
-from sentinel.clouds.tables import clouds
+from sentinel import clouds, ecs
 from sentinel.filters import SentinelTileFilter
 from sentinel.models import CompositeBuild, CompositeTile, SentinelTile
 from sentinel.serializers import CompositeBuildSerializer, CompositeTileSerializer, SentinelTileSerializer
@@ -58,7 +57,7 @@ class CloudView(RasterView):
             stack[band.band] = tile.bands[0].data()
 
         # Compute cloud confidence mask.
-        cloud_probs = clouds(stack)
+        cloud_probs = clouds.clouds_v4(stack)
 
         # Reshape and rescale probabilities to png value range.
         size = 256 * 256

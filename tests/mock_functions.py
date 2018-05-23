@@ -143,7 +143,15 @@ def point_to_test_file(source_url, filepath):
 
 
 def get_numpy_tile(prefix, tilez, tilex, tiley):
-    data = numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')
+    try:
+        SentinelTileSceneClass.objects.get(layer_id=prefix)
+    except:
+        data_max = 1e4
+    else:
+        data_max = 11
+
+    data = numpy.random.random_integers(0, data_max, (256, 256)).astype('uint16')
+
     return GDALRaster({
         'width': 256,
         'height': 256,

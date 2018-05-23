@@ -30,8 +30,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from sentinel import const, ecs
-from sentinel.clouds.sun_angle import sun
-from sentinel.clouds.tables import clouds
+from sentinel.clouds.algorithms import Clouds
+from sentinel.clouds.utils import sun
 # from classify.clouds import clouds
 from sentinel.models import (
     BucketParseLog, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
@@ -354,6 +354,10 @@ def process_compositetile(compositetile_id):
     ctile.end = None
     ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
 
+    # Get cloud algorithm.
+    clouds = Clouds(ctile.cloud_version)
+    ctile.write('Using cloud removal algorithm version V{}'.format(clouds.version))
+
     # Get the list of master layers for all 13 bands.
     rasterlayer_lookup = ctile.composite.rasterlayer_lookup
 
@@ -362,7 +366,7 @@ def process_compositetile(compositetile_id):
     counter = 0
     for x, y, stacks in compositetile_stacks(ctile):
         # Compute the cloud probabilities for each avaiable scene band stack.
-        cloud_probs = [clouds(stack) for stack in stacks]
+        cloud_probs = [clouds.clouds(stack) for stack in stacks]
 
         # Remove the SCL Layers from the stacks.
         for stack in stacks:
@@ -849,6 +853,7 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         for compositetile in compositetiles:
             # Log scheduling of composite tile build.
             compositetile.scheduled = timezone.now()
+            compositetile.cloud_version = compositebuild.cloud_version
             compositetile.write('Scheduled composite builder, waiting for worker availability.', CompositeTile.PENDING)
             # Call build task.
             ecs.process_compositetile(compositetile.id)
