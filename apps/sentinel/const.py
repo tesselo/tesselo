@@ -2,7 +2,6 @@ import datetime
 
 import numpy
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.utils import tile_scale
 
 # Set parameters for bucket praser
 CLIENT_TYPE = 's3'
@@ -39,14 +38,14 @@ GRANULE_FILE_EXTENSION = '.jp2'
 NR_OF_BANDS = 13
 NUMBER_OF_UTM_ZONES = 60
 
-TILESCALE = tile_scale(ZOOM_LEVEL_10M)
+TILESCALE_10M = 5378777689100435.0 / 562949953421312.0
 
 RESULT_DICT = {
     'driver': 'tif',
     'compress': 'DEFLATE',
     'width': WEB_MERCATOR_TILESIZE,
     'height': WEB_MERCATOR_TILESIZE,
-    'scale': [TILESCALE, -TILESCALE],
+    'scale': [TILESCALE_10M, -TILESCALE_10M],
     'srid': WEB_MERCATOR_SRID,
     'datatype': 2,
     'bands': [{'nodata_value': SENTINEL_NODATA_VALUE, }, ],
