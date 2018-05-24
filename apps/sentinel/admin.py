@@ -102,11 +102,15 @@ class CompositeTileAdmin(admin.ModelAdmin):
         self.message_user(request, 'Triggered Composite Tile Builds {}'.format([ctile.id for ctile in queryset]))
 
 
+class CompositeBandAdmin(admin.ModelAdmin):
+    raw_id_fields = ('band', 'rasterlayer', 'composite', )
+
+
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
 admin.site.register(SentinelTileBand, SentinelTileBandAdmin)
 admin.site.register(SentinelTile, SentinelTileAdmin)
 admin.site.register(MGRSTile, MGRSTileAdmin)
-admin.site.register(CompositeBand)
+admin.site.register(CompositeBand, CompositeBandAdmin)
 admin.site.register(CompositeTile, CompositeTileAdmin)
 admin.site.register(CompositeBuild, CompositeBuildAdmin)
 admin.site.register(Composite, CompositeAdmin)
