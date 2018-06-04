@@ -45,6 +45,8 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
 
     serializer_class = PredictedLayerSerializer
 
+    filter_fields = ('classifier', 'sentineltile', )
+
     _model = 'predictedlayer'
 
     def get_queryset(self):
