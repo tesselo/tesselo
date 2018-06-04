@@ -103,7 +103,7 @@ class CompositeTileAdmin(admin.ModelAdmin):
 
 
 class CompositeBandAdmin(admin.ModelAdmin):
-    raw_id_fields = ('band', 'rasterlayer', 'composite', )
+    raw_id_fields = ('rasterlayer', 'composite', )
 
 
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
