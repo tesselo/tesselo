@@ -23,5 +23,5 @@ class PredictedLayerSerializer(ModelSerializer):
 
     class Meta:
         model = PredictedLayer
-        fields = ('classifier', 'sentineltile', 'composite', 'rasterlayer', 'log', 'created', )
+        fields = ('id', 'classifier', 'sentineltile', 'composite', 'rasterlayer', 'log', 'created', )
         read_only_fields = ('rasterlayer', 'created', 'log', )
