@@ -380,7 +380,7 @@ def run_ecs(mgrs, start, end, vcpus=1, memory=1024, retry=1, stage='production')
         'jobDefinition': 'tesselo-{stage}'.format(stage=stage),
         'containerOverrides': {
             'command': [
-                'python', 'scripts/single_composite_task.py',
+                'python', '/code/apps/sentinel/single_composite_task.py',
                 '--workdir', '/tmp',
                 '--start', start,
                 '--end', end,
