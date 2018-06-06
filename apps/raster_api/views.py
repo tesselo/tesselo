@@ -444,7 +444,7 @@ class LambdaView(AlgebraView, RasterAPIView):
     permission_classes = (IsAuthenticated, )
 
     def get_ids(self):
-        if 'sentinel' in self.kwargs:
+        if 'sentinel' or 'composite' in self.kwargs:
             from sentinel.const import BAND_RESOLUTIONS
             bands = [bnd.split('.')[0] for bnd in BAND_RESOLUTIONS]
             if 'formula' in self.request.GET:
@@ -519,6 +519,21 @@ class LambdaView(AlgebraView, RasterAPIView):
                 img_src=self.kwargs.get('img_src'),
                 quadrangle=self.kwargs.get('quadrangle'),
                 scene=self.kwargs.get('scene'),
+            )
+        elif 'composite' in self.kwargs:
+            tilez = int(self.kwargs.get('z'))
+            tilex = int(self.kwargs.get('x'))
+            tiley = int(self.kwargs.get('y'))
+            factor = tilez - 8
+            if factor < 0:
+                raise ValueError('Zoom level min 8')
+            tilex = int(tilex / (2 ** factor))
+            tiley = int(tiley / (2 ** factor))
+
+            vsis3path = 'composite-single-task/8-{tilex}-{tiley}/{tilez}-{{band}}.tif'.format(
+                tilex=tilex,
+                tiley=tiley,
+                tilez=tilez,
             )
 
         return vsis3path
