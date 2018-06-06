@@ -14,11 +14,21 @@ from raster.tiles.utils import closest_zoomlevel, tile_bounds, tile_index_range,
 from scipy.ndimage import maximum_filter
 
 from django.conf import settings
-from django.contrib.gis.gdal import GDALRaster, OGRGeometry
 from sentinel import const
 
 # Fake django environment.
-settings.configure()
+BASE_DIR_GDAL = '/var/venv/lib/python3.6/site-packages'
+GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio/.libs/libgdal-*.so.*'))[0]
+GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio/.libs/libgeos_c-*.so.*'))[0]
+os.environ['GDAL_DATA'] = os.path.join(BASE_DIR_GDAL, 'rasterio/gdal_data')  # Set gdal data env var.
+
+settings.configure(
+    BASE_DIR_GDAL=BASE_DIR_GDAL,
+    GDAL_LIBRARY_PATH=GDAL_LIBRARY_PATH,
+    GEOS_LIBRARY_PATH=GEOS_LIBRARY_PATH
+)
+from django.contrib.gis.gdal import GDALRaster, OGRGeometry
+
 
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /products/ --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
 COMPOSITE_ZOOM = 8
@@ -395,7 +405,6 @@ def run_ecs(mgrs, start, end, vcpus=1, memory=1024, retry=1, stage='production')
             'environment': [
                 {'name': 'AWS_ACCESS_KEY_ID', 'value': os.environ.get('AWS_ACCESS_KEY_ID')},
                 {'name': 'AWS_SECRET_ACCESS_KEY', 'value': os.environ.get('AWS_SECRET_ACCESS_KEY')},
-                {'name': 'PYTHONPATH', 'value': '/code/apps'},
             ]
         },
         'retryStrategy': {
