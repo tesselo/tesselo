@@ -14,12 +14,12 @@ from raster.tiles.utils import closest_zoomlevel, tile_bounds, tile_index_range,
 from scipy.ndimage import maximum_filter
 
 from django.conf import settings
-
+from django.contrib.gis.gdal import GDALRaster, OGRGeometry
+from sentinel import const
 
 # Add the apps directory to the python path for celery to find the apps
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from sentinel import const
 
 # Fake django environment.
 if os.environ.get('ZAPPA', False):
@@ -36,7 +36,6 @@ if os.environ.get('ZAPPA', False):
 else:
     settings.configure()
 
-from django.contrib.gis.gdal import GDALRaster, OGRGeometry
 
 
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /products/ --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
