@@ -116,5 +116,5 @@ def predict_sentinel_layer(predicted_layer_id):
     return run_ecs_command(['predict_sentinel_layer', predicted_layer_id])
 
 
-def predict_sentinel_chunk(predicted_layer_id, tilex, tiley, tilez, B1, B2, B3, B4, B5, B6, B7, B8, B8A, B9, B10, B11, B12):
-    return run_ecs_command(['predict_sentinel_chunk', predicted_layer_id, tilex, tiley, tilez, B1, B2, B3, B4, B5, B6, B7, B8, B8A, B9, B10, B11, B12])
+def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
+    return run_ecs_command(['predict_sentinel_chunk', predicted_layer_id, from_idx, to_idx])

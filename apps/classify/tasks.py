@@ -21,10 +21,9 @@ SCALE = tile_scale(ZOOM)
 
 PIXELTYPE = 2
 
-BAND_NAMES = (
-    'B01.jp2', 'B02.jp2', 'B03.jp2', 'B04.jp2', 'B05.jp2', 'B06.jp2',
-    'B07.jp2', 'B08.jp2', 'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2',
-    'B12.jp2',
+CLASSIFY_BAND_NAMES = (
+    'B02.jp2', 'B03.jp2', 'B04.jp2', 'B05.jp2', 'B06.jp2', 'B07.jp2', 'B08.jp2',
+    'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2', 'B12.jp2',
 )
 
 
@@ -34,7 +33,7 @@ def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     """
     # Get data for a tile of this scene.
     result = []
-    for band in BAND_NAMES:
+    for band in CLASSIFY_BAND_NAMES:
         layer_id = rasterlayer_lookup.get(band)
         tile = get_raster_tile(layer_id, tilez=tilez, tilex=tilex, tiley=tiley)
         if not tile:
@@ -51,7 +50,8 @@ def train_sentinel_classifier(classifier_id):
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
     # Create numpy arrays holding training data.
-    X = numpy.empty(shape=(0, 13))
+    NUMBER_OF_BANDS = len(CLASSIFY_BAND_NAMES)
+    X = numpy.empty(shape=(0, NUMBER_OF_BANDS))
     Y = numpy.empty(shape=(0,))
     # Dictionary for categories.
     categories = {}
@@ -94,7 +94,7 @@ def train_sentinel_classifier(classifier_id):
                 sample_pixels = sample_rast.bands[0].data().ravel()
                 selector = sample_pixels == 1
                 # Create a constant array with sample value for all intersecting pixels.
-                sample_values = numpy.array([sample.value] * sum(selector))
+                sample_values = sample.value * numpy.ones(sum(selector))
                 # Add sample values to dependent variable.
                 Y = numpy.hstack([sample_values, Y])
                 # Use selector to pick sample pixels over geom.
@@ -114,6 +114,14 @@ def train_sentinel_classifier(classifier_id):
     classifier.save()
 
 
+def get_prediction_index_range(pred):
+    # Get tile range for compositeband or sentineltile for this prediction.
+    if pred.composite:
+        return get_composite_tile_indices(pred.composite, ZOOM)
+    else:
+        return get_sentinel_tile_indices(pred.sentineltile, ZOOM)
+
+
 def predict_sentinel_layer(predicted_layer_id):
     """
     Use a classifier to predict data onto a rasterlayer. The PredictedLayer
@@ -122,70 +130,47 @@ def predict_sentinel_layer(predicted_layer_id):
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
     pred.log = '[{0}] Started predicting layer.'.format(datetime.datetime.now())
     pred.save()
+
     # Get tile range for compositeband or sentineltile for this prediction.
-    if pred.composite:
-        tiles = get_composite_tile_indices(pred.composite, ZOOM)
-        rasterlayer_lookup = pred.composite.rasterlayer_lookup
-    else:
-        tiles = get_sentinel_tile_indices(pred.sentineltile, ZOOM)
-        rasterlayer_lookup = pred.sentineltile.rasterlayer_lookup
+    tiles = get_prediction_index_range(pred)
 
+    # Push tasks for sentinel chunks.
+    counter = 0
+    CHUNK_SIZE = 100
     for tile_index in tiles:
-        ecs.predict_sentinel_chunk(
-            pred.id,
-            tile_index[0],
-            tile_index[1],
-            tile_index[2],
-            rasterlayer_lookup['B01.jp2'],
-            rasterlayer_lookup['B02.jp2'],
-            rasterlayer_lookup['B03.jp2'],
-            rasterlayer_lookup['B04.jp2'],
-            rasterlayer_lookup['B05.jp2'],
-            rasterlayer_lookup['B06.jp2'],
-            rasterlayer_lookup['B07.jp2'],
-            rasterlayer_lookup['B08.jp2'],
-            rasterlayer_lookup['B8A.jp2'],
-            rasterlayer_lookup['B09.jp2'],
-            rasterlayer_lookup['B10.jp2'],
-            rasterlayer_lookup['B11.jp2'],
-            rasterlayer_lookup['B12.jp2'],
-        )
+        counter += 1
+        if counter % CHUNK_SIZE == 0:
+            ecs.predict_sentinel_chunk(pred.id, counter - CHUNK_SIZE, counter)
+    # Psuh a rest index range as well.
+    rest = counter % 50
+    if rest:
+        ecs.predict_sentinel_chunk(pred.id, counter - rest, counter)
 
 
-def predict_sentinel_chunk(predicted_layer_id, tilex, tiley, tilez, B1, B2, B3, B4, B5, B6, B7, B8, B8A, B9, B10, B11, B12):
+def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
     """
     Predict over a group of tiles.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    tiles = get_prediction_index_range(pred)
+    from_idx = int(from_idx)
+    to_idx = int(to_idx)
 
-    # Convert tile indices to integers.
-    tilex, tiley, tilez = int(tilex), int(tiley), int(tilez)
+    if pred.composite:
+        rasterlayer_lookup = pred.composite.rasterlayer_lookup
+    else:
+        rasterlayer_lookup = pred.sentineltile.rasterlayer_lookup
 
-    rasterlayer_lookup = {
-        'B01.jp2': B1,
-        'B02.jp2': B2,
-        'B03.jp2': B3,
-        'B04.jp2': B4,
-        'B05.jp2': B5,
-        'B06.jp2': B6,
-        'B07.jp2': B7,
-        'B08.jp2': B8,
-        'B8A.jp2': B8A,
-        'B09.jp2': B9,
-        'B10.jp2': B10,
-        'B11.jp2': B11,
-        'B12.jp2': B12,
-    }
+    for tilex, tiley, tilez in list(tiles)[from_idx:to_idx]:
+        # Get data from tiles for prediction.
+        data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
+        if data is None:
+            continue
+        # Predict classes.
+        predicted = pred.classifier.clf.predict(data).astype('uint8')
+        # Write predicted pixels into a tile and store in DB.
+        write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
 
-    # Get data from tiles for prediction.
-    data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
-    if data is None:
-        return
-    # Predict classes.
-    predicted = pred.classifier.clf.predict(data).astype('uint8')
-    # Write predicted pixels into a tile and store in DB.
-    write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
-
-    # pred.refresh_from_db()
-    # pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), chunks[0], chunks[-1])
-    # pred.save()
+    pred.refresh_from_db()
+    pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), from_idx, to_idx)
+    pred.save()
