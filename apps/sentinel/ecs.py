@@ -40,7 +40,7 @@ def get_batch_job_base():
     }
 
 
-def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo-{stage}'):
+def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo-{stage}'):
     '''
     Execute a Batch command.
     '''
