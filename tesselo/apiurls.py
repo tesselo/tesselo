@@ -104,6 +104,6 @@ router.register(r'group', GroupViewSet, base_name='group')
 apiurlpatterns = [
     url(r'^api/token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view())),
     url(r'^api/token-logout/', RemoveAuthToken.as_view()),
-    url(r'^api/wmts/', WMTSAPIView.as_view()),
+    url(r'^api/wmts/', WMTSAPIView.as_view(), name='wmts-service'),
     url(r'^api/', include(router.urls)),
 ]

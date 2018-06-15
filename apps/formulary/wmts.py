@@ -86,7 +86,7 @@ class WMTSAPIView(APIView):
         )
 
         # Get wmts layers for the request user.
-        wmts_layers = get_objects_for_user(request.user, 'formulary.change_wmtslayer')
+        wmts_layers = get_objects_for_user(request.user, 'formulary.view_wmtslayer')
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
