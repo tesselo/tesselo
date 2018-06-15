@@ -102,7 +102,7 @@ class WMTSLayer(models.Model):
             form_key = ''.join(key.split('.')[0].split('0'))
             if form_key in self.formula.formula:
                 try:
-                    ids.append('='.join(form_key, str(self.sentineltile.sentineltileband_set.get(band=key).only('pk').pk)))
+                    ids.append('='.join(form_key, str(self.sentineltile.sentineltileband_set.only('pk').get(band=key).pk)))
                 except SentinelTileBand.DoesNotExist:
                     continue
         return ','.join(ids)
