@@ -19,6 +19,9 @@ RUN aws s3 cp s3://sen2cor-source/Sen2Cor-2.4.0-Linux64.run . &&\
 # Example product successful without fix: S2A_MSIL1C_20180105T103421_N0206_R108_T30NUM_20180105T123915.SAFE
 RUN sed -i s/t1c_split[[]10[]]/t1c_split[-1]/g /Sen2Cor-2.4.0-Linux64/lib/python2.7/site-packages/sen2cor/L2A_Tables.py
 
+# Install libraries for faster scipy and scikit-learn.
+RUN rpm --rebuilddb && yum install -y blas-devel atlas-devel
+
 # Install the worker dependencies
 ADD requirements/workers.txt /code/requirements_workers.txt
 RUN source /var/venv/bin/activate && \
