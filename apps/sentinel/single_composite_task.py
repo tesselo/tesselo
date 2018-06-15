@@ -37,7 +37,6 @@ else:
     settings.configure()
 
 
-
 PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /products/ --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
 COMPOSITE_ZOOM = 8
 COMPOSITE_SCALE = tile_scale(COMPOSITE_ZOOM)
