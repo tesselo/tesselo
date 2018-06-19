@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
+from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
 
@@ -21,7 +21,21 @@ class ClassifierSerializer(ModelSerializer):
 
 class PredictedLayerSerializer(ModelSerializer):
 
+    classifier_name = SerializerMethodField()
+    source_name = SerializerMethodField()
+
     class Meta:
         model = PredictedLayer
-        fields = ('id', 'classifier', 'sentineltile', 'composite', 'rasterlayer', 'log', 'created', )
-        read_only_fields = ('rasterlayer', 'created', 'log', )
+        fields = (
+            'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
+            'log', 'created', 'classifier_name', 'source_name',
+        )
+        read_only_fields = (
+            'rasterlayer', 'created', 'log', 'classifier_name', 'source_name',
+        )
+
+    def get_classifier_name(self, obj):
+        return obj.classifier.name
+
+    def get_source_name(self, obj):
+        return obj.composite.name if obj.composite else str(obj.sentineltile)
