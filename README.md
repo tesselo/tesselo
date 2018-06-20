@@ -70,4 +70,8 @@ Command used on the CodePipeline CodeBuild on aws.
 Zappa create superuser
 ----------------------
 
-    zappa invoke dev "printf \"from django.contrib.auth.models import User; User.objects.create_superuser('daniel', 'daniel@tesselo.com', 'pKE5M53PieYBOdJ125CQ')\" | python manage.py shell" --raw
+    zappa invoke dev "printf \"from django.contrib.auth.models import User; User.objects.create_superuser('daniel2', 'daniel2@tesselo.com', 'adminpass')\" | python manage.py shell" --raw
+
+or alternatively
+
+    zappa invoke dev "from django.contrib.auth.models import User; User.objects.create_superuser('daniel2', 'daniel2@tesselo.com', 'adminpass')" --raw
