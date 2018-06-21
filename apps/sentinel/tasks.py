@@ -358,6 +358,11 @@ def process_compositetile(compositetile_id):
     clouds = Clouds(ctile.cloud_version)
     ctile.write('Using cloud removal algorithm version V{}'.format(clouds.version))
 
+    # Write the used type if it was not set manually.
+    if ctile.cloud_version is None:
+        ctile.cloud_version = clouds.version
+        ctile.save()
+
     # Get the list of master layers for all 13 bands.
     rasterlayer_lookup = ctile.composite.rasterlayer_lookup
 
