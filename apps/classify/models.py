@@ -71,7 +71,6 @@ class PredictedLayer(models.Model):
     composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='')
-    created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return 'Layer for {0} over {1}.'.format(
