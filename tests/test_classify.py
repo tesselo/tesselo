@@ -12,7 +12,7 @@ from tests.mock_functions import (
 )
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
-from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
+from classify.tasks import build_predicted_pyramid, predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.cache import cache
@@ -27,6 +27,7 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
+@mock.patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 
@@ -38,7 +39,7 @@ class SentinelClassifierTest(TestCase):
         self.zone = AggregationArea.objects.create(
             name='Test Agg Area',
             aggregationlayer=self.agglayer,
-            geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11859687.0 -469452.0, 11859687.0 -441452.0, 11833687.0 -441452.0, 11833687.0 -469452.0)))'
+            geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11833787.0 -469452.0, 11833787.0 -469352.0, 11833687.0 -469352.0, 11833687.0 -469452.0)))'
         )
         self.composite = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
         self.build = CompositeBuild.objects.create(composite=self.composite, aggregationlayer=self.agglayer)
@@ -131,6 +132,21 @@ class SentinelClassifierTest(TestCase):
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        cache.clear()
+
+    def test_classifier_pyramid_building(self):
+        self._get_data()
+        train_sentinel_classifier(self.clf.id)
+
+        pred = PredictedLayer.objects.create(
+            composite=self.composite,
+            classifier=self.clf,
+        )
+        predict_sentinel_layer(pred.id)
+        count_before_pyramid = pred.rasterlayer.rastertile_set.count()
+        build_predicted_pyramid(pred.id)
+        pred.refresh_from_db()
+        self.assertTrue(pred.rasterlayer.rastertile_set.count() > count_before_pyramid)
         cache.clear()
 
     @skip('Cloud view is outdated.')

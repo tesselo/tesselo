@@ -118,3 +118,7 @@ def predict_sentinel_layer(predicted_layer_id):
 
 def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
     return run_ecs_command(['predict_sentinel_chunk', predicted_layer_id, from_idx, to_idx])
+
+
+def build_predicted_pyramid(predicted_layer_id):
+    return run_ecs_command(['build_predicted_pyramid', predicted_layer_id])

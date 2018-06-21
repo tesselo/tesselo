@@ -13,7 +13,7 @@ from classify.models import Classifier, PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from sentinel import ecs
-from sentinel.utils import get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
+from sentinel.utils import aggregate_tile, get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
 
 ZOOM = 14
 
@@ -114,12 +114,12 @@ def train_sentinel_classifier(classifier_id):
     classifier.save()
 
 
-def get_prediction_index_range(pred):
+def get_prediction_index_range(pred, zoom=ZOOM):
     # Get tile range for compositeband or sentineltile for this prediction.
     if pred.composite:
-        return get_composite_tile_indices(pred.composite, ZOOM)
+        return get_composite_tile_indices(pred.composite, zoom)
     else:
-        return get_sentinel_tile_indices(pred.sentineltile, ZOOM)
+        return get_sentinel_tile_indices(pred.sentineltile, zoom)
 
 
 def predict_sentinel_layer(predicted_layer_id):
@@ -174,3 +174,44 @@ def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
     pred.refresh_from_db()
     pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), from_idx, to_idx)
     pred.save()
+
+
+def build_predicted_pyramid(predicted_layer_id):
+    """
+    Build an overview stack over a predicted layer.
+    """
+    pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    # Loop through the tiles in each zoom level, bottom up.
+    for tilez in range(ZOOM - 1, -1, -1):
+        for tilex, tiley, tilez in get_prediction_index_range(pred, tilez):
+            # Get tile data.
+            tiles = [
+                get_raster_tile(pred.rasterlayer_id, tilez=tilez + 1, tilex=tilex * 2, tiley=tiley * 2),
+                get_raster_tile(pred.rasterlayer_id, tilez=tilez + 1, tilex=tilex * 2 + 1, tiley=tiley * 2),
+                get_raster_tile(pred.rasterlayer_id, tilez=tilez + 1, tilex=tilex * 2, tiley=tiley * 2 + 1),
+                get_raster_tile(pred.rasterlayer_id, tilez=tilez + 1, tilex=tilex * 2 + 1, tiley=tiley * 2 + 1),
+            ]
+            # Continue if no tiles were found.
+            if not len([tile for tile in tiles if tile is not None]):
+                continue
+            # Extract pixel values.
+            tile_data = [
+                numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) if tile is None else tile.bands[0].data() for tile in tiles
+            ]
+            # Aggregate tile to lower resolution.
+            tile_data = [aggregate_tile(tile, numpy.uint8) for tile in tile_data]
+            # Combine data to larger tile.
+            tile_data = numpy.concatenate([
+                numpy.concatenate(tile_data[:2], axis=1),
+                numpy.concatenate(tile_data[2:], axis=1),
+            ])
+            # Write tile.
+            write_raster_tile(
+                layer_id=pred.rasterlayer_id,
+                result=tile_data,
+                tilez=tilez,
+                tilex=tilex,
+                tiley=tiley,
+                nodata_value=0,
+                datatype=1,
+            )

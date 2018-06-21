@@ -1,4 +1,6 @@
-from classify.tasks import predict_sentinel_chunk, predict_sentinel_layer, train_sentinel_classifier
+from classify.tasks import (
+    build_predicted_pyramid, predict_sentinel_chunk, predict_sentinel_layer, train_sentinel_classifier
+)
 from django.core.management.base import BaseCommand
 from sentinel.tasks import (
     composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
@@ -19,6 +21,7 @@ class Command(BaseCommand):
         'train_sentinel_classifier': train_sentinel_classifier,
         'predict_sentinel_layer': predict_sentinel_layer,
         'predict_sentinel_chunk': predict_sentinel_chunk,
+        'build_predicted_pyramid': build_predicted_pyramid,
     }
 
     def add_arguments(self, parser):
