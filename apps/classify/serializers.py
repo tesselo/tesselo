@@ -28,14 +28,19 @@ class PredictedLayerSerializer(ModelSerializer):
         model = PredictedLayer
         fields = (
             'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
-            'log', 'classifier_name', 'source_name',
+            'log', 'chunks_count', 'chunks_done', 'classifier_name',
+            'source_name',
         )
         read_only_fields = (
-            'rasterlayer', 'log', 'classifier_name', 'source_name',
+            'rasterlayer', 'log', 'chunks_count', 'chunks_done',
+            'classifier_name', 'source_name',
         )
 
     def get_classifier_name(self, obj):
         return obj.classifier.name
 
     def get_source_name(self, obj):
-        return obj.composite.name if obj.composite else str(obj.sentineltile)
+        if obj.composite:
+            return obj.composite.name
+        else:
+            return obj.sentineltile.collected.date()

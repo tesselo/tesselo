@@ -12,7 +12,7 @@ from tests.mock_functions import (
 )
 
 from classify.models import Classifier, PredictedLayer, TrainingSample
-from classify.tasks import build_predicted_pyramid, predict_sentinel_layer, train_sentinel_classifier
+from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.cache import cache
@@ -131,22 +131,11 @@ class SentinelClassifierTest(TestCase):
         )
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
+        # Tiles have been created.
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
-        cache.clear()
-
-    def test_classifier_pyramid_building(self):
-        self._get_data()
-        train_sentinel_classifier(self.clf.id)
-
-        pred = PredictedLayer.objects.create(
-            composite=self.composite,
-            classifier=self.clf,
-        )
-        predict_sentinel_layer(pred.id)
-        count_before_pyramid = pred.rasterlayer.rastertile_set.count()
-        build_predicted_pyramid(pred.id)
-        pred.refresh_from_db()
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > count_before_pyramid)
+        # Pyramid has been built.
+        self.assertTrue(pred.chunks_count > 0)
+        self.assertEqual(pred.chunks_done, pred.chunks_count)
         cache.clear()
 
     @skip('Cloud view is outdated.')

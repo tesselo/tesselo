@@ -128,6 +128,7 @@ def predict_sentinel_layer(predicted_layer_id):
     model is the mediator.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    pred.chunks_done = 0
     pred.log = '[{0}] Started predicting layer.'.format(datetime.datetime.now())
     pred.save()
 
@@ -136,15 +137,22 @@ def predict_sentinel_layer(predicted_layer_id):
 
     # Push tasks for sentinel chunks.
     counter = 0
+    chunk_counter = 0
     CHUNK_SIZE = 100
     for tile_index in tiles:
         counter += 1
         if counter % CHUNK_SIZE == 0:
+            chunk_counter += 1
             ecs.predict_sentinel_chunk(pred.id, counter - CHUNK_SIZE, counter)
-    # Psuh a rest index range as well.
+    # Push the remaining index range as well.
     rest = counter % 50
     if rest:
+        chunk_counter += 1
         ecs.predict_sentinel_chunk(pred.id, counter - rest, counter)
+    # Save number of jobs to be done.
+    pred.refresh_from_db()
+    pred.chunks_count = chunk_counter
+    pred.save()
 
 
 def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
@@ -171,9 +179,15 @@ def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
         # Write predicted pixels into a tile and store in DB.
         write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
 
+    # Log progress, update chunks done count.
     pred.refresh_from_db()
     pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), from_idx, to_idx)
+    pred.chunks_done += 1
     pred.save()
+
+    # If all chunks have completed, push pyramid build job.
+    if pred.chunks_count > 0 and pred.chunks_done == pred.chunks_count:
+        ecs.build_predicted_pyramid(predicted_layer_id)
 
 
 def build_predicted_pyramid(predicted_layer_id):

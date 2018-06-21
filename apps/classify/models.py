@@ -71,6 +71,8 @@ class PredictedLayer(models.Model):
     composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='')
+    chunks_count = models.IntegerField(default=0, blank=True)
+    chunks_done = models.IntegerField(default=0, blank=True)
 
     def __str__(self):
         return 'Layer for {0} over {1}.'.format(
