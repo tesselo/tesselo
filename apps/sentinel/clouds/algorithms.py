@@ -15,7 +15,7 @@ class Clouds(object):
         6: 'Rank based on SceneClass.'
     }
 
-    latest_version = 6
+    latest_version = 7
 
     def __init__(self, version):
         # Get default latest version.
@@ -29,9 +29,29 @@ class Clouds(object):
     def clouds(self, stack):
         return getattr(self, 'clouds_v{}'.format(self.version))(stack)
 
-    def clouds_v6(self, stack):
+    def clouds_v7(self, stack):
+        """
+        Scene class pixels ranked by preference. The rank is flattened out so
+        that between categories that are similarly desireable, the relative NDVI
+        value is decisive.
+        """
+        SCENE_CLASS_RANK_FLAT = (
+            8,   # NO_DATA
+            7,   # SATURATED_OR_DEFECTIVE
+            5,   # DARK_AREA_PIXELS
+            5,   # CLOUD_SHADOWS
+            1,   # VEGETATION
+            2,   # NOT_VEGETATED
+            3,   # WATER
+            5,   # UNCLASSIFIED
+            6,   # CLOUD_MEDIUM_PROBABILITY
+            7,   # CLOUD_HIGH_PROBABILITY
+            6,   # THIN_CIRRUS
+            4,   # SNOW
+        )
+
         # Use SCL layer to select pixel ranks.
-        cloud_probs = numpy.choose(stack[const.SCL], const.SCENE_CLASS_RANK)
+        cloud_probs = numpy.choose(stack[const.SCL], SCENE_CLASS_RANK_FLAT)
 
         # Ensure nodata pixels have the exclude value.
         cloud_probs[nodata_mask(stack)] = const.EXCLUDE_VALUE
@@ -55,7 +75,59 @@ class Clouds(object):
 
         return cloud_probs
 
-    def clouds_v5(stack=None, version=False):
+    def clouds_v6(self, stack):
+        """
+        All scene class categories are odrered into a rank by preference. The
+        lowest rank available is kept as final pixel. For multiple candidates
+        with the same rank, the highest NDVI value is kept.
+        """
+
+        SCENE_CLASS_RANK = (
+            12,  # NO_DATA
+            8,   # SATURATED_OR_DEFECTIVE
+            5,   # DARK_AREA_PIXELS
+            7,   # CLOUD_SHADOWS
+            1,   # VEGETATION
+            2,   # NOT_VEGETATED
+            3,   # WATER
+            6,   # UNCLASSIFIED
+            10,  # CLOUD_MEDIUM_PROBABILITY
+            11,  # CLOUD_HIGH_PROBABILITY
+            9,   # THIN_CIRRUS
+            4,   # SNOW
+        )
+
+        # Use SCL layer to select pixel ranks.
+        cloud_probs = numpy.choose(stack[const.SCL], SCENE_CLASS_RANK)
+
+        # Ensure nodata pixels have the exclude value.
+        cloud_probs[nodata_mask(stack)] = const.EXCLUDE_VALUE
+
+        # Convert cloud probs to float.
+        cloud_probs = cloud_probs.astype('float')
+
+        # Compute NDVI, avoiding zero division.
+        B4 = stack[const.BD4].astype('float')
+        B8 = stack[const.BD8].astype('float')
+        ndvi_diff = B8 - B4
+        ndvi_sum = B8 + B4
+        ndvi_sum[ndvi_sum == 0] = 1
+        ndvi = ndvi_diff / ndvi_sum
+
+        # Add inverted and scaled NDVI values to the decimal range of the cloud
+        # probs. This ensures that within acceptable pixels, the one with the
+        # highest NDVI is selected.
+        scaled_ndvi = (1 - ndvi) / 100
+        cloud_probs += scaled_ndvi
+
+        return cloud_probs
+
+    def clouds_v5(stack=None):
+        """
+        Scene class pixels are divided into three categories. In high and low
+        priority, and into a category that is always excluded. Within each
+        acceptable cateogry, the higher NDVI value is decisive.
+        """
         # Scipy is only installed on workers. So import it when used only.
         from scipy.ndimage import maximum_filter
 
@@ -93,6 +165,11 @@ class Clouds(object):
         return cloud_probs
 
     def clouds_v4(self, stack):
+        """
+        Piecewise linear functions with spatial max/min filters are used to
+        construct a priority index. The cutoff values were determined by
+        visual inspection of values in sample images.
+        """
         # Scipy is only installed on workers. So import it when used only.
         from scipy.ndimage import maximum_filter, minimum_filter
 
@@ -143,6 +220,10 @@ class Clouds(object):
         return index
 
     def clouds_v3(self, stack):
+        """
+        An index is constructed from the cirrus band and one atmospheric
+        sensitive infrared band. With a cutoff on band 11.
+        """
         from sklearn.preprocessing import minmax_scale
         # Select minimum sum of thick cloud and cirrus cloud bands.
         index = minmax_scale(stack[const.BD1]) + minmax_scale(stack[const.BD10])
@@ -155,6 +236,12 @@ class Clouds(object):
         return index
 
     def clouds_v2(self, stack):
+        """
+        Different types of clouds are masked using simple cutoff values per
+        band. Dark pixels are determined as well in RGB space. Each type of
+        cloud category and shadow pixels are ranked and this rank is used for
+        the final decision.
+        """
         # Aggressive cutoff for thick clouds.
         thick = stack[const.BD1] > 2000
         # Aggressive cutoff for cirrus clouds.
@@ -174,6 +261,10 @@ class Clouds(object):
         return dark
 
     def clouds_v1(self, stack):
+        """
+        An index is derived using scled NDVI values and the scaled sum of SWIR
+        bands. Each dimension has equal weight in the final decision.
+        """
         # Get sum of SWIR bands - the brighter the pixel in SWIR, the more
         # likely it is a cloud.
         swir = numpy.clip(stack['B10.jp2'], 0, 1e4) + numpy.clip(stack['B11.jp2'], 0, 1e4) + numpy.clip(stack['B12.jp2'], 0, 1e4)
