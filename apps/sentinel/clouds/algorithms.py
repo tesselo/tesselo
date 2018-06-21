@@ -12,7 +12,8 @@ class Clouds(object):
         3: 'Minimum sum of thick cloud and cirrus cloud bands.',
         4: 'Cloud band linear step function approach.',
         5: 'Discretized SceneClass index.',
-        6: 'Rank based on SceneClass.'
+        6: 'Rank based on SceneClass.',
+        7: 'Rank based on SceneClass, flattened.',
     }
 
     latest_version = 7
