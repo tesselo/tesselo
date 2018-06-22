@@ -76,7 +76,7 @@ class PredictedLayer(models.Model):
 
     def __str__(self):
         return 'Layer for {0} over {1}.'.format(
-            self.classifier.name,
+            self.classifier,
             self.composite if self.composite else self.sentineltile
         )
 
