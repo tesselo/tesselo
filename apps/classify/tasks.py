@@ -213,7 +213,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) if tile is None else tile.bands[0].data() for tile in tiles
             ]
             # Aggregate tile to lower resolution.
-            tile_data = [aggregate_tile(tile, numpy.uint8) for tile in tile_data]
+            tile_data = [aggregate_tile(tile, target_dtype='uint8', discrete=True) for tile in tile_data]
             # Combine data to larger tile.
             tile_data = numpy.concatenate([
                 numpy.concatenate(tile_data[:2], axis=1),

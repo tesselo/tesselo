@@ -11,7 +11,7 @@ from django.core.files import File
 from sentinel import const
 
 
-def aggregate_tile(tile, target_dtype=numpy.int16):
+def aggregate_tile(tile, target_dtype=numpy.int16, discrete=False):
     """
     Aggregate a tile array to the next zoom level using movin average. Create
     a 1-D array of half the size of the input data.
@@ -22,7 +22,14 @@ def aggregate_tile(tile, target_dtype=numpy.int16):
     tile.shape = (const.AGG_TILE_SIZE, const.AGG_FACTOR, const.AGG_TILE_SIZE, const.AGG_FACTOR)
     tile = tile.swapaxes(1, 2)
     tile = tile.reshape(const.AGG_TILE_SIZE_SQ, const.AGG_FACTOR, const.AGG_FACTOR)
-    tile = numpy.mean(tile, axis=(1, 2), dtype=target_dtype)
+    if discrete:
+        # Simplified Nearest neighbor - take upper left pixel.
+        tile = tile[:, 0, 0]
+    else:
+        # Average it for continuous values.
+        tile = numpy.mean(tile, axis=(1, 2))
+
+    tile = tile.astype(target_dtype)
     tile.shape = (const.AGG_TILE_SIZE, const.AGG_TILE_SIZE)
     return tile
 
