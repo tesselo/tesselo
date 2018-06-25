@@ -38,6 +38,23 @@ class TrainingSampleAdmin(admin.OSMGeoAdmin):
     form = TrainingSampleForm
 
 
+class TrainingSampleInline(admin.TabularInline):
+    model = TrainingSample
+    readonly_fields = ('id', 'composite', 'sentineltile', )
+    exclude = ('geom', )
+    form = TrainingSampleForm
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class TrainingLayerAdmin(admin.ModelAdmin):
+    inlines = [TrainingSampleInline, ]
+
+
 class ClassifierAdmin(admin.ModelAdmin):
 
     actions = ['train_classifier', ]
@@ -62,6 +79,6 @@ class PredictedLayerAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Classifier, ClassifierAdmin)
-admin.site.register(TrainingLayer)
+admin.site.register(TrainingLayer, TrainingLayerAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
