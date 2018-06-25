@@ -10,6 +10,21 @@ from django.dispatch import receiver
 from sentinel.models import Composite, SentinelTile
 
 
+class TrainingLayer(models.Model):
+    """
+    A group of training sample polygons.
+    """
+    name = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        permissions = (
+            ('view_traininglayer', 'View training layer'),
+        )
+
+
 class TrainingSample(models.Model):
     """
     Training Data for cloud classifiers.
@@ -19,6 +34,7 @@ class TrainingSample(models.Model):
     geom = models.PolygonField()
     category = models.CharField(max_length=100)
     value = models.IntegerField()
+    traininglayer = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
 
     def __str__(self):
         return '{0} - {1}'.format(self.category, self.composite if self.composite else self.sentineltile)
@@ -47,7 +63,7 @@ class Classifier(models.Model):
     name = models.CharField(max_length=100)
     algorithm = models.CharField(max_length=10, choices=ALGORITHM_CHOICES)
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
-    trainingsamples = models.ManyToManyField(TrainingSample)
+    traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
     legend = HStoreField(default={}, editable=False)
 
     def __str__(self):
@@ -92,6 +108,38 @@ class PredictedLayer(models.Model):
                 datatype=RasterLayer.CATEGORICAL,
             )
         super().save(*args, **kwargs)  # Call the "real" save() method.
+
+
+class TrainingLayerUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.user, self.permission, self.content_object)
+
+
+class TrainingLayerGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
+
+
+class PublicTrainingLayer(models.Model):
+
+    traininglayer = models.OneToOneField(TrainingLayer, on_delete=models.CASCADE)
+    public = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{0} | {1}'.format(self.traininglayer, 'public' if self.public else 'private')
+
+
+@receiver(post_save, sender=TrainingLayer, weak=False, dispatch_uid="create_traininglayer_public_object")
+def create_traininglayer_public_object(sender, instance, created, **kwargs):
+    """
+    Automatically create the public traininglayer object.
+    """
+    if created:
+        PublicTrainingLayer.objects.create(traininglayer=instance)
 
 
 class TrainingSampleUserObjectPermission(UserObjectPermissionBase):

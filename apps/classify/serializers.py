@@ -1,22 +1,34 @@
 from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField
 
-from classify.models import Classifier, PredictedLayer, TrainingSample
+from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
+
+
+class TrainingLayerSerializer(ModelSerializer):
+
+    trainingsamples = PrimaryKeyRelatedField(many=True, source='trainingsample_set', read_only=True)
+
+    class Meta:
+        model = TrainingLayer
+        fields = ('id', 'name', 'trainingsamples', )
 
 
 class TrainingSampleSerializer(ModelSerializer):
 
     class Meta:
         model = TrainingSample
-        fields = ('id', 'sentineltile', 'composite', 'geom', 'category', 'value')
+        fields = (
+            'id', 'sentineltile', 'composite', 'geom', 'category', 'value',
+            'traininglayer',
+        )
 
 
 class ClassifierSerializer(ModelSerializer):
 
-    trainingsamples = PrimaryKeyRelatedField(queryset=TrainingSample.objects.all(), many=True, required=False)
+    traininglayer = PrimaryKeyRelatedField(queryset=TrainingLayer.objects.all(), required=False)
 
     class Meta:
         model = Classifier
-        fields = ('id', 'name', 'algorithm', 'trainingsamples', 'legend')
+        fields = ('id', 'name', 'algorithm', 'traininglayer', 'legend')
 
 
 class PredictedLayerSerializer(ModelSerializer):

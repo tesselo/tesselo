@@ -3,11 +3,21 @@ from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from classify.models import Classifier, PredictedLayer, TrainingSample
-from classify.serializers import ClassifierSerializer, PredictedLayerSerializer, TrainingSampleSerializer
+from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
+from classify.serializers import (
+    ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
+)
 from raster_api.permissions import ChangePermissionObjectPermission
 from raster_api.views import PermissionsModelViewSet
 from sentinel import ecs
+
+
+class TrainingLayerViewSet(PermissionsModelViewSet):
+
+    serializer_class = TrainingLayerSerializer
+    queryset = TrainingLayer.objects.all().order_by('id')
+
+    _model = 'traininglayer'
 
 
 class TrainingSampleViewSet(PermissionsModelViewSet):

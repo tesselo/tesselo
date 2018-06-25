@@ -11,7 +11,7 @@ from tests.mock_functions import (
     client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
 )
 
-from classify.models import Classifier, PredictedLayer, TrainingSample
+from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
 from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
@@ -46,26 +46,32 @@ class SentinelClassifierTest(TestCase):
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
 
+        self.traininglayer = TrainingLayer.objects.create(name='Test Training Layer')
+
         self.cloud = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844687 -459865, 11844697 -459865, 11844697 -459805, 11844687 -459805, 11844687 -459865))',
             category='Cloud',
             value=2,
+            traininglayer=self.traininglayer,
         )
         self.shadow = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844787 -459865, 11844797 -459865, 11844797 -459805, 11844787 -459805, 11844787 -459865))',
             category='Shadow',
-            value=1
+            value=1,
+            traininglayer=self.traininglayer,
         )
         self.cloudfree = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844887 -459865, 11844897 -459865, 11844897 -459805, 11844887 -459805, 11844887 -459865))',
             category='Cloud free',
             value=0,
+            traininglayer=self.traininglayer,
         )
-        self.clf = Classifier.objects.create(name='Clouds', algorithm=Classifier.SVM)
 
-        self.clf.trainingsamples.add(self.cloud)
-        self.clf.trainingsamples.add(self.shadow)
-        self.clf.trainingsamples.add(self.cloudfree)
+        self.clf = Classifier.objects.create(name='Clouds', algorithm=Classifier.SVM, traininglayer=self.traininglayer)
+
+        self.clf.traininglayer.trainingsample_set.add(self.cloud)
+        self.clf.traininglayer.trainingsample_set.add(self.shadow)
+        self.clf.traininglayer.trainingsample_set.add(self.cloudfree)
 
     def tearDown(self):
         shutil.rmtree(settings.MEDIA_ROOT)

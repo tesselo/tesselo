@@ -56,7 +56,7 @@ def train_sentinel_classifier(classifier_id):
     # Dictionary for categories.
     categories = {}
     # Loop through training tiles to build training set.
-    for sample in classifier.trainingsamples.all():
+    for sample in classifier.traininglayer.trainingsample_set.all():
         # Check for consistency in training samples
         if sample.category in categories:
             if sample.value != categories[sample.category]:
