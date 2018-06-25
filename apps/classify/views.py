@@ -72,5 +72,6 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
         Predict this layer.
         """
         pred = self.get_object()
+        pred.write('Scheduled layer prediction', pred.PENDING)
         ecs.predict_sentinel_layer(pred.id)
         return Response({'success': 'Triggered Layer Prediction {}'.format(pred.id)})

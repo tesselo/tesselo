@@ -91,26 +91,33 @@ class SentinelClassifierTest(TestCase):
         self._get_data()
         # SVM
         self.clf.algorithm = Classifier.SVM
+        self.clf.status = self.clf.UNPROCESSED
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, LinearSVC))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        self.assertIn('Finished training algorithm', self.clf.log)
         cache.clear()
 
         # Random forest
         self.clf.algorithm = Classifier.RF
+        self.clf.status = self.clf.UNPROCESSED
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, RandomForestClassifier))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
         cache.clear()
 
         # Neural Network
         self.clf.algorithm = Classifier.NN
+        self.clf.status = self.clf.UNPROCESSED
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, MLPClassifier))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
         cache.clear()
 
     @skip('This test setup does not populate the sentineltiles yet.')
@@ -142,6 +149,9 @@ class SentinelClassifierTest(TestCase):
         # Pyramid has been built.
         self.assertTrue(pred.chunks_count > 0)
         self.assertEqual(pred.chunks_done, pred.chunks_count)
+        self.assertIn('Finished layer prediction at full resolution', pred.log)
+        self.assertIn('Finished building pyramid', pred.log)
+        self.assertEqual(pred.status, pred.FINISHED)
         cache.clear()
 
     @skip('Cloud view is outdated.')

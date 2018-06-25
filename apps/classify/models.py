@@ -94,7 +94,7 @@ class Classifier(models.Model):
             self._clf = pickle.loads(self.trained.read())
         return self._clf
 
-    def write(self, data, status=None, level=None):
+    def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
         self.log += now + str(data) + '\n'
         if status:
@@ -106,11 +106,24 @@ class PredictedLayer(models.Model):
     """
     A rasterlayer with prediction output from a classifier.
     """
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    ST_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
     composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
-    log = models.TextField(default='')
+    log = models.TextField(default='', blank=True)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     chunks_count = models.IntegerField(default=0, blank=True)
     chunks_done = models.IntegerField(default=0, blank=True)
 
@@ -132,6 +145,13 @@ class PredictedLayer(models.Model):
                 datatype=RasterLayer.CATEGORICAL,
             )
         super().save(*args, **kwargs)  # Call the "real" save() method.
+
+    def write(self, data, status=None):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
+        self.save()
 
 
 class TrainingLayerUserObjectPermission(UserObjectPermissionBase):

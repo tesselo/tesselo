@@ -78,6 +78,7 @@ class PredictedLayerAdmin(admin.ModelAdmin):
 
     def predict_layer(self, request, queryset):
         for pred in queryset:
+            pred.write('Scheduled layer prediction', pred.PENDING)
             ecs.predict_sentinel_layer(pred.id)
         self.message_user(request, 'Started predicting layer.')
 

@@ -1,4 +1,3 @@
-import datetime
 import importlib
 import io
 import pickle
@@ -135,30 +134,30 @@ def predict_sentinel_layer(predicted_layer_id):
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
     pred.chunks_done = 0
-    pred.log = '[{0}] Started predicting layer.'.format(datetime.datetime.now())
-    pred.save()
+    pred.write('Started predicting layer.', pred.PROCESSING)
 
     # Get tile range for compositeband or sentineltile for this prediction.
     tiles = get_prediction_index_range(pred)
 
     # Push tasks for sentinel chunks.
     counter = 0
-    chunk_counter = 0
     CHUNK_SIZE = 100
     for tile_index in tiles:
         counter += 1
         if counter % CHUNK_SIZE == 0:
-            chunk_counter += 1
+            # Save number of jobs to be done.
+            pred.refresh_from_db()
+            pred.chunks_count += 1
+            pred.save()
             ecs.predict_sentinel_chunk(pred.id, counter - CHUNK_SIZE, counter)
     # Push the remaining index range as well.
     rest = counter % 50
     if rest:
-        chunk_counter += 1
+        # Save number of jobs to be done.
+        pred.refresh_from_db()
+        pred.chunks_count += 1
+        pred.save()
         ecs.predict_sentinel_chunk(pred.id, counter - rest, counter)
-    # Save number of jobs to be done.
-    pred.refresh_from_db()
-    pred.chunks_count = chunk_counter
-    pred.save()
 
 
 def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
@@ -187,14 +186,12 @@ def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
 
     # Log progress, update chunks done count.
     pred.refresh_from_db()
-    pred.log += '\n[{0}] Finished chunks from {1} to {2}'.format(datetime.datetime.now(), from_idx, to_idx)
     pred.chunks_done += 1
-    pred.save()
+    pred.write('Finished chunks from {} to {}'.format(from_idx, to_idx))
 
     # If all chunks have completed, push pyramid build job.
     if pred.chunks_count > 0 and pred.chunks_done == pred.chunks_count:
-        pred.log += '\n[{0}] Finished layer prediction at full resolution'.format(datetime.datetime.now())
-        pred.save()
+        pred.write('Finished layer prediction at full resolution')
         ecs.build_predicted_pyramid(predicted_layer_id)
 
 
@@ -204,13 +201,11 @@ def build_predicted_pyramid(predicted_layer_id):
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
 
-    pred.log += '\n[{0}] Started building pyramid'.format(datetime.datetime.now())
-    pred.save()
+    pred.write('Started building pyramid')
 
     # Loop through the tiles in each zoom level, bottom up.
     for tilez in range(ZOOM - 1, -1, -1):
-        pred.log += '\n[{0}] Building pyramid at zoom level {}'.format(datetime.datetime.now(), tilez)
-        pred.save()
+        pred.write('Building pyramid at zoom level {}'.format(tilez))
 
         for tilex, tiley, tilez in get_prediction_index_range(pred, tilez):
             # Get tile data.
@@ -244,5 +239,4 @@ def build_predicted_pyramid(predicted_layer_id):
                 nodata_value=0,
                 datatype=1,
             )
-    pred.log += '\n[{0}] Finished building pyramid, prediction task completed.'.format(datetime.datetime.now())
-    pred.save()
+    pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
