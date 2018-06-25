@@ -16,6 +16,8 @@ class TrainingLayerViewSet(PermissionsModelViewSet):
 
     serializer_class = TrainingLayerSerializer
     queryset = TrainingLayer.objects.all().order_by('id')
+    filter_backends = (SearchFilter, )
+    search_fields = ('name', )
 
     _model = 'traininglayer'
 
