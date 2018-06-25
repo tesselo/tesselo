@@ -2,6 +2,7 @@ from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingS
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const, ecs
+from sentinel.models import CompositeBand, SentinelTileBand
 
 
 class TrainingSampleForm(forms.ModelForm):
@@ -10,13 +11,19 @@ class TrainingSampleForm(forms.ModelForm):
         super(TrainingSampleForm, self).__init__(*args, **kwargs)
         if hasattr(self, 'instance'):
             if self.instance.composite:
-                red = self.instance.composite.compositeband_set.get(band=const.BD4).rasterlayer_id
-                green = self.instance.composite.compositeband_set.get(band=const.BD3).rasterlayer_id
-                blue = self.instance.composite.compositeband_set.get(band=const.BD2).rasterlayer_id
+                try:
+                    red = self.instance.composite.compositeband_set.get(band=const.BD4).rasterlayer_id
+                    green = self.instance.composite.compositeband_set.get(band=const.BD3).rasterlayer_id
+                    blue = self.instance.composite.compositeband_set.get(band=const.BD2).rasterlayer_id
+                except CompositeBand.DoesNotExist:
+                    return
             elif self.instance.sentineltile:
-                red = self.instance.sentineltile.sentineltileband_set.get(band=const.BD4).layer_id
-                green = self.instance.sentineltile.sentineltileband_set.get(band=const.BD3).layer_id
-                blue = self.instance.sentineltile.sentineltileband_set.get(band=const.BD2).layer_id
+                try:
+                    red = self.instance.sentineltile.sentineltileband_set.get(band=const.BD4).layer_id
+                    green = self.instance.sentineltile.sentineltileband_set.get(band=const.BD3).layer_id
+                    blue = self.instance.sentineltile.sentineltileband_set.get(band=const.BD2).layer_id
+                except SentinelTileBand.DoesNotExist:
+                    return
             else:
                 return
             url = '/api/algebra/${z}/${x}/${y}.png?' + 'layers=r={red},g={green},b={blue}&scale=0,4e3&alpha&enhance_brightness=1.6&enhance_sharpness=1.2&enhance_color=1.2&enhance_contrast=1.1'.format(
