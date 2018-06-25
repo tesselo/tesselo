@@ -1,3 +1,4 @@
+import datetime
 import pickle
 
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
@@ -60,11 +61,27 @@ class Classifier(models.Model):
         NN: ('neural_network', 'MLPClassifier'),
     }
 
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    ST_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+
     name = models.CharField(max_length=100)
     algorithm = models.CharField(max_length=10, choices=ALGORITHM_CHOICES)
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
     legend = HStoreField(default={}, editable=False)
+
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    log = models.TextField(blank=True, default='')
 
     def __str__(self):
         return '{0} ({1})'.format(self.name, self.get_algorithm_display())
@@ -76,6 +93,13 @@ class Classifier(models.Model):
         if self._clf is None:
             self._clf = pickle.loads(self.trained.read())
         return self._clf
+
+    def write(self, data, status=None, level=None):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
+        self.save()
 
 
 class PredictedLayer(models.Model):

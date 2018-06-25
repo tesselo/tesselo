@@ -59,11 +59,15 @@ class ClassifierAdmin(admin.ModelAdmin):
 
     actions = ['train_classifier', ]
 
+    readonly_fields = ['legend', ]
+
     def train_classifier(self, request, queryset):
         """
         Admin action to train classifiers.
         """
         for clf in queryset:
+            clf.status = clf.PENDING
+            clf.save()
             ecs.train_sentinel_classifier(clf.id)
         self.message_user(request, 'Started training classifiers.')
 

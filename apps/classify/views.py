@@ -49,6 +49,8 @@ class ClassifierViewSet(PermissionsModelViewSet):
         Train this classifier.
         """
         classifier = self.get_object()
+        classifier.status = classifier.PENDING
+        classifier.save()
         ecs.train_sentinel_classifier(classifier.id)
         return Response({'success': 'Triggered Classifier Training {}'.format(classifier.id)})
 

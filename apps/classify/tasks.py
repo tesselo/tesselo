@@ -49,6 +49,8 @@ def train_sentinel_classifier(classifier_id):
     """
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
+    classifier.write('Started collecting training data', classifier.PROCESSING)
+
     # Create numpy arrays holding training data.
     NUMBER_OF_BANDS = len(CLASSIFY_BAND_NAMES)
     X = numpy.empty(shape=(0, NUMBER_OF_BANDS))
@@ -60,7 +62,9 @@ def train_sentinel_classifier(classifier_id):
         # Check for consistency in training samples
         if sample.category in categories:
             if sample.value != categories[sample.category]:
-                raise ValueError('Found different values for same category.')
+                msg = 'Found different values for same category.'
+                classifier.write(msg, classifier.FAILED)
+                raise ValueError(msg)
         else:
             categories[sample.category] = sample.value
         # Loop over index range for tiles intersecting with the sample geom.
@@ -102,6 +106,8 @@ def train_sentinel_classifier(classifier_id):
                 # Add explanatory variables to stack.
                 X = numpy.vstack([data, X])
 
+    classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(Y)))
+
     # Instanciate and fit the classifier.
     clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]
     clf_mod = importlib.import_module('sklearn.' + clf_mod)
@@ -111,7 +117,7 @@ def train_sentinel_classifier(classifier_id):
     # Store result in classifier.
     classifier.legend = categories
     classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name='trained')
-    classifier.save()
+    classifier.write('Finished training algorithm', classifier.FINISHED)
 
 
 def get_prediction_index_range(pred, zoom=ZOOM):
