@@ -187,6 +187,8 @@ def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
 
     # If all chunks have completed, push pyramid build job.
     if pred.chunks_count > 0 and pred.chunks_done == pred.chunks_count:
+        pred.log += '\n[{0}] Finished layer prediction at full resolution'.format(datetime.datetime.now())
+        pred.save()
         ecs.build_predicted_pyramid(predicted_layer_id)
 
 
@@ -195,8 +197,15 @@ def build_predicted_pyramid(predicted_layer_id):
     Build an overview stack over a predicted layer.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
+
+    pred.log += '\n[{0}] Started building pyramid'.format(datetime.datetime.now())
+    pred.save()
+
     # Loop through the tiles in each zoom level, bottom up.
     for tilez in range(ZOOM - 1, -1, -1):
+        pred.log += '\n[{0}] Building pyramid at zoom level {}'.format(datetime.datetime.now(), tilez)
+        pred.save()
+
         for tilex, tiley, tilez in get_prediction_index_range(pred, tilez):
             # Get tile data.
             tiles = [
@@ -229,3 +238,5 @@ def build_predicted_pyramid(predicted_layer_id):
                 nodata_value=0,
                 datatype=1,
             )
+    pred.log += '\n[{0}] Finished building pyramid, prediction task completed.'.format(datetime.datetime.now())
+    pred.save()
