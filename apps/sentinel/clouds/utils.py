@@ -1,3 +1,5 @@
+import datetime
+
 import ephem
 import numpy
 
@@ -8,17 +10,26 @@ def sun(time, lat, lon):
     """
     Computes average sun angle for a given tile.
     """
-    # Create the observer.
+    # Check input types.
+    if not isinstance(lat, (float, int)):
+        raise ValueError('Latitude needs to be float or integer.')
+    if not isinstance(lon, (float, int)):
+        raise ValueError('Longitude needs to be float or integer.')
+    if not isinstance(time, datetime.datetime):
+        raise ValueError('Time input needs to be a datetime instance.')
+    # Create the observer. The arguments here need to be in str format,
+    # otherwise the results are scrambled. Ephem is very sensitive to input
+    # types apparently.
     obs = ephem.Observer()
-    obs.date = time
-    obs.lat = lat
-    obs.lon = lon
+    obs.date = time.strftime('%y-%m-%d %H:%M:%S')
+    obs.lat = str(lat)
+    obs.lon = str(lon)
     # Get the sun.
     sun = ephem.Sun()
     # Compute observation angle.
     sun.compute(obs)
     # Return result as degrees.
-    return ephem.degrees(sun.alt), ephem.degrees(sun.az)
+    return float(sun.alt), float(sun.az)
 
 
 def nodata_mask(stack):

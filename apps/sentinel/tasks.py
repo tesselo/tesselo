@@ -177,7 +177,7 @@ def ingest_tile_from_prefix(tile_prefix, client=None):
     # Compute sun angle at center of tile.
     cen = mgrs.geom.centroid.transform(4326, clone=True)
     date = parser.parse(tileinfo['timestamp'])
-    alt, azim = sun(date.strftime('%y-%m-%d %H:%M:%S'), cen.y, cen.x)
+    alt, azim = sun(date, cen.y, cen.x)
 
     # Register tile, log error if creation failed.
     SentinelTile.objects.create(
