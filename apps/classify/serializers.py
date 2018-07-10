@@ -28,7 +28,11 @@ class ClassifierSerializer(ModelSerializer):
 
     class Meta:
         model = Classifier
-        fields = ('id', 'name', 'algorithm', 'traininglayer', 'legend')
+        fields = (
+            'id', 'name', 'algorithm', 'traininglayer', 'legend', 'status',
+            'log',
+        )
+        read_only_fields = ('status', 'log', 'legend', )
 
 
 class PredictedLayerSerializer(ModelSerializer):
@@ -41,11 +45,11 @@ class PredictedLayerSerializer(ModelSerializer):
         fields = (
             'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
             'log', 'chunks_count', 'chunks_done', 'classifier_name',
-            'source_name',
+            'source_name', 'status',
         )
         read_only_fields = (
             'rasterlayer', 'log', 'chunks_count', 'chunks_done',
-            'classifier_name', 'source_name',
+            'classifier_name', 'source_name', 'status',
         )
 
     def get_classifier_name(self, obj):
