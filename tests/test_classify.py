@@ -12,8 +12,9 @@ from tests.mock_functions import (
 )
 
 from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
-from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
+from classify.tasks import VALUE_CONFIG_ERROR_MSG, predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.cache import cache
 from django.test import TestCase, override_settings
@@ -120,6 +121,18 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         cache.clear()
 
+        # Error due to broken input data.
+        self.cloud.pk = None
+        self.cloud.value = 99
+        self.cloud.save()
+        with self.assertRaisesMessage(ValueError, VALUE_CONFIG_ERROR_MSG):
+            train_sentinel_classifier(self.clf.id)
+        try:
+            train_sentinel_classifier(self.clf.id)
+        except ValueError:
+            self.clf.refresh_from_db()
+            self.assertEqual(self.clf.status, Classifier.FAILED)
+
     @skip('This test setup does not populate the sentineltiles yet.')
     def test_classifier_prediction_sentineltile(self):
         self._get_data()
@@ -153,6 +166,23 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
         cache.clear()
+
+    def test_training_export(self):
+        self._get_data()
+
+        User.objects.create_superuser(
+            username='michael',
+            email='michael@bluth.com',
+            password='bananastand'
+        )
+        self.client.login(username='michael', password='bananastand')
+
+        url = reverse('traininglayer-trainingdata', kwargs={'pk': self.clf.traininglayer.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertTrue(len(response.content) > 3000)
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):

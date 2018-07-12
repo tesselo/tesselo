@@ -1,3 +1,4 @@
+import numpy
 from rest_framework.decorators import detail_route
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +8,8 @@ from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingS
 from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
 )
+from classify.tasks import CLASSIFY_BAND_NAMES, get_training_matrix
+from django.http import HttpResponse
 from raster_api.permissions import ChangePermissionObjectPermission
 from raster_api.views import PermissionsModelViewSet
 from sentinel import ecs
@@ -20,6 +23,30 @@ class TrainingLayerViewSet(PermissionsModelViewSet):
     search_fields = ('name', )
 
     _model = 'traininglayer'
+
+    @detail_route(methods=['get'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def trainingdata(self, request, pk):
+        """
+        Get the training data from this training layer.
+        """
+        # Get training data.
+        categories, X, Y = get_training_matrix(self.get_object())
+        # Append class values to matrix.
+        data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('uint16')
+        # Append class names to matrix.
+        names = numpy.chararray(Y.shape, itemsize=max(len(key) for key in categories.keys()))
+        for key, val in categories.items():
+            names[Y == val] = key
+        data = numpy.append(names.reshape((len(names), 1)), data, 1)
+        # Append header to matrix.
+        header = numpy.array(['ClassName', 'ClassDigitalNumber'] + [band.split('.jp2')[0] for band in CLASSIFY_BAND_NAMES])
+        data = numpy.append(header.reshape((1, len(header))), data, 0)
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="trainingdata.csv"'
+        numpy.savetxt(response, data, delimiter=',', fmt='%s')
+
+        return response
 
 
 class TrainingSampleViewSet(PermissionsModelViewSet):

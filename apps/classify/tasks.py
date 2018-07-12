@@ -25,6 +25,8 @@ CLASSIFY_BAND_NAMES = (
     'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2', 'B12.jp2',
 )
 
+VALUE_CONFIG_ERROR_MSG = 'Found different values for same category.'
+
 
 def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     """
@@ -42,28 +44,19 @@ def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     return numpy.array(result).T
 
 
-def train_sentinel_classifier(classifier_id):
-    """
-    Trains a classifier based on the registered tiles and sample data.
-    """
-    # Get classifier model.
-    classifier = Classifier.objects.get(pk=classifier_id)
-    classifier.write('Started collecting training data', classifier.PROCESSING)
-
+def get_training_matrix(traininglayer):
     # Create numpy arrays holding training data.
     NUMBER_OF_BANDS = len(CLASSIFY_BAND_NAMES)
-    X = numpy.empty(shape=(0, NUMBER_OF_BANDS))
-    Y = numpy.empty(shape=(0,))
+    X = numpy.empty(shape=(0, NUMBER_OF_BANDS), dtype='uint16')
+    Y = numpy.empty(shape=(0,), dtype='uint8')
     # Dictionary for categories.
     categories = {}
     # Loop through training tiles to build training set.
-    for sample in classifier.traininglayer.trainingsample_set.all():
+    for sample in traininglayer.trainingsample_set.all():
         # Check for consistency in training samples
         if sample.category in categories:
             if sample.value != categories[sample.category]:
-                msg = 'Found different values for same category.'
-                classifier.write(msg, classifier.FAILED)
-                raise ValueError(msg)
+                raise ValueError(VALUE_CONFIG_ERROR_MSG)
         else:
             categories[sample.category] = sample.value
         # Loop over index range for tiles intersecting with the sample geom.
@@ -104,6 +97,23 @@ def train_sentinel_classifier(classifier_id):
                 data = data[selector]
                 # Add explanatory variables to stack.
                 X = numpy.vstack([data, X])
+
+    return categories, X, Y
+
+
+def train_sentinel_classifier(classifier_id):
+    """
+    Trains a classifier based on the registered tiles and sample data.
+    """
+    # Get classifier model.
+    classifier = Classifier.objects.get(pk=classifier_id)
+    classifier.write('Started collecting training data', classifier.PROCESSING)
+
+    try:
+        categories, X, Y = get_training_matrix(classifier.traininglayer)
+    except ValueError:
+        classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
+        raise
 
     classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(Y)))
 
