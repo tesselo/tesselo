@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'classify',
     'formulary',
     'naip',
+    'wmts',
 ]
 
 MIDDLEWARE = [

@@ -5,6 +5,9 @@ from raster.tiles.utils import tile_bounds, tile_scale
 from rest_framework.views import APIView
 
 from django.http import HttpResponse
+from raster_api.views import PermissionsModelViewSet
+from wmts.models import WMTSLayer
+from wmts.serializers import WMTSLayerSerializer
 
 WMTS_BASE_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml" xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd" version="1.0.0">
@@ -86,13 +89,13 @@ class WMTSAPIView(APIView):
         )
 
         # Get wmts layers for the request user.
-        wmts_layers = get_objects_for_user(request.user, 'formulary.view_wmtslayer')
+        wmts_layers = get_objects_for_user(request.user, 'wmts.view_wmtslayer')
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
         for layer in wmts_layers:
             if layer.formula:
-                layer_ids = layer.layer_ids
+                layer_ids = layer.formula_ids
                 if not layer_ids:
                     continue
                 # Generate raster algebra url.
@@ -103,12 +106,13 @@ class WMTSAPIView(APIView):
                     colormap=json.dumps({"continuous": True, "from": [165, 0, 38], "to": [0, 104, 55], "over": [249, 247, 174]}).replace('"', '&quot;'),
                 )
             else:
+                red, green, blue = layer.rgb_ids
                 # Generate RGB url.
                 url = "{urlbase}{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=3,3e3&amp;alpha".format(
                     urlbase=urlbase,
-                    red=layer.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id,
-                    green=layer.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id,
-                    blue=layer.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id,
+                    red=red,
+                    green=green,
+                    blue=blue,
                 )
 
             # Add layer to wmts capabilities list.
@@ -137,3 +141,9 @@ class WMTSAPIView(APIView):
             )
 
         return TILE_MATRIX_SET_TEMPLATE.format(content=content)
+
+
+class WMTSLayerViewSet(PermissionsModelViewSet):
+    queryset = WMTSLayer.objects.all().order_by('title')
+    serializer_class = WMTSLayerSerializer
+    _model = 'wmtslayer'

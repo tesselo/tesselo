@@ -3,8 +3,7 @@ from rest_framework import routers
 from classify.views import ClassifierViewSet, PredictedLayerViewSet, TrainingLayerViewSet, TrainingSampleViewSet
 from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
-from formulary.views import FormulaViewSet, WMTSLayerViewSet
-from formulary.wmts import WMTSAPIView
+from formulary.views import FormulaViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
     CompositeViewSet, ExportAPIView, GroupViewSet, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet,
@@ -12,6 +11,7 @@ from raster_api.views import (
     UserViewSet, ValueCountResultViewSet
 )
 from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
+from wmts.views import WMTSAPIView, WMTSLayerViewSet
 
 router = routers.DefaultRouter(trailing_slash=False)
 
