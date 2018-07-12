@@ -15,7 +15,10 @@ class WMTSLayer(models.Model):
     composite = models.ForeignKey(Composite, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return '{0} - {1}'.format(self.formula, self.sentineltile)
+        layer = self.sentineltile if self.sentineltile else self.composite
+        layer_type = 'Scene' if self.sentineltile else 'Composite'
+        formula = self.formula if self.formula else 'RGB'
+        return '{} - {} for {} "{}"'.format(self.title, formula, layer_type, layer)
 
     class Meta:
         permissions = (
