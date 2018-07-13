@@ -95,7 +95,7 @@ class WMTSAPIView(APIView):
                 continue
             layer_list += TILE_LAYER_TEMPLATE.format(
                 title=layer.title,
-                identifier=layer.id,
+                identifier='wmtslayer{}'.format(layer.id),
                 url=urlbase + url,
             )
 
