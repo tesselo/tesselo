@@ -1,5 +1,3 @@
-import json
-
 from guardian.shortcuts import get_objects_for_user
 from raster.tiles.utils import tile_bounds, tile_scale
 from rest_framework.views import APIView
@@ -83,46 +81,23 @@ class WMTSAPIView(APIView):
     def get(self, request):
         # Get url base from request.
         host = request.get_host()
-        urlbase = '{0}://{1}/api/algebra/'.format(
-            'http' if host == 'localhost' else 'https',
-            host,
-        )
+        protocol = 'http' if host == 'localhost' else 'https'
+        urlbase = '{}://{}/api/'.format(protocol, host)
 
         # Get wmts layers for the request user.
         wmts_layers = get_objects_for_user(request.user, 'wmts.view_wmtslayer')
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
-        counter = 1
         for layer in wmts_layers:
-            if layer.formula:
-                layer_ids = layer.formula_ids
-                if not layer_ids:
-                    continue
-                # Generate raster algebra url.
-                url = "{urlbase}{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
-                    layers=layer_ids,
-                    urlbase=urlbase,
-                    formula=layer.formula.formula.replace(' ', ''),
-                    colormap=json.dumps({"continuous": True, "from": [165, 0, 38], "to": [0, 104, 55], "over": [249, 247, 174]}).replace('"', '&quot;'),
-                )
-            else:
-                red, green, blue = layer.rgb_ids
-                # Generate RGB url.
-                url = "{urlbase}{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=3,3e3&amp;alpha".format(
-                    urlbase=urlbase,
-                    red=red,
-                    green=green,
-                    blue=blue,
-                )
-
-            # Add layer to wmts capabilities list.
+            url = layer.url
+            if not url:
+                continue
             layer_list += TILE_LAYER_TEMPLATE.format(
-                title=layer.title,
-                identifier=counter,
-                url=url
+                title=layer.title.title(),
+                identifier=layer.id,
+                url=urlbase + url,
             )
-            counter += 1
 
         return HttpResponse(WMTS_BASE_TEMPLATE.format(layers=layer_list, mat=self.tile_matrix_set_3857), content_type="text/xml")
 

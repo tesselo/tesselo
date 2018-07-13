@@ -1,5 +1,8 @@
+import json
+
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
+from classify.models import PredictedLayer
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -13,11 +16,21 @@ class WMTSLayer(models.Model):
     formula = models.ForeignKey(Formula, null=True, blank=True, help_text='Assumes RGB mode if left blank.', on_delete=models.CASCADE)
     sentineltile = models.ForeignKey(SentinelTile, on_delete=models.CASCADE, null=True, blank=True)
     composite = models.ForeignKey(Composite, on_delete=models.CASCADE, null=True, blank=True)
+    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        layer = self.sentineltile if self.sentineltile else self.composite
-        layer_type = 'Scene' if self.sentineltile else 'Composite'
-        formula = self.formula if self.formula else 'RGB'
+        if self.sentineltile:
+            layer = self.sentineltile
+            layer_type = 'Scene'
+            formula = self.formula if self.formula else 'RGB'
+        elif self.predictedlayer:
+            layer = self.predictedlayer
+            layer_type = 'Predicted layer'
+            formula = 'Result'
+        else:
+            layer = self.composite
+            layer_type = 'Composite'
+            formula = self.formula if self.formula else 'RGB'
         return '{} - {} for {} "{}"'.format(self.title, formula, layer_type, layer)
 
     class Meta:
@@ -26,7 +39,34 @@ class WMTSLayer(models.Model):
         )
 
     @property
-    def formula_ids(self):
+    def url(self):
+        if self.formula:
+            return self.formula_url
+        elif self.predictedlayer:
+            return self.predictedlayer_url
+        else:
+            return self.rgb_url
+
+    @property
+    def rgb_url(self):
+        if self.sentineltile:
+            red = self.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id,
+            green = self.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id,
+            blue = self.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id,
+        else:
+            red = self.composite.compositeband_set.get(band='B04.jp2').rasterlayer_id,
+            green = self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id,
+            blue = self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id,
+
+        # Generate RGB url.
+        return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=3,3e3&amp;alpha".format(
+            red=red,
+            green=green,
+            blue=blue,
+        )
+
+    @property
+    def formula_url(self):
         ids = []
         if self.sentineltile:
             qs = self.sentineltile.sentineltileband_set.all()
@@ -45,22 +85,24 @@ class WMTSLayer(models.Model):
                     ids.append('{}={}'.format(form_key, getattr(qs.get(band=key), layer_attr)))
                 except doesnotexist:
                     continue
-        return ','.join(ids)
+
+        layer_ids = ','.join(ids)
+
+        if not layer_ids:
+            return
+
+        # Generate raster algebra url.
+        return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
+            layers=layer_ids,
+            formula=self.formula.formula.replace(' ', ''),
+            colormap=json.dumps({"continuous": True, "from": [165, 0, 38], "to": [0, 104, 55], "over": [249, 247, 174]}).replace('"', '&quot;'),
+        )
 
     @property
-    def rgb_ids(self):
-        if self.sentineltile:
-            return (
-                self.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id,
-                self.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id,
-                self.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id,
-            )
-        else:
-            return (
-                self.composite.compositeband_set.get(band='B04.jp2').rasterlayer_id,
-                self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id,
-                self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id,
-            )
+    def predictedlayer_url(self):
+        return "tile/{predictedlayer}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png".format(
+            predictedlayer=self.predictedlayer.rasterlayer_id,
+        )
 
 
 class WMTSLayerUserObjectPermission(UserObjectPermissionBase):
