@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Obtained from https://github.com/dsc/colorbrewer-python
 
 __version__ = '1.0.0'
 VERSION = tuple(map(int, __version__.split('.')))
