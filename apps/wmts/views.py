@@ -93,6 +93,7 @@ class WMTSAPIView(APIView):
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
+        counter = 1
         for layer in wmts_layers:
             if layer.formula:
                 layer_ids = layer.formula_ids
@@ -118,9 +119,10 @@ class WMTSAPIView(APIView):
             # Add layer to wmts capabilities list.
             layer_list += TILE_LAYER_TEMPLATE.format(
                 title=layer.title,
-                identifier='{0}'.format(layer.id),
+                identifier=counter,
                 url=url
             )
+            counter += 1
 
         return HttpResponse(WMTS_BASE_TEMPLATE.format(layers=layer_list, mat=self.tile_matrix_set_3857), content_type="text/xml")
 
