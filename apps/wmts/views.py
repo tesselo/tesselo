@@ -94,7 +94,7 @@ class WMTSAPIView(APIView):
             if not url:
                 continue
             layer_list += TILE_LAYER_TEMPLATE.format(
-                title=layer.title.title(),
+                title=layer.title,
                 identifier=layer.id,
                 url=urlbase + url,
             )

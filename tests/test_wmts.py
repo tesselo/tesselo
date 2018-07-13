@@ -4,6 +4,7 @@ from guardian.shortcuts import assign_perm
 from raster.models import RasterLayer
 from rest_framework import status
 
+from classify.models import PredictedLayer
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -84,6 +85,12 @@ class WMTSViewTests(TestCase):
             formula=formula,
         )
 
+        self.pred = PredictedLayer.objects.create(composite=composite)
+        self.wmtslayer5 = WMTSLayer.objects.create(
+            title='Shuturmurg Classified',
+            predictedlayer=self.pred,
+        )
+
         self.url = reverse('wmts-service')
 
     def test_wmts_api(self):
@@ -111,6 +118,10 @@ class WMTSViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('Sudden Valley RGB', response.content.decode())
+        self.assertIn(
+            'https://testserver/api/algebra/{TileMatrix}/{TileCol}/{TileRow}.png?layers=r=',
+            response.content.decode(),
+        )
 
     def test_wmts_service_scene_formula(self):
         assign_perm('view_wmtslayer', self.usr, self.wmtslayer2)
@@ -118,6 +129,10 @@ class WMTSViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('Sudden Valley Formula', response.content.decode())
+        self.assertIn(
+            'https://testserver/api/algebra/{TileMatrix}/{TileCol}/{TileRow}.png?layers=B4',
+            response.content.decode(),
+        )
 
     def test_wmts_service_composite_rgb(self):
         response = self.client.get(self.url)
@@ -136,3 +151,11 @@ class WMTSViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('Shuturmurg Formula', response.content.decode())
+
+    def test_wmts_service_predicted_layer(self):
+        assign_perm('view_wmtslayer', self.usr, self.wmtslayer5)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('Shuturmurg Classified', response.content.decode())
+        self.assertIn('/tile/{}/'.format(self.pred.rasterlayer_id), response.content.decode())

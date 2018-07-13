@@ -50,13 +50,13 @@ class WMTSLayer(models.Model):
     @property
     def rgb_url(self):
         if self.sentineltile:
-            red = self.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id,
-            green = self.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id,
-            blue = self.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id,
+            red = self.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id
+            green = self.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id
+            blue = self.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id
         else:
-            red = self.composite.compositeband_set.get(band='B04.jp2').rasterlayer_id,
-            green = self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id,
-            blue = self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id,
+            red = self.composite.compositeband_set.get(band='B04.jp2').rasterlayer_id
+            green = self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id
+            blue = self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id
 
         # Generate RGB url.
         return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=3,3e3&amp;alpha".format(
