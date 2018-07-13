@@ -10,6 +10,10 @@ from formulary.models import Formula
 from sentinel.const import BAND_CHOICES
 from sentinel.models import Composite, CompositeBand, SentinelTile, SentinelTileBand
 
+from . import colorbrewer
+
+DEFAULT_COLOR = 'RdYlGn'
+
 
 class WMTSLayer(models.Model):
     title = models.CharField(max_length=200)
@@ -88,14 +92,28 @@ class WMTSLayer(models.Model):
 
         layer_ids = ','.join(ids)
 
+        # Ignore this layer if formula has no match (for instance, when scene
+        # was not ingested).
         if not layer_ids:
             return
+
+        # Construct colormap.
+        palette = self.formula.color_palette if self.formula.color_palette else DEFAULT_COLOR
+        brew = getattr(colorbrewer, palette)[9]
+        colormap = {
+            "continuous": True,
+            "range": [self.formula.min_val, self.formula.max_val],
+            "from": colorbrewer.convert(brew[0]),
+            "over": colorbrewer.convert(brew[4]),
+            "to": colorbrewer.convert(brew[8]),
+        }
+        colormap = json.dumps(colormap).replace('"', '&quot;')
 
         # Generate raster algebra url.
         return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
             layers=layer_ids,
             formula=self.formula.formula.replace(' ', ''),
-            colormap=json.dumps({"continuous": True, "from": [165, 0, 38], "to": [0, 104, 55], "over": [249, 247, 174]}).replace('"', '&quot;'),
+            colormap=colormap,
         )
 
     @property
