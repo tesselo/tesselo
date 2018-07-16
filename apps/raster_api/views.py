@@ -79,8 +79,6 @@ class AlgebraAPIView(AlgebraView, RasterAPIView):
     """
 
     def list(self, *args, **kwargs):
-        import json
-        print(json.loads(self.request.GET['colormap']))
         return super(AlgebraAPIView, self).get(*args, **kwargs)
 
 
