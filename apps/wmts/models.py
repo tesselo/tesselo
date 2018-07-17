@@ -1,4 +1,5 @@
 import json
+import urllib
 
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
@@ -109,10 +110,13 @@ class WMTSLayer(models.Model):
         }
         colormap = json.dumps(colormap).replace('"', '&quot;')
 
+        # Urlencode formula string.
+        fromula_quoted = urllib.parse.quote(self.formula.formula.replace(' ', ''))
+
         # Generate raster algebra url.
         return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
             layers=layer_ids,
-            formula=self.formula.formula.replace(' ', ''),
+            formula=fromula_quoted,
             colormap=colormap,
         )
 
