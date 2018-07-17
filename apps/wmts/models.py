@@ -1,5 +1,5 @@
 import json
-import urllib
+from urllib.parse import quote
 
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
@@ -92,6 +92,7 @@ class WMTSLayer(models.Model):
                     continue
 
         layer_ids = ','.join(ids)
+        layer_ids_quoted = quote(layer_ids)
 
         # Ignore this layer if formula has no match (for instance, when scene
         # was not ingested).
@@ -108,16 +109,17 @@ class WMTSLayer(models.Model):
             "over": colorbrewer.convert(brew[4]),
             "to": colorbrewer.convert(brew[8]),
         }
-        colormap = json.dumps(colormap).replace('"', '&quot;')
+        colormap = json.dumps(colormap)
+        colormap_quoted = quote(colormap.replace(' ', ''))
 
         # Urlencode formula string.
-        fromula_quoted = urllib.parse.quote(self.formula.formula.replace(' ', ''))
+        fromula_quoted = quote(self.formula.formula.replace(' ', ''))
 
         # Generate raster algebra url.
         return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
-            layers=layer_ids,
+            layers=layer_ids_quoted,
             formula=fromula_quoted,
-            colormap=colormap,
+            colormap=colormap_quoted,
         )
 
     @property
