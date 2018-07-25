@@ -8,7 +8,7 @@ from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingS
 from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
 )
-from classify.tasks import CLASSIFY_BAND_NAMES, get_training_matrix
+from classify.tasks import CLASSIFY_BAND_NAMES, populate_training_matrix
 from django.http import HttpResponse
 from raster_api.permissions import ChangePermissionObjectPermission
 from raster_api.views import PermissionsModelViewSet
@@ -29,14 +29,16 @@ class TrainingLayerViewSet(PermissionsModelViewSet):
         """
         Get the training data from this training layer.
         """
+        obj = self.get_object()
+        populate_training_matrix(obj)
         # Get training data.
-        categories, X, Y = get_training_matrix(self.get_object())
+        categories, X, Y = obj.legend, obj.X, obj.Y
         # Append class values to matrix.
         data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('uint16')
         # Append class names to matrix.
-        names = numpy.chararray(Y.shape, itemsize=max(len(key) for key in categories.keys()))
-        for key, val in categories.items():
-            names[Y == val] = key
+        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in categories.values()))
+        for category_dn, category_name in categories.items():
+            names[Y == int(category_dn)] = category_name
         data = numpy.append(names.reshape((len(names), 1)), data, 1)
         # Append header to matrix.
         header = numpy.array(['ClassName', 'ClassDigitalNumber'] + [band.split('.jp2')[0] for band in CLASSIFY_BAND_NAMES])
@@ -80,6 +82,62 @@ class ClassifierViewSet(PermissionsModelViewSet):
         classifier.save()
         ecs.train_sentinel_classifier(classifier.id)
         return Response({'success': 'Triggered Classifier Training {}'.format(classifier.id)})
+
+    @detail_route(methods=['get'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    def report(self, request, pk):
+        """
+        Accuracy assessment report.
+        """
+        classifier = self.get_object()
+
+        if not hasattr(classifier, 'classifieraccuracy'):
+            return HttpResponse('')
+        else:
+            acc = classifier.classifieraccuracy
+
+        # Get row and col names
+        names = [acc.classifier.traininglayer.legend[str(int(dat))] for dat in sorted(set(acc.predicted))]
+
+        # Add names to accuracy matrix.
+        data = numpy.array(acc.accuracy_matrix).astype('str')
+        data = numpy.vstack([names, data])
+
+        names = [''] + names
+        data = numpy.hstack([numpy.array(names).reshape((len(names), 1)), data])
+
+        # Add additional header rows to accuracy matrix.
+        head = [''] * len(names)
+        head[1] = 'Actual class'
+        data = numpy.vstack([head, data])
+
+        head[1] = 'Predicted class'
+        head.append('')
+        data = numpy.hstack([numpy.array(head).reshape((len(head), 1)), data])
+
+        # Add producers and consumers accuracy to matrix.
+        producers = ['', 'Producers Accuracy'] + (numpy.diag(acc.accuracy_matrix) / numpy.sum(acc.accuracy_matrix, axis=0)).astype('str').tolist()
+        consumers = ['', 'Consumers Accuracy'] + (numpy.diag(acc.accuracy_matrix) / numpy.sum(acc.accuracy_matrix, axis=1)).astype('str').tolist()
+        consumers.append('')
+
+        data = numpy.vstack([data, producers])
+        data = numpy.hstack([data, numpy.array(consumers).reshape((len(consumers), 1))])
+
+        # Addd overarching statistics.
+        overall = [''] * len(consumers)
+        overall[0] = 'Overall Accuracy'
+        overall[1] = str(acc.accuracy_score)
+        data = numpy.vstack([data, overall])
+
+        kappa = [''] * len(consumers)
+        kappa[0] = 'Overall Accuracy'
+        kappa[1] = str(acc.cohen_kappa)
+        data = numpy.vstack([data, kappa])
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="accuracy_classifier_{}.csv"'.format(classifier.id)
+        numpy.savetxt(response, data, delimiter=',', fmt='%s')
+
+        return response
 
 
 class PredictedLayerViewSet(PermissionsModelViewSet):

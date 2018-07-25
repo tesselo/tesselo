@@ -1,11 +1,12 @@
 import datetime
 import pickle
 
+import numpy
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import RasterLayer
 
 from django.contrib.gis.db import models
-from django.contrib.postgres.fields import HStoreField
+from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from sentinel.models import Composite, SentinelTile
@@ -13,9 +14,12 @@ from sentinel.models import Composite, SentinelTile
 
 class TrainingLayer(models.Model):
     """
-    A group of training sample polygons.
+    A group of training sample polygons and the extracted training pixels.
     """
     name = models.CharField(max_length=500)
+    dependent = ArrayField(ArrayField(models.FloatField(), default=[]), default=[])
+    explanatory = ArrayField(models.IntegerField(), default=[])
+    legend = HStoreField(default={}, editable=False)
 
     def __str__(self):
         return self.name
@@ -24,6 +28,14 @@ class TrainingLayer(models.Model):
         permissions = (
             ('view_traininglayer', 'View training layer'),
         )
+
+    @property
+    def X(self):
+        return numpy.array(self.dependent)
+
+    @property
+    def Y(self):
+        return numpy.array(self.explanatory)
 
 
 class TrainingSample(models.Model):
@@ -79,6 +91,7 @@ class Classifier(models.Model):
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
     legend = HStoreField(default={}, editable=False)
+    splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
 
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
@@ -100,6 +113,22 @@ class Classifier(models.Model):
         if status:
             self.status = status
         self.save()
+
+
+class ClassifierAccuracy(models.Model):
+    """
+    Accuracy data for the classifier.
+    """
+    classifier = models.OneToOneField(Classifier, on_delete=models.CASCADE)
+    selector = ArrayField(models.BooleanField(), default=[])
+    predicted = ArrayField(models.FloatField(), default=[])
+    control = ArrayField(models.FloatField(), default=[])
+    accuracy_matrix = ArrayField(ArrayField(models.FloatField(), default=[]), default=[])
+    cohen_kappa = models.FloatField(default=0)
+    accuracy_score = models.FloatField(default=0)
+
+    def __str__(self):
+        return '{} Accuracy {}'.format(self.classifier, self.accuracy_score)
 
 
 class PredictedLayer(models.Model):

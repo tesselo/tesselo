@@ -1,6 +1,6 @@
-from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField
+from rest_framework.serializers import CharField, ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField
 
-from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, TrainingLayer, TrainingSample
 
 
 class TrainingLayerSerializer(ModelSerializer):
@@ -22,17 +22,26 @@ class TrainingSampleSerializer(ModelSerializer):
         )
 
 
+class ClassifierAccuracySerializer(ModelSerializer):
+
+    class Meta:
+        model = ClassifierAccuracy
+        fields = ('accuracy_score', 'accuracy_matrix', 'cohen_kappa')
+
+
 class ClassifierSerializer(ModelSerializer):
 
     traininglayer = PrimaryKeyRelatedField(queryset=TrainingLayer.objects.all(), required=False)
+    classifieraccuracy = ClassifierAccuracySerializer(read_only=True)
+    legend = CharField(source='traininglayer.legend')
 
     class Meta:
         model = Classifier
         fields = (
             'id', 'name', 'algorithm', 'traininglayer', 'legend', 'status',
-            'log',
+            'log', 'classifieraccuracy'
         )
-        read_only_fields = ('status', 'log', 'legend', )
+        read_only_fields = ('status', 'log', 'legend', 'classifieraccuracy', )
 
 
 class PredictedLayerSerializer(ModelSerializer):

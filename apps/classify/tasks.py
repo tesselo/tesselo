@@ -8,7 +8,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
-from classify.models import Classifier, PredictedLayer
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from sentinel import ecs
@@ -44,7 +44,7 @@ def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     return numpy.array(result).T
 
 
-def get_training_matrix(traininglayer):
+def populate_training_matrix(traininglayer):
     # Create numpy arrays holding training data.
     NUMBER_OF_BANDS = len(CLASSIFY_BAND_NAMES)
     X = numpy.empty(shape=(0, NUMBER_OF_BANDS), dtype='uint16')
@@ -98,34 +98,69 @@ def get_training_matrix(traininglayer):
                 # Add explanatory variables to stack.
                 X = numpy.vstack([data, X])
 
-    return categories, X, Y
+    traininglayer.dependent = X.tolist()
+    traininglayer.explanatory = Y.tolist()
+    traininglayer.legend = {str(int(val)): key for key, val in categories.items()}
+    traininglayer.save()
 
 
 def train_sentinel_classifier(classifier_id):
     """
     Trains a classifier based on the registered tiles and sample data.
     """
+    # Import sklearn here, its not installed in web app servers.
+    from sklearn.metrics import confusion_matrix, cohen_kappa_score, accuracy_score
+
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
     classifier.write('Started collecting training data', classifier.PROCESSING)
 
     try:
-        categories, X, Y = get_training_matrix(classifier.traininglayer)
+        populate_training_matrix(classifier.traininglayer)
     except ValueError:
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
         raise
 
-    classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(Y)))
+    classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(classifier.traininglayer.dependent)))
+
+    # Constructing split data.
+    selector = numpy.random.random(len(classifier.traininglayer.Y)) >= classifier.splitfraction
 
     # Instanciate and fit the classifier.
     clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]
     clf_mod = importlib.import_module('sklearn.' + clf_mod)
     clf = getattr(clf_mod, clf_class)()
-    clf.fit(X, Y)
+    clf.fit(classifier.traininglayer.X[selector, :], classifier.traininglayer.Y[selector])
+
+    # Compute validation arrays. If full arrays were used for training, the
+    # validation array is empty. In this case, compute accuracy agains full
+    # dataset.
+    if numpy.all(selector):
+        validation_pixels = classifier.traininglayer.X
+        control_pixels = classifier.traininglayer.Y
+    else:
+        validation_pixels = classifier.traininglayer.X[numpy.logical_not(selector), :]
+        control_pixels = classifier.traininglayer.Y[numpy.logical_not(selector)]
+
+    # Predict validation pixels.
+    validation_pixels = clf.predict(validation_pixels)
+
+    # Instanciate data container model.
+    acc, created = ClassifierAccuracy.objects.get_or_create(classifier=classifier)
+
+    # Compute accuracy matrix and coefficients.
+    acc.accuracy_matrix = confusion_matrix(control_pixels, validation_pixels).tolist()
+    acc.cohen_kappa = cohen_kappa_score(control_pixels, validation_pixels)
+    acc.accuracy_score = accuracy_score(control_pixels, validation_pixels)
+
+    # Store predicted and control arrays.
+    acc.predicted = validation_pixels.tolist()
+    acc.control = control_pixels.tolist()
+    acc.save()
 
     # Store result in classifier.
-    classifier.legend = categories
     classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name='trained')
+    classifier.selector = selector.tolist()
     classifier.write('Finished training algorithm', classifier.FINISHED)
 
 

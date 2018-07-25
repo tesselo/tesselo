@@ -68,7 +68,12 @@ class SentinelClassifierTest(TestCase):
             traininglayer=self.traininglayer,
         )
 
-        self.clf = Classifier.objects.create(name='Clouds', algorithm=Classifier.SVM, traininglayer=self.traininglayer)
+        self.clf = Classifier.objects.create(
+            name='Clouds',
+            algorithm=Classifier.SVM,
+            traininglayer=self.traininglayer,
+            splitfraction=0.3,
+        )
 
         self.clf.traininglayer.trainingsample_set.add(self.cloud)
         self.clf.traininglayer.trainingsample_set.add(self.shadow)
@@ -120,6 +125,12 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(isinstance(self.clf.clf, MLPClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         cache.clear()
+
+        # Assert legend was created.
+        self.assertEqual(self.clf.traininglayer.legend, {'0': 'Cloud free', '1': 'Shadow', '2': 'Cloud'})
+
+        # Assert accuracy statistic has been calculated.
+        self.assertNotEqual(self.clf.classifieraccuracy.cohen_kappa, 0)
 
         # Error due to broken input data.
         self.cloud.pk = None
@@ -196,3 +207,31 @@ class SentinelClassifierTest(TestCase):
         })
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_classifier_report_and_list_views(self):
+        self._get_data()
+        # Train SVM classifier.
+        self.clf.algorithm = Classifier.SVM
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        # Create and authenticate user.
+        self.michael = User.objects.create_superuser(
+            username='michael',
+            email='michael@bluth.com',
+            password='bananastand',
+        )
+        self.client.login(username='michael', password='bananastand')
+        # Get url.
+        url = reverse('classifier-report', kwargs={'pk': self.clf.id})
+        # Request tile build.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('Producers Accuracy', response.content.decode())
+        # Test list rendering.
+        url = reverse('classifier-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertNotEqual(data['results'][0]['classifieraccuracy']['cohen_kappa'], 0)
