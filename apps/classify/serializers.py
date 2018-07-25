@@ -33,7 +33,7 @@ class ClassifierSerializer(ModelSerializer):
 
     traininglayer = PrimaryKeyRelatedField(queryset=TrainingLayer.objects.all(), required=False)
     classifieraccuracy = ClassifierAccuracySerializer(read_only=True)
-    legend = CharField(source='traininglayer.legend')
+    legend = CharField(source='traininglayer.legend', read_only=True)
 
     class Meta:
         model = Classifier
