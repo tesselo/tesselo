@@ -110,6 +110,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
         head[1] = 'Actual class'
         data = numpy.vstack([head, data])
 
+        head = [''] * len(names)
         head[2] = 'Predicted class'
         head.append('')
         data = numpy.hstack([numpy.array(head).reshape((len(head), 1)), data])
