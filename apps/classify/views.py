@@ -110,7 +110,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
         head[1] = 'Actual class'
         data = numpy.vstack([head, data])
 
-        head[1] = 'Predicted class'
+        head[2] = 'Predicted class'
         head.append('')
         data = numpy.hstack([numpy.array(head).reshape((len(head), 1)), data])
 
@@ -124,12 +124,12 @@ class ClassifierViewSet(PermissionsModelViewSet):
 
         # Addd overarching statistics.
         overall = [''] * len(consumers)
-        overall[0] = 'Overall Accuracy'
+        overall[0] = 'Overall Accuracy Score'
         overall[1] = str(acc.accuracy_score)
         data = numpy.vstack([data, overall])
 
         kappa = [''] * len(consumers)
-        kappa[0] = 'Overall Accuracy'
+        kappa[0] = 'Cohen Kappa Score'
         kappa[1] = str(acc.cohen_kappa)
         data = numpy.vstack([data, kappa])
 
