@@ -54,13 +54,14 @@ class TrainingSampleInline(admin.TabularInline):
 
 class TrainingLayerAdmin(admin.ModelAdmin):
     inlines = [TrainingSampleInline, ]
+    readonly_fields = ['dependent', 'explanatory', 'legend', ]
 
 
 class ClassifierAdmin(admin.ModelAdmin):
 
     actions = ['train_classifier', ]
 
-    readonly_fields = ['legend', ]
+    readonly_fields = ['trained', ]
 
     def train_classifier(self, request, queryset):
         """

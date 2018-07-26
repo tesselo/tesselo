@@ -90,7 +90,6 @@ class Classifier(models.Model):
     algorithm = models.CharField(max_length=10, choices=ALGORITHM_CHOICES)
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
-    legend = HStoreField(default={}, editable=False)
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
 
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)

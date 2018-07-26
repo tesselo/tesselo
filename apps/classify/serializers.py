@@ -9,7 +9,7 @@ class TrainingLayerSerializer(ModelSerializer):
 
     class Meta:
         model = TrainingLayer
-        fields = ('id', 'name', 'trainingsamples', )
+        fields = ('id', 'name', 'trainingsamples', 'legend', )
 
 
 class TrainingSampleSerializer(ModelSerializer):
@@ -39,7 +39,7 @@ class ClassifierSerializer(ModelSerializer):
         model = Classifier
         fields = (
             'id', 'name', 'algorithm', 'traininglayer', 'legend', 'status',
-            'log', 'classifieraccuracy'
+            'log', 'classifieraccuracy', 'splitfraction',
         )
         read_only_fields = ('status', 'log', 'legend', 'classifieraccuracy', )
 
