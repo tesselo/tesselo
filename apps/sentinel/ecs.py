@@ -108,7 +108,7 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
     return run_ecs_command(['composite_build_callback', compositebuild_id, initiate, rebuild])
 
 
-def train_sentinel_classifier(classifier_id):
+def train_sentinel_classifier(classifier_id, vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a'):
     return run_ecs_command(['train_sentinel_classifier', classifier_id])
 
 
