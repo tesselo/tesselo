@@ -1,4 +1,4 @@
-from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, TrainingLayer, TrainingSample
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const, ecs
@@ -53,15 +53,25 @@ class TrainingSampleInline(admin.TabularInline):
 
 
 class TrainingLayerAdmin(admin.ModelAdmin):
-    inlines = [TrainingSampleInline, ]
-    readonly_fields = ['dependent', 'explanatory', 'legend', ]
+    inlines = (TrainingSampleInline, )
+    readonly_fields = ('legend', )
+    exclude = ('dependent', 'explanatory', )
+
+
+class ClassifierAccuracyInline(admin.TabularInline):
+    model = ClassifierAccuracy
+    exclude = ('selector', 'predicted', 'control', )
+    readonly_fields = ('accuracy_matrix', 'cohen_kappa', 'accuracy_score', )
 
 
 class ClassifierAdmin(admin.ModelAdmin):
+    inlines = (ClassifierAccuracyInline, )
 
     actions = ['train_classifier', ]
 
     readonly_fields = ['trained', ]
+
+    raw_id_fields = ('traininglayer', )
 
     def train_classifier(self, request, queryset):
         """
