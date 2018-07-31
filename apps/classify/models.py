@@ -1,7 +1,6 @@
 import datetime
 import pickle
 
-import numpy
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import RasterLayer
 
@@ -17,8 +16,6 @@ class TrainingLayer(models.Model):
     A group of training sample polygons and the extracted training pixels.
     """
     name = models.CharField(max_length=500)
-    dependent = ArrayField(ArrayField(models.FloatField(), default=[]), default=[])
-    explanatory = ArrayField(models.IntegerField(), default=[])
     legend = HStoreField(default={}, editable=False)
 
     def __str__(self):
@@ -28,14 +25,6 @@ class TrainingLayer(models.Model):
         permissions = (
             ('view_traininglayer', 'View training layer'),
         )
-
-    @property
-    def X(self):
-        return numpy.array(self.dependent)
-
-    @property
-    def Y(self):
-        return numpy.array(self.explanatory)
 
 
 class TrainingSample(models.Model):
@@ -119,9 +108,6 @@ class ClassifierAccuracy(models.Model):
     Accuracy data for the classifier.
     """
     classifier = models.OneToOneField(Classifier, on_delete=models.CASCADE)
-    selector = ArrayField(models.BooleanField(), default=[])
-    predicted = ArrayField(models.FloatField(), default=[])
-    control = ArrayField(models.FloatField(), default=[])
     accuracy_matrix = ArrayField(ArrayField(models.FloatField(), default=[]), default=[])
     cohen_kappa = models.FloatField(default=0)
     accuracy_score = models.FloatField(default=0)

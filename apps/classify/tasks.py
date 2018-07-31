@@ -98,10 +98,10 @@ def populate_training_matrix(traininglayer):
                 # Add explanatory variables to stack.
                 X = numpy.vstack([data, X])
 
-    traininglayer.dependent = X.tolist()
-    traininglayer.explanatory = Y.tolist()
     traininglayer.legend = {str(int(val)): key for key, val in categories.items()}
     traininglayer.save()
+
+    return X, Y
 
 
 def train_sentinel_classifier(classifier_id):
@@ -116,31 +116,31 @@ def train_sentinel_classifier(classifier_id):
     classifier.write('Started collecting training data', classifier.PROCESSING)
 
     try:
-        populate_training_matrix(classifier.traininglayer)
+        X, Y = populate_training_matrix(classifier.traininglayer)
     except ValueError:
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
         raise
 
-    classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(classifier.traininglayer.dependent)))
+    classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(Y)))
 
     # Constructing split data.
-    selector = numpy.random.random(len(classifier.traininglayer.Y)) >= classifier.splitfraction
+    selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
     # Instanciate and fit the classifier.
     clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]
     clf_mod = importlib.import_module('sklearn.' + clf_mod)
     clf = getattr(clf_mod, clf_class)()
-    clf.fit(classifier.traininglayer.X[selector, :], classifier.traininglayer.Y[selector])
+    clf.fit(X[selector, :], Y[selector])
 
     # Compute validation arrays. If full arrays were used for training, the
     # validation array is empty. In this case, compute accuracy agains full
     # dataset.
     if numpy.all(selector):
-        validation_pixels = classifier.traininglayer.X
-        control_pixels = classifier.traininglayer.Y
+        validation_pixels = X
+        control_pixels = Y
     else:
-        validation_pixels = classifier.traininglayer.X[numpy.logical_not(selector), :]
-        control_pixels = classifier.traininglayer.Y[numpy.logical_not(selector)]
+        validation_pixels = X[numpy.logical_not(selector), :]
+        control_pixels = Y[numpy.logical_not(selector)]
 
     # Predict validation pixels.
     validation_pixels = clf.predict(validation_pixels)
@@ -152,15 +152,10 @@ def train_sentinel_classifier(classifier_id):
     acc.accuracy_matrix = confusion_matrix(control_pixels, validation_pixels).tolist()
     acc.cohen_kappa = cohen_kappa_score(control_pixels, validation_pixels)
     acc.accuracy_score = accuracy_score(control_pixels, validation_pixels)
-
-    # Store predicted and control arrays.
-    acc.predicted = validation_pixels.tolist()
-    acc.control = control_pixels.tolist()
     acc.save()
 
     # Store result in classifier.
     classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name='trained')
-    classifier.selector = selector.tolist()
     classifier.write('Finished training algorithm', classifier.FINISHED)
 
 

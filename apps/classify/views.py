@@ -30,14 +30,13 @@ class TrainingLayerViewSet(PermissionsModelViewSet):
         Get the training data from this training layer.
         """
         obj = self.get_object()
-        populate_training_matrix(obj)
         # Get training data.
-        categories, X, Y = obj.legend, obj.X, obj.Y
+        X, Y = populate_training_matrix(obj)
         # Append class values to matrix.
         data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('uint16')
         # Append class names to matrix.
-        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in categories.values()))
-        for category_dn, category_name in categories.items():
+        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in obj.legend.values()))
+        for category_dn, category_name in obj.legend.items():
             names[Y == int(category_dn)] = category_name
         data = numpy.append(names.reshape((len(names), 1)), data, 1)
         # Append header to matrix.
@@ -96,7 +95,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
             acc = classifier.classifieraccuracy
 
         # Get row and col names
-        names = [acc.classifier.traininglayer.legend[str(int(dat))] for dat in sorted(set(acc.predicted))]
+        names = [acc.classifier.traininglayer.legend[dat] for dat in sorted(acc.classifier.traininglayer.legend)]
 
         # Add names to accuracy matrix.
         data = numpy.array(acc.accuracy_matrix).astype('str')

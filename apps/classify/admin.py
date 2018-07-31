@@ -55,12 +55,10 @@ class TrainingSampleInline(admin.TabularInline):
 class TrainingLayerAdmin(admin.ModelAdmin):
     inlines = (TrainingSampleInline, )
     readonly_fields = ('legend', )
-    exclude = ('dependent', 'explanatory', )
 
 
 class ClassifierAccuracyInline(admin.TabularInline):
     model = ClassifierAccuracy
-    exclude = ('selector', 'predicted', 'control', )
     readonly_fields = ('accuracy_matrix', 'cohen_kappa', 'accuracy_score', )
 
 
