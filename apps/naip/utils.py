@@ -110,10 +110,12 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
         if source == NAIPQuadrangle.RGBIR:
             ir[ir == 0] = tile_data[3]['data'][ir == 0]
 
-    result = [{'data': red, 'nodata_value': None}, {'data': green, 'nodata_value': None}, {'data': blue, 'nodata_value': None}]
-    if source == NAIPQuadrangle.RGBIR:
-        result.append({'data': ir, 'nodata_value': None})
-
-    return [
-        (dtype, result)
+    result = [
+        (dtype, [{'data': red, 'nodata_value': None}]),
+        (dtype, [{'data': green, 'nodata_value': None}]),
+        (dtype, [{'data': blue, 'nodata_value': None}]),
     ]
+    if source == NAIPQuadrangle.RGBIR:
+        result.append((dtype, [{'data': ir, 'nodata_value': None}]))
+
+    return result

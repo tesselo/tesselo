@@ -444,7 +444,7 @@ class LambdaView(AlgebraView, RasterAPIView):
     permission_classes = (IsAuthenticated, )
 
     def get_ids(self):
-        if 'sentinel' or 'composite' in self.kwargs:
+        if 'sentinel' in self.kwargs or 'composite' in self.kwargs:
             from sentinel.const import BAND_RESOLUTIONS
             bands = [bnd.split('.')[0] for bnd in BAND_RESOLUTIONS]
             if 'formula' in self.request.GET:
@@ -467,19 +467,20 @@ class LambdaView(AlgebraView, RasterAPIView):
                 }
         elif 'naip' in self.kwargs:
             if 'formula' in self.request.GET:
-                bands = ['B1', 'B2', 'B3', 'B4']
-                band_keys = {
-                    'B1': 'B1:0',
-                    'B2': 'B2:1',
-                    'B3': 'B3:2',
-                    'B4': 'B4:3',
+                # The RGBIR data is wrapped up in one multi band raster and will
+                # be gotten anyway. So all bands can be added here without
+                # filtering for formula values.
+                return {
+                    'B1': 'B1',
+                    'B2': 'B2',
+                    'B3': 'B3',
+                    'B4': 'B4',
                 }
-                return {band_keys[band]: 'RGBIR' for band in bands if band in self.request.GET.get('formula')}
             else:
                 return {
-                    'r:0': 'RGB',
-                    'g:1': 'RGB',
-                    'b:2': 'RGB',
+                    'r': 'B1',
+                    'g': 'B2',
+                    'b': 'B3',
                 }
 
     def get_vsi_path(self):
@@ -544,7 +545,7 @@ class LambdaView(AlgebraView, RasterAPIView):
 
         # Prepare unique list of layer ids to be efficient if the same layer
         # is used multiple times (for band access for instance).
-        layerids = set(ids.values())
+        layerids = sorted(set(ids.values()))
 
         # Get tile indices from the request url parameters.
         tilez = int(self.kwargs.get('z'))
