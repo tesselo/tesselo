@@ -8,6 +8,7 @@ from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from sentinel.const import ZOOM_LEVEL_10M
 from sentinel.models import Composite, SentinelTile
 
 
@@ -157,6 +158,7 @@ class PredictedLayer(models.Model):
                     self.composite_id if self.composite else self.sentineltile_id,
                 ),
                 datatype=RasterLayer.CATEGORICAL,
+                max_zoom=ZOOM_LEVEL_10M,
             )
         super().save(*args, **kwargs)  # Call the "real" save() method.
 
