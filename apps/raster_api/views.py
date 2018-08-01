@@ -30,6 +30,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
+from raster_api.exceptions import MissingZoomLevel
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterTilePermission,
@@ -303,6 +304,9 @@ class ValueCountResultViewSet(ValueCountResultViewSetOrig):
             else:
                 # Compute at the maximum maxzoom (resolution of highest definition layer)
                 zoom = max(zlevels)
+
+        if zoom is None:
+            raise MissingZoomLevel()
 
         # Create object with final zoom value.
         try:
