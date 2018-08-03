@@ -1,19 +1,19 @@
 import calendar
 import datetime
 
-from raster.models import RasterLayer, RasterLayerParseStatus
-from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
+from raster.models import RasterLayer
+from raster.tiles.const import WEB_MERCATOR_SRID
 from raster.tiles.utils import tile_index_range
 from raster_aggregation.models import AggregationLayer
 
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
-from django.contrib.gis.gdal import SpatialReference
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from sentinel import const
+from sentinel.utils import populate_raster_metadata
 
 
 def get_duration(obj):
@@ -307,26 +307,7 @@ def create_compositeband_layers(sender, instance, created, **kwargs):
 
     for band, description in const.BAND_CHOICES:
         raster = RasterLayer.objects.create(name='{0} - {1}'.format(instance.name, band))
-        # Update metadata item.
-        nr_of_pixels = WEB_MERCATOR_TILESIZE * 2 ** const.ZOOM_LEVEL_10M
-
-        raster.metadata.uperleftx = -WEB_MERCATOR_WORLDSIZE / 2
-        raster.metadata.uperlefty = WEB_MERCATOR_WORLDSIZE / 4
-        raster.metadata.width = nr_of_pixels
-        raster.metadata.height = nr_of_pixels / 2
-        raster.metadata.scalex = WEB_MERCATOR_WORLDSIZE / nr_of_pixels
-        raster.metadata.scaley = -WEB_MERCATOR_WORLDSIZE / nr_of_pixels
-        raster.metadata.skewx = 0
-        raster.metadata.skewy = 0
-        raster.metadata.numbands = 1
-        raster.metadata.srs_wkt = SpatialReference(WEB_MERCATOR_SRID).wkt
-        raster.metadata.srid = WEB_MERCATOR_SRID
-        raster.metadata.max_zoom = const.ZOOM_LEVEL_10M
-
-        raster.metadata.save()
-        # Update parse status to parsed.
-        raster.parsestatus.status = RasterLayerParseStatus.FINISHED
-        raster.parsestatus.save()
+        populate_raster_metadata(raster)
         # Create compositeband for this band.
         CompositeBand.objects.create(band=band, rasterlayer=raster, composite=instance)
 

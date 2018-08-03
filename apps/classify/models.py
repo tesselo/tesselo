@@ -10,6 +10,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from sentinel.const import ZOOM_LEVEL_10M
 from sentinel.models import Composite, SentinelTile
+from sentinel.utils import populate_raster_metadata
 
 
 class TrainingLayer(models.Model):
@@ -160,6 +161,7 @@ class PredictedLayer(models.Model):
                 datatype=RasterLayer.CATEGORICAL,
                 max_zoom=ZOOM_LEVEL_10M,
             )
+            populate_raster_metadata(self.rasterlayer)
         super().save(*args, **kwargs)  # Call the "real" save() method.
 
     def write(self, data, status=None):

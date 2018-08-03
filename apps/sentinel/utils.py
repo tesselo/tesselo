@@ -2,11 +2,11 @@ import io
 import uuid
 
 import numpy
-from raster.models import RasterTile
-from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
+from raster.models import RasterLayerParseStatus, RasterTile
+from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
-from django.contrib.gis.gdal import GDALRaster
+from django.contrib.gis.gdal import GDALRaster, SpatialReference
 from django.core.files import File
 from sentinel import const
 
@@ -158,3 +158,29 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
             tiley=tiley,
             rast=dest,
         )
+
+
+def populate_raster_metadata(raster):
+    """
+    For manually created rasters, set the extent to the entire world such that
+    metadata parameters are populated. The metadata is used in multiple
+    locations, especially for aggregation.
+    """
+    # Compute metadata parameters covering the world.
+    nr_of_pixels = WEB_MERCATOR_TILESIZE * 2 ** const.ZOOM_LEVEL_10M
+    raster.metadata.uperleftx = -WEB_MERCATOR_WORLDSIZE / 2
+    raster.metadata.uperlefty = WEB_MERCATOR_WORLDSIZE / 4
+    raster.metadata.width = nr_of_pixels
+    raster.metadata.height = nr_of_pixels / 2
+    raster.metadata.scalex = WEB_MERCATOR_WORLDSIZE / nr_of_pixels
+    raster.metadata.scaley = -WEB_MERCATOR_WORLDSIZE / nr_of_pixels
+    raster.metadata.skewx = 0
+    raster.metadata.skewy = 0
+    raster.metadata.numbands = 1
+    raster.metadata.srs_wkt = SpatialReference(WEB_MERCATOR_SRID).wkt
+    raster.metadata.srid = WEB_MERCATOR_SRID
+    raster.metadata.max_zoom = const.ZOOM_LEVEL_10M
+    raster.metadata.save()
+    # Update parse status to parsed.
+    raster.parsestatus.status = RasterLayerParseStatus.FINISHED
+    raster.parsestatus.save()
