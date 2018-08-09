@@ -173,6 +173,7 @@ def predict_sentinel_layer(predicted_layer_id):
     model is the mediator.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
+    pred.chunks_count = 0
     pred.chunks_done = 0
     pred.write('Started predicting layer.', pred.PROCESSING)
 
