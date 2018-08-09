@@ -192,7 +192,7 @@ def predict_sentinel_layer(predicted_layer_id):
             pred.save()
             ecs.predict_sentinel_chunk(pred.id, counter - CHUNK_SIZE, counter)
     # Push the remaining index range as well.
-    rest = counter % 50
+    rest = counter % CHUNK_SIZE
     if rest:
         # Save number of jobs to be done.
         pred.refresh_from_db()
