@@ -1,4 +1,6 @@
-from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, TrainingLayer, TrainingSample
+from classify.models import (
+    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
+)
 from django import forms
 from django.contrib.gis import admin
 from sentinel import const, ecs
@@ -97,3 +99,4 @@ admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
+admin.site.register(PredictedLayerChunk)

@@ -1,6 +1,8 @@
 from rest_framework.serializers import CharField, ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField
 
-from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, TrainingLayer, TrainingSample
+from classify.models import (
+    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
+)
 
 
 class TrainingLayerSerializer(ModelSerializer):
@@ -48,6 +50,8 @@ class PredictedLayerSerializer(ModelSerializer):
 
     classifier_name = SerializerMethodField()
     source_name = SerializerMethodField()
+    chunks_count = SerializerMethodField()
+    chunks_done = SerializerMethodField()
 
     class Meta:
         model = PredictedLayer
@@ -69,3 +73,9 @@ class PredictedLayerSerializer(ModelSerializer):
             return obj.composite.name
         else:
             return obj.sentineltile.collected.date()
+
+    def get_chunks_count(self, obj):
+        return obj.predictedlayerchunk_set.count()
+
+    def get_chunks_done(self, obj):
+        return obj.predictedlayerchunk_set.filter(status=PredictedLayerChunk.FINISHED).count()

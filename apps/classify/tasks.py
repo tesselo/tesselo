@@ -8,7 +8,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
-from classify.models import Classifier, ClassifierAccuracy, PredictedLayer
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from sentinel import ecs
@@ -173,8 +173,7 @@ def predict_sentinel_layer(predicted_layer_id):
     model is the mediator.
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
-    pred.chunks_count = 0
-    pred.chunks_done = 0
+    pred.predictedlayerchunk_set.all().delete()
     pred.write('Started predicting layer.', pred.PROCESSING)
 
     # Get tile range for compositeband or sentineltile for this prediction.
@@ -186,54 +185,53 @@ def predict_sentinel_layer(predicted_layer_id):
     for tile_index in tiles:
         counter += 1
         if counter % CHUNK_SIZE == 0:
-            # Save number of jobs to be done.
-            pred.refresh_from_db()
-            pred.chunks_count += 1
-            pred.save()
-            ecs.predict_sentinel_chunk(pred.id, counter - CHUNK_SIZE, counter)
+            chunk = PredictedLayerChunk.objects.create(
+                predictedlayer=pred,
+                from_index=counter - CHUNK_SIZE,
+                to_index=counter,
+            )
+            ecs.predict_sentinel_chunk(chunk.id)
     # Push the remaining index range as well.
     rest = counter % CHUNK_SIZE
     if rest:
-        # Save number of jobs to be done.
-        pred.refresh_from_db()
-        pred.chunks_count += 1
-        pred.save()
-        ecs.predict_sentinel_chunk(pred.id, counter - rest, counter)
+        chunk = PredictedLayerChunk.objects.create(
+            predictedlayer=pred,
+            from_index=counter - rest,
+            to_index=counter,
+        )
+        ecs.predict_sentinel_chunk(chunk.id)
 
 
-def predict_sentinel_chunk(predicted_layer_id, from_idx, to_idx):
+def predict_sentinel_chunk(chunk_id):
     """
     Predict over a group of tiles.
     """
-    pred = PredictedLayer.objects.get(id=predicted_layer_id)
-    tiles = get_prediction_index_range(pred)
-    from_idx = int(from_idx)
-    to_idx = int(to_idx)
+    chunk = PredictedLayerChunk.objects.get(id=chunk_id)
+    tiles = get_prediction_index_range(chunk.predictedlayer)
 
-    if pred.composite:
-        rasterlayer_lookup = pred.composite.rasterlayer_lookup
+    if chunk.predictedlayer.composite_id:
+        rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
     else:
-        rasterlayer_lookup = pred.sentineltile.rasterlayer_lookup
+        rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
 
-    for tilex, tiley, tilez in list(tiles)[from_idx:to_idx]:
+    for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
         # Get data from tiles for prediction.
         data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
         if data is None:
             continue
         # Predict classes.
-        predicted = pred.classifier.clf.predict(data).astype('uint8')
+        predicted = chunk.predictedlayer.classifier.clf.predict(data).astype('uint8')
         # Write predicted pixels into a tile and store in DB.
-        write_raster_tile(pred.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
+        write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
 
     # Log progress, update chunks done count.
-    pred.refresh_from_db()
-    pred.chunks_done += 1
-    pred.write('Finished chunks from {} to {}'.format(from_idx, to_idx))
+    chunk.status = PredictedLayerChunk.FINISHED
+    chunk.save()
 
     # If all chunks have completed, push pyramid build job.
-    if pred.chunks_count > 0 and pred.chunks_done == pred.chunks_count:
-        pred.write('Finished layer prediction at full resolution')
-        ecs.build_predicted_pyramid(predicted_layer_id)
+    if PredictedLayerChunk.objects.filter(predictedlayer=chunk.predictedlayer).exclude(status=PredictedLayerChunk.FINISHED).count() == 0:
+        chunk.predictedlayer.write('Finished layer prediction at full resolution')
+        ecs.build_predicted_pyramid(chunk.predictedlayer.id)
 
 
 def build_predicted_pyramid(predicted_layer_id):

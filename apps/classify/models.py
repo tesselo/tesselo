@@ -140,8 +140,6 @@ class PredictedLayer(models.Model):
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
-    chunks_count = models.IntegerField(default=0, blank=True)
-    chunks_done = models.IntegerField(default=0, blank=True)
 
     def __str__(self):
         return 'Layer for {0} over {1}.'.format(
@@ -170,6 +168,25 @@ class PredictedLayer(models.Model):
         if status:
             self.status = status
         self.save()
+
+
+class PredictedLayerChunk(models.Model):
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    PLC_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE)
+    from_index = models.IntegerField()
+    to_index = models.IntegerField()
+    status = models.CharField(choices=PLC_STATUS_CHOICES, default=UNPROCESSED, max_length=100)
 
 
 class TrainingLayerUserObjectPermission(UserObjectPermissionBase):

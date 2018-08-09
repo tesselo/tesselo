@@ -11,7 +11,7 @@ from tests.mock_functions import (
     client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
 )
 
-from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
+from classify.models import Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
 from classify.tasks import VALUE_CONFIG_ERROR_MSG, predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -171,8 +171,11 @@ class SentinelClassifierTest(TestCase):
         # Tiles have been created.
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
         # Pyramid has been built.
-        self.assertTrue(pred.chunks_count > 0)
-        self.assertEqual(pred.chunks_done, pred.chunks_count)
+        self.assertTrue(pred.predictedlayerchunk_set.count() > 0)
+        self.assertEqual(
+            pred.predictedlayerchunk_set.count(),
+            pred.predictedlayerchunk_set.filter(status=PredictedLayerChunk.FINISHED).count(),
+        )
         self.assertIn('Finished layer prediction at full resolution', pred.log)
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
