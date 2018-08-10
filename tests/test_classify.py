@@ -22,8 +22,7 @@ from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild, SentinelTile
 from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
 
-
-@mock.patch('sentinel.tasks.botocore.paginate.PageIterator.search', iterator_search)
+@mock.patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)

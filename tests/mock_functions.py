@@ -40,9 +40,11 @@ def client_get_object(*args, **kwargs):
         },
         'Body': io.FileIO(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/tileInfo1.json')),
     }
+
     expected_params = {
         'Key': "tiles/10/S/DG/2015/12/7/0/tileInfo.json",
         'Bucket': const.BUCKET_NAME,
+        'RequestPayer': 'requester',
     }
     stubber.add_response('get_object', response1, expected_params)
 
@@ -60,6 +62,7 @@ def client_get_object(*args, **kwargs):
     expected_params = {
         'Key': "tiles/48/M/XA/2016/5/20/0/tileInfo.json",
         'Bucket': const.BUCKET_NAME,
+        'RequestPayer': 'requester',
     }
     stubber.add_response('get_object', response2, expected_params)
 
@@ -77,6 +80,7 @@ def client_get_object(*args, **kwargs):
     expected_params = {
         'Key': "tiles/48/M/XA/2015/5/20/0/tileInfo.json",
         'Bucket': const.BUCKET_NAME,
+        'RequestPayer': 'requester',
     }
     stubber.add_response('get_object', response2A, expected_params)
 
@@ -94,6 +98,7 @@ def client_get_object(*args, **kwargs):
     expected_params = {
         'Key': "tiles/1/C/CV/2015/12/21/0/tileInfo.json",
         'Bucket': const.BUCKET_NAME,
+        'RequestPayer': 'requester',
     }
     stubber.add_response('get_object', response3, expected_params)
 

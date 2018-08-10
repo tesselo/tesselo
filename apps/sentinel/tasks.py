@@ -10,9 +10,7 @@ import traceback
 import uuid
 
 import boto3
-import botocore
 import numpy
-from botocore.client import Config
 from celery import task
 from celery.utils.log import get_task_logger
 from dateutil import parser
@@ -88,14 +86,12 @@ def sync_sentinel_bucket_utm_zone(utm_zone):
     log.start = timezone.now()
     log.write('Started parsing utm zone "{0}".'.format(utm_zone), BucketParseLog.PROCESSING)
 
-    # Initiate anonymous boto session.
-    session = boto3.session.Session()
-    config = Config(signature_version=botocore.UNSIGNED)
-    client = session.client(const.CLIENT_TYPE, config=config)
+    # Initiate boto session.
+    client = boto3.client(const.CLIENT_TYPE)
     paginator = client.get_paginator(const.PAGINATOR_LOOKUP)
     prefix = const.PAGINATOR_BASE_PREFIX
     prefix += str(utm_zone) + '/'
-    iterator = paginator.paginate(Bucket=const.BUCKET_NAME, Prefix=prefix)
+    iterator = paginator.paginate(Bucket=const.BUCKET_NAME, Prefix=prefix, RequestPayer='requester')
     filtered_iterator = iterator.search(const.TILE_INFO_FILE_JMES_SEARCH)
 
     # Iteratively follow all keys.
@@ -121,17 +117,16 @@ def sync_sentinel_bucket_utm_zone(utm_zone):
 
 
 def ingest_tile_from_prefix(tile_prefix, client=None):
+    # Instanciate client. The client can be passed mainly to fix stubber during
+    # tests.
     if not client:
-        # Initiate anonymous boto session.
-        session = boto3.session.Session()
-        config = Config(signature_version=botocore.UNSIGNED)
-        client = session.client(const.CLIENT_TYPE, config=config)
+        client = boto3.client(const.CLIENT_TYPE)
 
     # Construct TileInfo file key.
     tileinfo_key = tile_prefix + const.TILE_INFO_FILE
 
     # Get tile info json data.
-    tileinfo = client.get_object(Key=tileinfo_key, Bucket=const.BUCKET_NAME)
+    tileinfo = client.get_object(Key=tileinfo_key, Bucket=const.BUCKET_NAME, RequestPayer='requester')
     tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
 
     # Get or create MGRS tile for this sentinel tile.
