@@ -178,7 +178,14 @@ def predict_sentinel_layer(predicted_layer_id):
 
     # Get tile range for compositeband or sentineltile for this prediction.
     tiles = get_prediction_index_range(pred)
-
+    
+    # placeholder
+    # want to know something about likely timing, complexity of the prediction tasks
+    # especially because this task queue setup is taking ~4 minutes without feedback
+    # ideally would construct an ETA after a few tasks have run
+    # but for now perhaps just announce to user how many tasks we are starting?
+    # pred.write('Prediction will require {} chunks.'.format(len(tiles)), pred.PROCESSING)
+    
     # Push tasks for sentinel chunks.
     counter = 0
     CHUNK_SIZE = 100
@@ -208,7 +215,12 @@ def predict_sentinel_chunk(chunk_id):
     """
     chunk = PredictedLayerChunk.objects.get(id=chunk_id)
     tiles = get_prediction_index_range(chunk.predictedlayer)
-
+    
+    # placeholder code - perhaps too granular for default use, and limit to debugging mode
+    # but want to record that we have started a chunk
+    # and time it so that we can estimate total processing time
+    # pred.write('Started predicting chunk id {}.'.format(chunk_id), pred.PROCESSING)
+    
     if chunk.predictedlayer.composite_id:
         rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
     else:
@@ -228,6 +240,10 @@ def predict_sentinel_chunk(chunk_id):
     chunk.status = PredictedLayerChunk.FINISHED
     chunk.save()
 
+    # placeholder - want to know when base is finished because then we can look at detailed maps
+    # even before full overviews are cooked
+    # pred.write('Done predicting layer {}, building pyramids.'.format(predictedlayer.id), pred.PROCESSING)
+    
     # If all chunks have completed, push pyramid build job.
     if PredictedLayerChunk.objects.filter(predictedlayer=chunk.predictedlayer).exclude(status=PredictedLayerChunk.FINISHED).count() == 0:
         chunk.predictedlayer.write('Finished layer prediction at full resolution')
