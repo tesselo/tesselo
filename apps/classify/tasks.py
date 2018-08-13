@@ -223,7 +223,8 @@ def predict_sentinel_layer(predicted_layer_id):
         ecs.predict_sentinel_chunk(chunk.id)
 
     # Log how many chunks need to be processed.
-    pred.write('Prediction will require {} chunks.'.format(counter))
+    pred.refresh_from_db()
+    pred.write('Prediction will require {} chunks.'.format(pred.predictedlayerchunk_set.count()))
 
 
 def predict_sentinel_chunk(chunk_id):
