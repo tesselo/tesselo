@@ -177,6 +177,7 @@ class SentinelClassifierTest(TestCase):
             pred.predictedlayerchunk_set.count(),
             pred.predictedlayerchunk_set.filter(status=PredictedLayerChunk.FINISHED).count(),
         )
+        self.assertEqual(pred.status, PredictedLayer.FINISHED)
         self.assertIn('Finished layer prediction at full resolution', pred.log)
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
