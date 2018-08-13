@@ -117,7 +117,7 @@ def predict_sentinel_layer(predicted_layer_id):
 
 
 def predict_sentinel_chunk(chunk_id):
-    return run_ecs_command(['predict_sentinel_chunk', chunk_id])
+    return run_ecs_command(['predict_sentinel_chunk', chunk_id], vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
 
 
 def build_predicted_pyramid(predicted_layer_id):
