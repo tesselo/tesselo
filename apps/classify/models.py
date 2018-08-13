@@ -3,6 +3,7 @@ import pickle
 
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import RasterLayer
+from raster_aggregation.models import AggregationLayer
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField, HStoreField
@@ -137,6 +138,7 @@ class PredictedLayer(models.Model):
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
     composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
+    aggregationlayer = models.ForeignKey(AggregationLayer, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)

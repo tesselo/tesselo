@@ -9,7 +9,9 @@ from raster.tiles.lookup import get_raster_tile
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk
+from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
+from django.contrib.gis.geos import Polygon
 from django.core.files import File
 from sentinel import ecs
 from sentinel.utils import aggregate_tile, get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
@@ -159,9 +161,25 @@ def train_sentinel_classifier(classifier_id):
     classifier.write('Finished training algorithm', classifier.FINISHED)
 
 
+def get_aggregationlayer_tile_indices(aggregationlayer, zoom):
+    # Set agglayer extent if not precomputed.
+    if not aggregationlayer.extent:
+        extent = aggregationlayer.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
+        aggregationlayer.extent = Polygon.from_bbox(extent)
+        aggregationlayer.save()
+    # Compute indexrange.
+    index_range = tile_index_range(aggregationlayer.extent.extent, zoom)
+    for idx in range(index_range[0], index_range[2] + 1):
+        for idy in range(index_range[1], index_range[3] + 1):
+            yield (idx, idy, zoom)
+
+
 def get_prediction_index_range(pred, zoom=ZOOM):
-    # Get tile range for compositeband or sentineltile for this prediction.
-    if pred.composite:
+    # Get tile range for aggregationlayer, compositeband or sentineltile for
+    # this prediction.
+    if pred.aggregationlayer:
+        return get_aggregationlayer_tile_indices(pred.aggregationlayer, zoom)
+    elif pred.composite:
         return get_composite_tile_indices(pred.composite, zoom)
     else:
         return get_sentinel_tile_indices(pred.sentineltile, zoom)

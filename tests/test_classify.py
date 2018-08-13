@@ -22,6 +22,7 @@ from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild, SentinelTile
 from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
 
+
 @mock.patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
@@ -129,7 +130,7 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(self.clf.traininglayer.legend, {'0': 'Cloud free', '1': 'Shadow', '2': 'Cloud'})
 
         # Assert accuracy statistic has been calculated.
-        self.assertNotEqual(self.clf.classifieraccuracy.cohen_kappa, 0)
+        self.assertNotEqual(self.clf.classifieraccuracy.accuracy_score, 0)
 
         # Error due to broken input data.
         self.cloud.pk = None
@@ -157,11 +158,32 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
         cache.clear()
 
-    def test_classifier_prediction_composite(self):
+    def test_classifier_prediction_composite_aggregationlayer(self):
         self._get_data()
         train_sentinel_classifier(self.clf.id)
 
+        # Test with compisite range.
         pred = PredictedLayer.objects.create(
+            composite=self.composite,
+            classifier=self.clf,
+        )
+        predict_sentinel_layer(pred.id)
+        pred.refresh_from_db()
+        # Tiles have been created.
+        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        # Pyramid has been built.
+        self.assertTrue(pred.predictedlayerchunk_set.count() > 0)
+        self.assertEqual(
+            pred.predictedlayerchunk_set.count(),
+            pred.predictedlayerchunk_set.filter(status=PredictedLayerChunk.FINISHED).count(),
+        )
+        self.assertIn('Finished layer prediction at full resolution', pred.log)
+        self.assertIn('Finished building pyramid', pred.log)
+        self.assertEqual(pred.status, pred.FINISHED)
+        cache.clear()
+        # Test with aggregationlayer argument.
+        pred = PredictedLayer.objects.create(
+            aggregationlayer=self.agglayer,
             composite=self.composite,
             classifier=self.clf,
         )

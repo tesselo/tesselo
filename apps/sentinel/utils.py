@@ -55,7 +55,7 @@ def get_composite_tile_indices(composite, zoom=const.ZOOM_LEVEL_WORLDLAYER):
     """
     # Create set to hold tile indexes.
     indexranges = set()
-    # Loop through all aggregationareas in aggregationlayers.
+    # Loop through all composite tiles.
     for ctile in composite.compositetile_set.all():
         # Get index range from sentinel tile index.
         extent = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
