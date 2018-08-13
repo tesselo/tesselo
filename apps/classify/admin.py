@@ -95,8 +95,20 @@ class PredictedLayerAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started predicting layer.')
 
 
+class PredictedLayerChunkAdmin(admin.ModelAdmin):
+    list_filter = ('status', )
+    actions = ('predict_chunk', )
+
+    def predict_chunk(self, request, queryset):
+        for chunk in queryset:
+            chunk.status = chunk.PENDING
+            chunk.save()
+            ecs.predict_sentinel_chunk(chunk.id)
+        self.message_user(request, 'Started predicting chunk.')
+
+
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
-admin.site.register(PredictedLayerChunk)
+admin.site.register(PredictedLayerChunk, PredictedLayerChunkAdmin)

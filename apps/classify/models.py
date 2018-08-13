@@ -190,6 +190,14 @@ class PredictedLayerChunk(models.Model):
     to_index = models.IntegerField()
     status = models.CharField(choices=PLC_STATUS_CHOICES, default=UNPROCESSED, max_length=100)
 
+    def __str__(self):
+        return 'Chunk Range {}-{} for Predictedlayer {} ({})'.format(
+            self.from_index,
+            self.to_index,
+            self.predictedlayer_id,
+            self.status,
+        )
+
 
 class TrainingLayerUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)

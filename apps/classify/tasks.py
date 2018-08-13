@@ -207,8 +207,10 @@ def predict_sentinel_layer(predicted_layer_id):
                 predictedlayer=pred,
                 from_index=counter - CHUNK_SIZE,
                 to_index=counter,
+                status=PredictedLayerChunk.PENDING,
             )
             ecs.predict_sentinel_chunk(chunk.id)
+
     # Push the remaining index range as well.
     rest = counter % CHUNK_SIZE
     if rest:
@@ -216,22 +218,31 @@ def predict_sentinel_layer(predicted_layer_id):
             predictedlayer=pred,
             from_index=counter - rest,
             to_index=counter,
+            status=PredictedLayerChunk.PENDING,
         )
         ecs.predict_sentinel_chunk(chunk.id)
+
+    # Log how many chunks need to be processed.
+    pred.write('Prediction will require {} chunks.'.format(counter))
 
 
 def predict_sentinel_chunk(chunk_id):
     """
     Predict over a group of tiles.
     """
+    # Get chunk.
     chunk = PredictedLayerChunk.objects.get(id=chunk_id)
+    # Update chunk status.
+    chunk.status = PredictedLayerChunk.PROCESSING
+    chunk.save()
+    # Get global tile range.
     tiles = get_prediction_index_range(chunk.predictedlayer)
-
+    # Get rasterlayer ids.
     if chunk.predictedlayer.composite_id:
         rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
     else:
         rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
-
+    # Predict tiles over this chunk's range.
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
         # Get data from tiles for prediction.
         data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
