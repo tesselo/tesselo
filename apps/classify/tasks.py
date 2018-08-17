@@ -65,6 +65,9 @@ def populate_training_matrix(traininglayer):
         idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
         for tilex in range(idx[0], idx[2] + 1):
             for tiley in range(idx[1], idx[3] + 1):
+                # if tileNo % step == 0:
+                # classifier.write('Collecting training data for tile {} of {}'.format(tileNo, tileCount), classifier.PROCESSING)
+
                 if sample.composite:
                     rasterlayer_lookup = sample.composite.rasterlayer_lookup
                 else:
