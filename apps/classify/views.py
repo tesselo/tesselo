@@ -31,22 +31,23 @@ class TrainingLayerViewSet(PermissionsModelViewSet):
         """
         obj = self.get_object()
         # Get training data.
-        X, Y = populate_training_matrix(obj)
+        X, Y, PID = populate_training_matrix(obj)
         # Append class values to matrix.
-        data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('uint16')
+        data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('int64')
         # Append class names to matrix.
         names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in obj.legend.values()))
         for category_dn, category_name in obj.legend.items():
             names[Y == int(category_dn)] = category_name
         data = numpy.append(names.reshape((len(names), 1)), data, 1)
+        # Apend pixel ids to matrix.
+        data = numpy.append(PID.reshape((len(PID), 1)).astype('int64'), data, 1)
         # Append header to matrix.
-        header = numpy.array(['ClassName', 'ClassDigitalNumber'] + [band.split('.jp2')[0] for band in CLASSIFY_BAND_NAMES])
+        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + [band.split('.jp2')[0] for band in CLASSIFY_BAND_NAMES])
         data = numpy.append(header.reshape((1, len(header))), data, 0)
-
+        # Return data as csv.
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="trainingdata.csv"'
         numpy.savetxt(response, data, delimiter=',', fmt='%s')
-
         return response
 
 

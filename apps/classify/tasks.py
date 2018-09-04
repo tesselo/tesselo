@@ -50,7 +50,8 @@ def populate_training_matrix(traininglayer):
     # Create numpy arrays holding training data.
     NUMBER_OF_BANDS = len(CLASSIFY_BAND_NAMES)
     X = numpy.empty(shape=(0, NUMBER_OF_BANDS), dtype='uint16')
-    Y = numpy.empty(shape=(0,), dtype='uint8')
+    Y = numpy.empty(shape=(0, ), dtype='uint8')
+    PID = numpy.empty(shape=(0, ), dtype='int64')
     # Dictionary for categories.
     categories = {}
     # Loop through training tiles to build training set.
@@ -99,11 +100,16 @@ def populate_training_matrix(traininglayer):
                 data = data[selector]
                 # Add explanatory variables to stack.
                 X = numpy.vstack([data, X])
+                # Compute pixel ids for this tile.
+                pid_from = (tiley * (2 ** ZOOM) + tilex) * WEB_MERCATOR_TILESIZE ** 2
+                pid_to = pid_from + WEB_MERCATOR_TILESIZE ** 2
+                pids = numpy.arange(pid_from, pid_to)
+                PID = numpy.hstack([pids[selector], PID])
 
     traininglayer.legend = {str(int(val)): key for key, val in categories.items()}
     traininglayer.save()
 
-    return X, Y
+    return X, Y, PID
 
 
 def train_sentinel_classifier(classifier_id):
@@ -118,7 +124,7 @@ def train_sentinel_classifier(classifier_id):
     classifier.write('Started collecting training data', classifier.PROCESSING)
 
     try:
-        X, Y = populate_training_matrix(classifier.traininglayer)
+        X, Y, PID = populate_training_matrix(classifier.traininglayer)
     except ValueError:
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
         raise
