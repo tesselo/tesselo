@@ -1,5 +1,6 @@
 import importlib
 import io
+import os
 import pickle
 
 import numpy
@@ -8,12 +9,15 @@ from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.lookup import get_raster_tile
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
-from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk
+from classify.models import (
+    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport
+)
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
 from django.core.files import File
 from sentinel import ecs
+from sentinel.models import Composite
 from sentinel.utils import aggregate_tile, get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
 
 ZOOM = 14
@@ -315,3 +319,58 @@ def build_predicted_pyramid(predicted_layer_id):
                 datatype=1,
             )
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
+
+
+def export_training_data(traininglayer_id, min_date, max_date):
+    """
+    Export training data to a file over a date range for monthly composites.
+    """
+    # Get composite list.
+    composites = Composite.objects.filter(
+        official=True,
+        interval=Composite.MONTHLY,
+        min_date__gte=min_date,
+        max_date__lte=max_date,
+    )
+
+    # Get training layer.
+    obj = TrainingLayer.objects.get(id=traininglayer_id)
+
+    # Store initial composite id.
+    original_composite_id = obj.trainingsample_set.first().composite.id
+
+    # Loop through composites.
+    for comp in composites:
+        print('Exporting training matrix for', comp)
+        # Update target composite layer.
+        for sample in obj.trainingsample_set.all():
+            sample.composite = comp
+            sample.save()
+        # Get training data.
+        X, Y, PID = populate_training_matrix(obj)
+        # Append class values to matrix.
+        data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('int64')
+        # Append class names to matrix.
+        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in obj.legend.values()))
+        for category_dn, category_name in obj.legend.items():
+            names[Y == int(category_dn)] = category_name
+        data = numpy.append(names.reshape((len(names), 1)), data, 1)
+        # Apend pixel ids to matrix.
+        data = numpy.append(PID.reshape((len(PID), 1)).astype('int64'), data, 1)
+        # Append header to matrix.
+        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + [band.split('.jp2')[0] for band in CLASSIFY_BAND_NAMES])
+        data = numpy.append(header.reshape((1, len(header))), data, 0)
+        # Write data to csv file.
+        csv_name = 'traininglayer-{}-{}.csv'.format(obj.id, comp.min_date)
+        csv_path = os.path.join('/tmp/', csv_name)
+        numpy.savetxt(csv_path, data, delimiter=',', fmt='%s')
+        # Create training layer export instance.
+        TrainingLayerExport.objects.create(
+            traininglayer=obj,
+            data=File(open(csv_path), name=csv_name)
+        )
+
+    # Restore original composite ids.
+    for sample in obj.trainingsample_set.all():
+        sample.composite_id = original_composite_id
+        sample.save()

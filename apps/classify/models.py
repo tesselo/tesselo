@@ -30,6 +30,18 @@ class TrainingLayer(models.Model):
         )
 
 
+class TrainingLayerExport(models.Model):
+    """
+    Export training pixels to files and store permanently.
+    """
+    traininglayer = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
+    data = models.FileField(upload_to='clouds/traininglayer_exports')
+    created = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return '{} {}'.format(self.traininglayer.name, self.created)
+
+
 class TrainingSample(models.Model):
     """
     Training Data for cloud classifiers.

@@ -11,8 +11,12 @@ from tests.mock_functions import (
     client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
 )
 
-from classify.models import Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
-from classify.tasks import VALUE_CONFIG_ERROR_MSG, predict_sentinel_layer, train_sentinel_classifier
+from classify.models import (
+    Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport, TrainingSample
+)
+from classify.tasks import (
+    VALUE_CONFIG_ERROR_MSG, export_training_data, predict_sentinel_layer, train_sentinel_classifier
+)
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
@@ -42,8 +46,16 @@ class SentinelClassifierTest(TestCase):
             aggregationlayer=self.agglayer,
             geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11833787.0 -469452.0, 11833787.0 -469352.0, 11833687.0 -469352.0, 11833687.0 -469452.0)))'
         )
-        self.composite = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
-        self.build = CompositeBuild.objects.create(composite=self.composite, aggregationlayer=self.agglayer)
+        self.composite = Composite.objects.create(
+            name='The World',
+            official=True,
+            min_date='2015-12-01',
+            max_date='2015-12-31',
+        )
+        self.build = CompositeBuild.objects.create(
+            composite=self.composite,
+            aggregationlayer=self.agglayer,
+        )
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -54,18 +66,21 @@ class SentinelClassifierTest(TestCase):
             category='Cloud',
             value=2,
             traininglayer=self.traininglayer,
+            composite=self.composite,
         )
         self.shadow = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844787 -459865, 11844797 -459865, 11844797 -459805, 11844787 -459805, 11844787 -459865))',
             category='Shadow',
             value=1,
             traininglayer=self.traininglayer,
+            composite=self.composite,
         )
         self.cloudfree = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844887 -459865, 11844897 -459865, 11844897 -459805, 11844887 -459805, 11844887 -459865))',
             category='Cloud free',
             value=0,
             traininglayer=self.traininglayer,
+            composite=self.composite,
         )
 
         self.clf = Classifier.objects.create(
@@ -219,6 +234,11 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'text/csv')
         self.assertTrue(len(response.content) > 3000)
+
+        # Run export task.
+        export_training_data(self.clf.traininglayer.id, '2015-12-01', '2015-12-31')
+        export = TrainingLayerExport.objects.filter(traininglayer=self.clf.traininglayer.id).first()
+        self.assertTrue(len(export.data.read()) > 3000)
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):

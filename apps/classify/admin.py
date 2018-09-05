@@ -1,5 +1,6 @@
 from classify.models import (
-    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
+    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport,
+    TrainingSample
 )
 from django import forms
 from django.contrib.gis import admin
@@ -109,6 +110,7 @@ class PredictedLayerChunkAdmin(admin.ModelAdmin):
 
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
+admin.site.register(TrainingLayerExport)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
 admin.site.register(PredictedLayerChunk, PredictedLayerChunkAdmin)
