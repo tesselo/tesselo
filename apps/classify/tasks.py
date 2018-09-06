@@ -367,7 +367,7 @@ def export_training_data(traininglayer_id, min_date, max_date):
         # Create training layer export instance.
         TrainingLayerExport.objects.create(
             traininglayer=obj,
-            data=File(open(csv_path), name=csv_name)
+            data=File(open(csv_path, 'rb'), name=csv_name)
         )
 
     # Restore original composite ids.
