@@ -58,7 +58,7 @@ class PredictedLayerSerializer(ModelSerializer):
         fields = (
             'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
             'log', 'chunks_count', 'chunks_done', 'classifier_name',
-            'source_name', 'status',
+            'source_name', 'status', 'aggregationlayer',
         )
         read_only_fields = (
             'rasterlayer', 'log', 'chunks_count', 'chunks_done',
