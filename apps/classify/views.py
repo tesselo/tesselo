@@ -107,17 +107,17 @@ class ClassifierViewSet(PermissionsModelViewSet):
 
         # Add additional header rows to accuracy matrix.
         head = [''] * len(names)
-        head[1] = 'Actual class'
+        head[1] = 'Predicted class'
         data = numpy.vstack([head, data])
 
         head = [''] * len(names)
-        head[2] = 'Predicted class'
+        head[2] = 'Actual class'
         head.append('')
         data = numpy.hstack([numpy.array(head).reshape((len(head), 1)), data])
 
         # Add producers and consumers accuracy to matrix.
-        producers = ['', 'Producers Accuracy'] + (numpy.diag(acc.accuracy_matrix) / numpy.sum(acc.accuracy_matrix, axis=0)).astype('str').tolist()
-        consumers = ['', 'Consumers Accuracy'] + (numpy.diag(acc.accuracy_matrix) / numpy.sum(acc.accuracy_matrix, axis=1)).astype('str').tolist()
+        producers = ['', 'Consumers Accuracy'] + (numpy.diag(acc.accuracy_matrix) / numpy.sum(acc.accuracy_matrix, axis=0)).astype('str').tolist()
+        consumers = ['', 'Producers Accuracy'] + (numpy.diag(acc.accuracy_matrix) / numpy.sum(acc.accuracy_matrix, axis=1)).astype('str').tolist()
         consumers.append('')
 
         data = numpy.vstack([data, producers])
