@@ -521,7 +521,6 @@ def process_compositetile(compositetile_id):
         composite_build_callback(cbuild.id)
 
 
-PRODUCT_DOWNLOAD_CMD_TMPL = 'java -jar /ProductDownload/ProductDownload.jar --sensor S2 --aws --out /rasterwd/products/{tile_id} --store AWS --limit 1 --tiles {mgrs_code} --start {start} --end {end}'
 SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process {product_path}'
 
 
@@ -698,23 +697,18 @@ def run_sen2cor(tile):
     """
     Get L1C data and run Sen2Cor to upgrade to L2A.
     """
-    # Construct download command.
-    mgrs_code = '{0}{1}{2}'.format(
-        tile.mgrstile.utm_zone,
-        tile.mgrstile.latitude_band,
-        tile.mgrstile.grid_square
-    )
-    productdownload_cmd = PRODUCT_DOWNLOAD_CMD_TMPL.format(
-        tile_id=tile.id,
-        mgrs_code=mgrs_code,
-        start=tile.collected.date(),
-        end=tile.collected.date(),
-    )
+    # SentinelHub library is only installed on workers.
+    from sentinelhub import AwsProductRequest
 
     # Download the scene.
     tile.write('Starting download of product data.')
     try:
-        subprocess.run(productdownload_cmd, shell=True, check=True)
+        product_request = AwsProductRequest(
+            product_id=tile.product_name,
+            data_folder='/rasterwd/products/{tile_id}'.format(tile.id),
+            safe_format=True,
+        )
+        product_request.save_data()
     except:
         tile.write('Failed download of product data.', SentinelTile.FAILED)
         raise

@@ -1,10 +1,5 @@
 FROM tesselo-zappa
 
-# Install ProductDownload
-RUN curl -O -L https://github.com/kraftek/awsdownload/releases/download/1.7.2/ProductDownload-1.7.2.zip &&\
-  unzip ProductDownload-1.7.2.zip -d / &&\
-  rm ProductDownload-1.7.2.zip
-
 # Install Sen2Cor
 # http://step.esa.int/main/third-party-plugins-2/sen2cor/
 ARG AWS_SECRET_ACCESS_KEY
