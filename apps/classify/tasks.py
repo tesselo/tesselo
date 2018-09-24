@@ -26,22 +26,16 @@ SCALE = tile_scale(ZOOM)
 
 PIXELTYPE = 2
 
-CLASSIFY_BAND_NAMES = (
-    'B02.jp2', 'B03.jp2', 'B04.jp2', 'B05.jp2', 'B06.jp2', 'B07.jp2', 'B08.jp2',
-    'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2', 'B12.jp2',
-)
-
 VALUE_CONFIG_ERROR_MSG = 'Found different values for same category.'
 
 
-def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
+def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
     """
     Builds the 13 band training tile file for a training tile instance.
     """
     # Get data for a tile of this scene.
     result = []
-    for band in CLASSIFY_BAND_NAMES:
-        layer_id = rasterlayer_lookup.get(band)
+    for layer_id in rasterlayer_ids:
         tile = get_raster_tile(layer_id, tilez=tilez, tilex=tilex, tiley=tiley)
         if not tile:
             return
@@ -50,10 +44,31 @@ def get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley):
     return numpy.array(result).T
 
 
-def populate_training_matrix(traininglayer):
+def get_rasterlayer_ids(band_names, rasterlayer_lookup):
+    """
+    Compile ordered list of rasterlayer ids to include in training or prediction.
+    """
+    # Compile a list of rasterlayer ids (order matters here).
+    rasterlayer_ids = []
+    for band in band_names:
+
+        if band.lower().startswith('rl'):
+            # If the band name starts with RL, assume its a rasterlayer id.
+            # RL23 would be raster layer id 23.
+            rasterlayer_ids.append(int(band[2:]))
+        elif band.lower().startswith('b'):
+            # Otherwise get the band rasterlayer id from the rasterlayer lookup.
+            rasterlayer_ids.append(rasterlayer_lookup.get(band + '.jp2'))
+        else:
+            raise ValueError('Band names have to be similar to either B01 or RL23.')
+
+    return rasterlayer_ids
+
+
+def populate_training_matrix(traininglayer, band_names):
     # Create numpy arrays holding training data.
-    NUMBER_OF_BANDS = len(CLASSIFY_BAND_NAMES)
-    X = numpy.empty(shape=(0, NUMBER_OF_BANDS), dtype='uint16')
+    number_of_bands = len(band_names)
+    X = numpy.empty(shape=(0, number_of_bands), dtype='uint16')
     Y = numpy.empty(shape=(0, ), dtype='uint8')
     PID = numpy.empty(shape=(0, ), dtype='int64')
     # Dictionary for categories.
@@ -74,8 +89,10 @@ def populate_training_matrix(traininglayer):
                     rasterlayer_lookup = sample.composite.rasterlayer_lookup
                 else:
                     rasterlayer_lookup = sample.sentineltile.rasterlayer_lookup
+                # Convert lookup to id list.
+                rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
                 # Get stacked tile data for this tile.
-                data = get_classifier_data(rasterlayer_lookup, ZOOM, tilex, tiley)
+                data = get_classifier_data(rasterlayer_ids, ZOOM, tilex, tiley)
                 if data is None:
                     continue
                 # Create a target raster for the rasterization.
@@ -128,7 +145,7 @@ def train_sentinel_classifier(classifier_id):
     classifier.write('Started collecting training data', classifier.PROCESSING)
 
     try:
-        X, Y, PID = populate_training_matrix(classifier.traininglayer)
+        X, Y, PID = populate_training_matrix(classifier.traininglayer, classifier.band_names.split(','))
     except ValueError:
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
         raise
@@ -248,6 +265,8 @@ def predict_sentinel_chunk(chunk_id):
     chunk.save()
     # Get global tile range.
     tiles = get_prediction_index_range(chunk.predictedlayer)
+    # Get band names for data matrix construction.
+    band_names = chunk.predictedlayer.classifier.band_names.split(',')
     # Get rasterlayer ids.
     if chunk.predictedlayer.composite_id:
         rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
@@ -255,8 +274,10 @@ def predict_sentinel_chunk(chunk_id):
         rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
     # Predict tiles over this chunk's range.
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
+        # Convert lookup to id list.
+        rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
         # Get data from tiles for prediction.
-        data = get_classifier_data(rasterlayer_lookup, tilez, tilex, tiley)
+        data = get_classifier_data(rasterlayer_ids, tilez, tilex, tiley)
         if data is None:
             continue
         # Predict classes.
@@ -321,7 +342,7 @@ def build_predicted_pyramid(predicted_layer_id):
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
 
 
-def export_training_data(traininglayer_id, min_date, max_date):
+def export_training_data(traininglayer_id, min_date, max_date, band_names=['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']):
     """
     Export training data to a file over a date range for monthly composites.
     """
@@ -347,7 +368,7 @@ def export_training_data(traininglayer_id, min_date, max_date):
             sample.composite = comp
             sample.save()
         # Get training data.
-        X, Y, PID = populate_training_matrix(obj)
+        X, Y, PID = populate_training_matrix(obj, band_names)
         # Append class values to matrix.
         data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('int64')
         # Append class names to matrix.
@@ -355,10 +376,10 @@ def export_training_data(traininglayer_id, min_date, max_date):
         for category_dn, category_name in obj.legend.items():
             names[Y == int(category_dn)] = category_name
         data = numpy.append(names.reshape((len(names), 1)), data, 1)
-        # Apend pixel ids to matrix.
+        # Append pixel ids to matrix.
         data = numpy.append(PID.reshape((len(PID), 1)).astype('int64'), data, 1)
         # Append header to matrix.
-        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + [band.split('.jp2')[0] for band in CLASSIFY_BAND_NAMES])
+        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + band_names)
         data = numpy.append(header.reshape((1, len(header))), data, 0)
         # Write data to csv file.
         csv_name = 'traininglayer-{}-{}.csv'.format(obj.id, comp.min_date)

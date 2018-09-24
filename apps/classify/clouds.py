@@ -2,8 +2,12 @@ import numpy
 from raster.tiles.const import WEB_MERCATOR_TILESIZE
 
 from classify.models import Classifier
-from classify.tasks import CLASSIFY_BAND_NAMES
 from sentinel import const
+
+CLASSIFY_BAND_NAMES = (
+    'B02.jp2', 'B03.jp2', 'B04.jp2', 'B05.jp2', 'B06.jp2', 'B07.jp2', 'B08.jp2',
+    'B8A.jp2', 'B09.jp2', 'B10.jp2', 'B11.jp2', 'B12.jp2',
+)
 
 
 def clouds(stack):

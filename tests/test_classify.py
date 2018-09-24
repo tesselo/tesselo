@@ -220,25 +220,12 @@ class SentinelClassifierTest(TestCase):
 
     def test_training_export(self):
         self._get_data()
-
-        User.objects.create_superuser(
-            username='michael',
-            email='michael@bluth.com',
-            password='bananastand'
-        )
-        self.client.login(username='michael', password='bananastand')
-
-        url = reverse('traininglayer-trainingdata', kwargs={'pk': self.clf.traininglayer.id})
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'text/csv')
-        self.assertTrue(len(response.content) > 3000)
-
+        # Get rasterlayer id.
+        band_names = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B8A', 'RL{}'.format(self.composite.compositeband_set.first().rasterlayer_id)]
         # Run export task.
-        export_training_data(self.clf.traininglayer.id, '2015-12-01', '2015-12-31')
+        export_training_data(self.clf.traininglayer.id, '2015-12-01', '2015-12-31', band_names)
         export = TrainingLayerExport.objects.filter(traininglayer=self.clf.traininglayer.id).first()
-        self.assertTrue(len(export.data.read()) > 3000)
+        self.assertTrue(len(export.data.read()) > 2500)
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):
