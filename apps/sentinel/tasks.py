@@ -30,7 +30,6 @@ from django.utils import timezone
 from sentinel import const, ecs
 from sentinel.clouds.algorithms import Clouds
 from sentinel.clouds.utils import sun
-# from classify.clouds import clouds
 from sentinel.models import (
     BucketParseLog, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
     SentinelTileBand, SentinelTileSceneClass
