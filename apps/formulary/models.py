@@ -51,6 +51,11 @@ class Formula(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        permissions = (
+            ('view_formula', 'View formula'),
+        )
+
 
 class FormulaUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Formula, on_delete=models.CASCADE)
