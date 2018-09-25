@@ -705,7 +705,7 @@ def run_sen2cor(tile):
     try:
         product_request = AwsProductRequest(
             product_id=tile.product_name,
-            data_folder='/rasterwd/products/{tile_id}'.format(tile.id),
+            data_folder='/rasterwd/products/{tile_id}'.format(tile_id=tile.id),
             safe_format=True,
         )
         product_request.save_data()
