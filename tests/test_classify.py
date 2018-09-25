@@ -20,7 +20,6 @@ from classify.tasks import (
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
-from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild, SentinelTile
@@ -119,7 +118,6 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(isinstance(self.clf.clf, LinearSVC))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
-        cache.clear()
 
         # Random forest
         self.clf.algorithm = Classifier.RF
@@ -129,7 +127,6 @@ class SentinelClassifierTest(TestCase):
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, RandomForestClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
-        cache.clear()
 
         # Neural Network
         self.clf.algorithm = Classifier.NN
@@ -139,7 +136,6 @@ class SentinelClassifierTest(TestCase):
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, MLPClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
-        cache.clear()
 
         # Assert legend was created.
         self.assertEqual(self.clf.traininglayer.legend, {'0': 'Cloud free', '1': 'Shadow', '2': 'Cloud'})
@@ -171,7 +167,6 @@ class SentinelClassifierTest(TestCase):
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
-        cache.clear()
 
     def test_classifier_prediction_composite_aggregationlayer(self):
         self._get_data()
@@ -196,7 +191,6 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished layer prediction at full resolution', pred.log)
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
-        cache.clear()
         # Test with aggregationlayer argument.
         pred = PredictedLayer.objects.create(
             aggregationlayer=self.agglayer,
@@ -216,7 +210,6 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished layer prediction at full resolution', pred.log)
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
-        cache.clear()
 
     def test_training_export(self):
         self._get_data()
