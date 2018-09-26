@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 import numpy
+import pandas
 import requests
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
@@ -15,7 +16,6 @@ from sklearn.metrics import accuracy_score, cohen_kappa_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 
-import pandas
 from django.conf import settings
 from django.contrib.gis.gdal import DataSource, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import GEOSGeometry

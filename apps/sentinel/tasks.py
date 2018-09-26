@@ -16,11 +16,11 @@ from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.lookup import get_raster_tile
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
 
+from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
@@ -39,6 +39,7 @@ from sentinel.utils import aggregate_tile, disaggregate_tile, write_raster_tile
 logger = get_task_logger(__name__)
 
 boto3.set_stream_logger('boto3', logging.ERROR)
+s3 = boto3.resource('s3')
 
 
 @task
@@ -233,23 +234,21 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     # Return data as tuples of scene, band number and pixel values.
     tiles = []
     for sentineltile in sentineltiles:
-        for band in bnds:
-            try:
-                tile = get_raster_tile(SentinelTileBand.objects.get(tile__prefix=sentineltile, band=band).layer_id, tilez, tilex, tiley)
-            except SentinelTileBand.DoesNotExist:
+        for sentineltileband in sentineltile.sentineltileband_set.all():
+            if sentineltileband.band not in bnds:
                 continue
+            tile = get_raster_tile(sentineltileband.layer_id, tilez, tilex, tiley)
             if not tile:
                 continue
-            tiles.append((sentineltile, band, tile.bands[0].data()))
+            tiles.append((sentineltile.prefix, sentineltileband.band, tile.bands[0].data()))
 
         if tilez == const.ZOOM_LEVEL_20M:
-            try:
-                tile = get_raster_tile(SentinelTileSceneClass.objects.get(tile__prefix=sentineltile).layer_id, tilez, tilex, tiley)
-            except SentinelTileSceneClass.DoesNotExist:
+            if not hasattr(sentineltile, 'sentineltilesceneclass'):
                 continue
+            tile = get_raster_tile(sentineltile.sentineltilesceneclass.layer_id, tilez, tilex, tiley)
             if not tile:
                 continue
-            tiles.append((sentineltile, const.SCL, tile.bands[0].data()))
+            tiles.append((sentineltile.prefix, const.SCL, tile.bands[0].data()))
 
     return tiles
 
@@ -265,6 +264,7 @@ def compositetile_stacks(ctile):
         ctile.tilex,
         ctile.tiley,
     ))
+    # Get queryset for sentineltiles within the composite date range.
     sentineltiles = ctile.composite.get_sentineltiles()
 
     # Compute indexrange for this higher level tile.
@@ -278,8 +278,10 @@ def compositetile_stacks(ctile):
             bounds60 = tile_bounds(tilex60, tiley60, const.ZOOM_LEVEL_60M)
             # Get tile bounding box as ewkt.
             bounds60 = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds60).wkt)
-            # Filter sentinel scenes fthat overlap with this tile boundaries.
-            sentineltiles60 = list(sentineltiles.filter(tile_data_geom__bboverlaps=bounds60).distinct().values_list('prefix', flat=True))
+            # Filter sentinel scenes that overlap with this tile boundaries.
+            sentineltiles60 = sentineltiles.filter(tile_data_geom__bboverlaps=bounds60).only('prefix')
+            # Prefetch related objects.
+            sentineltiles60 = sentineltiles60.select_related('sentineltilesceneclass').prefetch_related('sentineltileband_set')
 
             tiles60 = get_range_tiles(sentineltiles60, tilex60, tiley60, const.ZOOM_LEVEL_60M)
             if not len(tiles60):
@@ -384,7 +386,16 @@ def process_compositetile(compositetile_id):
         bounds = tile_bounds(x, y, const.ZOOM_LEVEL_10M)
         result_dict['origin'] = bounds[0], bounds[3]
 
+        # Delete existing tiles for this composite.
+        RasterTile.objects.filter(
+            rasterlayer_id__in=list(rasterlayer_lookup.values()),
+            tilex=x,
+            tiley=y,
+            tilez=const.ZOOM_LEVEL_10M,
+        ).delete()
+
         # Loop over all bands.
+        tile_bands_batch = []
         for key, name in const.BAND_CHOICES:
             # Merge scene tiles for this band into a composite tile using the selector index.
             bnds = numpy.array([stack[key] for stack in stacks])
@@ -405,27 +416,19 @@ def process_compositetile(compositetile_id):
             dest = io.BytesIO(dest.vsi_buffer)
             dest = File(dest, name='tile.tif')
 
-            # Get current tile if it already exists.
-            tile = RasterTile.objects.filter(
-                rasterlayer_id=rasterlayer_lookup[key],
-                tilex=x,
-                tiley=y,
-                tilez=const.ZOOM_LEVEL_10M,
-            ).first()
-
-            if tile:
-                # Replace raster with updated composite.
-                tile.rast = dest
-                tile.save()
-            else:
-                # Register a new tile in database.
-                RasterTile.objects.create(
+            # Register a new tile in database.
+            tile_bands_batch.append(
+                RasterTile(
                     rasterlayer_id=rasterlayer_lookup[key],
                     tilex=x,
                     tiley=y,
                     tilez=const.ZOOM_LEVEL_10M,
                     rast=dest,
                 )
+            )
+
+        # Bulk create the tiles for all bands of this tile.
+        RasterTile.objects.bulk_create(tile_bands_batch)
 
         # Log progress.
         counter += 1
@@ -881,3 +884,19 @@ def process_sentinel_sns_message(event, context):
             continue
 
         ingest_tile_from_prefix(tile_prefix)
+
+
+def get_raster_tile(layer_id, tilez, tilex, tiley):
+    """
+    Bypass the database to fetch files using structured file name scheme.
+    """
+    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
+
+    # Get object from s3 if exists.
+    obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+    try:
+        data = obj.get()
+    except s3.meta.client.exceptions.NoSuchKey:
+        return
+    data = data['Body'].read()
+    return GDALRaster(data)

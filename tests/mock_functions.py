@@ -147,9 +147,9 @@ def point_to_test_file(source_url, filepath):
     })
 
 
-def get_numpy_tile(prefix, tilez, tilex, tiley):
+def get_numpy_tile(layer_id, tilez, tilex, tiley):
     try:
-        SentinelTileSceneClass.objects.get(layer_id=prefix)
+        SentinelTileSceneClass.objects.get(layer_id=layer_id)
     except:
         data_max = 1e4
     else:
