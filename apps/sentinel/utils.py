@@ -12,6 +12,7 @@ from django.contrib.gis.gdal import GDALRaster, SpatialReference
 from sentinel import const
 
 s3 = boto3.resource('s3')
+s3_client = boto3.client('s3')
 
 
 def aggregate_tile(tile, target_dtype=numpy.int16, discrete=False):
@@ -158,7 +159,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     # Convert GDALRaster to file-like object.
     dest = io.BytesIO(dest.vsi_buffer)
     # Upload merged tile to s3.
-    s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+    s3_client.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
     # Return tile for bulk registration in DB without actual file uploads.
     return tile_to_register
 
