@@ -1,14 +1,17 @@
 import io
 import uuid
 
+import boto3
 import numpy
 from raster.models import RasterLayerParseStatus, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
+from django.conf import settings
 from django.contrib.gis.gdal import GDALRaster, SpatialReference
-from django.core.files import File
 from sentinel import const
+
+s3 = boto3.resource('s3')
 
 
 def aggregate_tile(tile, target_dtype=numpy.int16, discrete=False):
@@ -81,6 +84,22 @@ def get_sentinel_tile_indices(sentineltile, zoom=const.ZOOM_LEVEL_10M):
             yield tilex, tiley, zoom
 
 
+def get_raster_tile(layer_id, tilez, tilex, tiley):
+    """
+    Bypass the database to fetch files using structured file name scheme.
+    """
+    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
+
+    # Get object from s3 if exists.
+    obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+    try:
+        data = obj.get()
+    except s3.meta.client.exceptions.NoSuchKey:
+        return
+    data = data['Body'].read()
+    return GDALRaster(data)
+
+
 def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):
     """
     Commit a rastertile into the DB and storage.
@@ -88,6 +107,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     # Compute bounds and scale for the target tile.
     bounds = tile_bounds(tilex, tiley, tilez)
     scale = tile_scale(tilez)
+    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
 
     # Instantiate target GDALRaster dict.
     result_dict = {
@@ -106,58 +126,41 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         },
     }
 
-    # Write tile to database, update if tile already exists.
-    tile = RasterTile.objects.filter(
-        rasterlayer_id=layer_id,
-        tilez=tilez,
-        tilex=tilex,
-        tiley=tiley,
-    ).first()
+    # Try getting tile from S3.
+    tile = get_raster_tile(layer_id, tilez, tilex, tiley)
 
     if tile:
-        try:
-            # Get current array for this tile.
-            current = tile.rast.bands[0].data()
-            # Add values from current array to result for pixels
-            # where result is nodata. This ensures that areas
-            # not covered by this zone stay present in the upper
-            # pyramid levels, i.e. it unifies zone level pyramids.
-            result_nodata = result == nodata_value
-            result[result_nodata] = current[result_nodata]
-        except:
-            # Different storage backends might raise different errors. So
-            # this has to be a catch-all.
-            pass
-
-        # Store result in raster.
-        result_dict['bands'][0]['data'] = result
-
-        # Convert gdalraster to file like object, and set
-        # the file object.
-        dest = GDALRaster(result_dict)
-        dest = io.BytesIO(dest.vsi_buffer)
-        dest = File(dest, name='tile.tif')
-        tile.rast = dest
-
-        # Write the tile update to db and storage.
-        tile.save()
+        # No new tile needs registering. This assumes that if tile file exists,
+        # it is already registered in DB.
+        tile_to_register = None
+        # Get current pixel array for this tile.
+        current = tile.bands[0].data()
+        # Add values from current array to result for pixels
+        # where result is nodata. This ensures that areas
+        # not covered by this zone stay present in the upper
+        # pyramid levels, i.e. it unifies zone level pyramids.
+        result_nodata = result == nodata_value
+        result[result_nodata] = current[result_nodata]
     else:
-        # Add result to GDALRaster dictionary.
-        result_dict['bands'][0]['data'] = result
-
-        # Convert gdalraster to file like object.
-        dest = GDALRaster(result_dict)
-        dest = io.BytesIO(dest.vsi_buffer)
-        dest = File(dest, name='tile.tif')
-
-        # Create a new tile if the composite tile does not exist yet.
-        RasterTile.objects.create(
+        # Create a non-saved new tile instance for bulk creation.
+        tile_to_register = RasterTile(
             rasterlayer_id=layer_id,
             tilez=tilez,
             tilex=tilex,
             tiley=tiley,
-            rast=dest,
+            rast=filename,
         )
+
+    # Add result to target dictionary.
+    result_dict['bands'][0]['data'] = result
+    # Instanciate GDALRaster.
+    dest = GDALRaster(result_dict)
+    # Convert GDALRaster to file-like object.
+    dest = io.BytesIO(dest.vsi_buffer)
+    # Upload merged tile to s3.
+    s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+    # Return tile for bulk registration in DB without actual file uploads.
+    return tile_to_register
 
 
 def populate_raster_metadata(raster):

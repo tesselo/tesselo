@@ -11,9 +11,12 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
+from django.core.files.storage import DefaultStorage
 from django.utils import timezone
 from sentinel import const
 from sentinel.models import SentinelTile, SentinelTileBand, SentinelTileSceneClass
+
+storage = DefaultStorage()
 
 
 def iterator_search(self, searchstring):
@@ -168,6 +171,33 @@ def get_numpy_tile(layer_id, tilez, tilex, tiley):
             {'nodata_value': 0, 'data': data},
         ],
     })
+
+
+def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):
+    # Convert data to file-like object and store.
+    rst = GDALRaster({
+        'width': 256,
+        'height': 256,
+        'origin': (11843687, -458452),
+        'scale': [10, -10],
+        'srid': WEB_MERCATOR_SRID,
+        'datatype': datatype,
+        'bands': [
+            {'nodata_value': 0, 'data': result},
+        ],
+    })
+    rst = io.BytesIO(rst.vsi_buffer)
+    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
+    storage.save(filename, rst)
+
+    if not RasterTile.objects.filter(rasterlayer_id=layer_id, tilez=tilez, tilex=tilex, tiley=tiley).exists():
+        return RasterTile(
+            rasterlayer_id=layer_id,
+            tilez=tilez,
+            tilex=tilex,
+            tiley=tiley,
+            rast=filename,
+        )
 
 
 def patch_process_l2a(stile_id):

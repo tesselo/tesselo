@@ -20,7 +20,6 @@ from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
 
-from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
@@ -34,12 +33,13 @@ from sentinel.models import (
     BucketParseLog, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
     SentinelTileBand, SentinelTileSceneClass
 )
-from sentinel.utils import aggregate_tile, disaggregate_tile, write_raster_tile
+from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, write_raster_tile
 
 logger = get_task_logger(__name__)
 
 boto3.set_stream_logger('boto3', logging.ERROR)
-s3 = boto3.resource('s3')
+
+CHUNK_SIZE = 100
 
 
 @task
@@ -467,6 +467,8 @@ def process_compositetile(compositetile_id):
         ctile.write(msg)
 
         # Loop over composite band tiles in blocks of four.
+        counter = 0
+        batch = []
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
 
@@ -476,29 +478,10 @@ def process_compositetile(compositetile_id):
                     none_found = True
                     # Aggregate each tile in the block of 2x2.
                     for idx, dat in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
-                        tile = RasterTile.objects.filter(
-                            rasterlayer_id=rasterlayer_id,
-                            tilez=zoom,
-                            tilex=tilex + dat[0],
-                            tiley=tiley + dat[1],
-                        ).first()
+                        tile = get_raster_tile(rasterlayer_id, zoom, tilex + dat[0], tiley + dat[1])
                         if tile:
                             none_found = False
-                            # Try to get tile, in some cases, the underlying file
-                            # might have been already overwritten by another task.
-                            # So have multiple try/except loops.
-                            RETRIES = 3
-                            for i in range(RETRIES):
-                                try:
-                                    agg = aggregate_tile(tile.rast.bands[0].data())
-                                except IOError:
-                                    if i == (RETRIES - 1):
-                                        raise
-                                    else:
-                                        tile.refresh_from_db()
-                                        continue
-                                else:
-                                    break
+                            agg = aggregate_tile(tile.bands[0].data())
                         else:
                             size = WEB_MERCATOR_TILESIZE // 2
                             agg = numpy.zeros((size, size), dtype=numpy.int16)
@@ -513,8 +496,19 @@ def process_compositetile(compositetile_id):
                     lower = numpy.append(result[2], result[3], axis=1)
                     result = numpy.append(upper, lower, axis=0)
 
-                    # Commit raster to DB.
-                    write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
+                    # Write predicted pixels into a tile.
+                    tile_to_register = write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
+                    # Append tile to batch.
+                    if tile_to_register:
+                        batch.append(tile_to_register)
+                    # Commit batch if size is reached.
+                    if len(batch) >= CHUNK_SIZE:
+                        RasterTile.objects.bulk_create(batch)
+                        batch = []
+
+    # Commit remaining tiles if present.
+    if len(batch) > 0:
+        RasterTile.objects.bulk_create(batch)
 
     ctile.end = timezone.now()
     ctile.write('Finished building composite tile.', CompositeTile.FINISHED)
@@ -884,19 +878,3 @@ def process_sentinel_sns_message(event, context):
             continue
 
         ingest_tile_from_prefix(tile_prefix)
-
-
-def get_raster_tile(layer_id, tilez, tilex, tiley):
-    """
-    Bypass the database to fetch files using structured file name scheme.
-    """
-    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
-
-    # Get object from s3 if exists.
-    obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
-    try:
-        data = obj.get()
-    except s3.meta.client.exceptions.NoSuchKey:
-        return
-    data = data['Body'].read()
-    return GDALRaster(data)

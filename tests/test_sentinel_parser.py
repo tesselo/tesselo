@@ -4,7 +4,7 @@ import tempfile
 import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import (
-    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
+    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_write_raster_tile, point_to_test_file
 )
 
 from django.conf import settings
@@ -19,6 +19,7 @@ from sentinel.tasks import composite_build_callback, generate_bands_and_scenecla
 @mock.patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
+@mock.patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
@@ -77,8 +78,10 @@ class SentinelBucketParserTest(TestCase):
         # The status has been set to finished.
         self.assertEqual(ctile.status, CompositeTile.FINISHED)
         # Check that the tiles have been created.
-        for band in self.composite.compositeband_set.all():
-            self.assertEqual(band.rasterlayer.rastertile_set.count(), 522)
+        self.assertEqual(
+            [band.rasterlayer.rastertile_set.count() for band in self.composite.compositeband_set.all()],
+            [541, 541, 541, 541, 541, 539, 539, 537, 537, 537, 537, 537, 537],
+        )
 
     def test_bucket_parser(self):
         sync_sentinel_bucket_utm_zone(1)

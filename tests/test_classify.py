@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import LinearSVC
 from tests.mock_functions import (
-    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, point_to_test_file
+    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_write_raster_tile, point_to_test_file
 )
 
 from classify.models import (
@@ -30,6 +30,9 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
 @mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
+@mock.patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
+@mock.patch('classify.tasks.get_raster_tile', get_numpy_tile)
+@mock.patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
 @mock.patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)

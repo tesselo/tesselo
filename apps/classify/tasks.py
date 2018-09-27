@@ -4,9 +4,9 @@ import os
 import pickle
 
 import numpy
+from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.lookup import get_raster_tile
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from classify.models import (
@@ -18,7 +18,9 @@ from django.contrib.gis.geos import Polygon
 from django.core.files import File
 from sentinel import ecs
 from sentinel.models import Composite
-from sentinel.utils import aggregate_tile, get_composite_tile_indices, get_sentinel_tile_indices, write_raster_tile
+from sentinel.utils import (
+    aggregate_tile, get_composite_tile_indices, get_raster_tile, get_sentinel_tile_indices, write_raster_tile
+)
 
 ZOOM = 14
 
@@ -27,6 +29,8 @@ SCALE = tile_scale(ZOOM)
 PIXELTYPE = 2
 
 VALUE_CONFIG_ERROR_MSG = 'Found different values for same category.'
+
+CHUNK_SIZE = 100
 
 
 def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
@@ -226,7 +230,6 @@ def predict_sentinel_layer(predicted_layer_id):
 
     # Push tasks for sentinel chunks.
     counter = 0
-    CHUNK_SIZE = 100
     for tile_index in tiles:
         counter += 1
         if counter % CHUNK_SIZE == 0:
@@ -273,6 +276,7 @@ def predict_sentinel_chunk(chunk_id):
     else:
         rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
     # Predict tiles over this chunk's range.
+    batch = []
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
         # Convert lookup to id list.
         rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
@@ -282,8 +286,19 @@ def predict_sentinel_chunk(chunk_id):
             continue
         # Predict classes.
         predicted = chunk.predictedlayer.classifier.clf.predict(data).astype('uint8')
-        # Write predicted pixels into a tile and store in DB.
-        write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
+        # Write predicted pixels into a tile.
+        tile_to_register = write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
+        # Append tile to batch.
+        if tile_to_register:
+            batch.append(tile_to_register)
+        # Commit batch if size is reached.
+        if len(batch) >= CHUNK_SIZE:
+            RasterTile.objects.bulk_create(batch)
+            batch = []
+
+    # Commit remaining tiles if present.
+    if len(batch) > 0:
+        RasterTile.objects.bulk_create(batch)
 
     # Log progress, update chunks done count.
     chunk.status = PredictedLayerChunk.FINISHED
@@ -304,6 +319,7 @@ def build_predicted_pyramid(predicted_layer_id):
     pred.write('Started building pyramid')
 
     # Loop through the tiles in each zoom level, bottom up.
+    batch = []
     for tilez in range(ZOOM - 1, -1, -1):
         pred.write('Building pyramid at zoom level {}'.format(tilez))
 
@@ -330,7 +346,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 numpy.concatenate(tile_data[2:], axis=1),
             ])
             # Write tile.
-            write_raster_tile(
+            tile_to_register = write_raster_tile(
                 layer_id=pred.rasterlayer_id,
                 result=tile_data,
                 tilez=tilez,
@@ -339,6 +355,18 @@ def build_predicted_pyramid(predicted_layer_id):
                 nodata_value=0,
                 datatype=1,
             )
+            # Append tile to batch.
+            if tile_to_register:
+                batch.append(tile_to_register)
+            # Commit batch if size is reached.
+            if len(batch) >= CHUNK_SIZE:
+                RasterTile.objects.bulk_create(batch)
+                batch = []
+
+    # Commit remaining tiles if present.
+    if len(batch) > 0:
+        RasterTile.objects.bulk_create(batch)
+
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
 
 
