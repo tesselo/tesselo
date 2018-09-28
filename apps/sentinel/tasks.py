@@ -429,6 +429,7 @@ def process_compositetile(compositetile_id):
 
         # Bulk create the tiles for all bands of this tile.
         RasterTile.objects.bulk_create(tile_bands_batch)
+        tile_bands_batch = []
 
         # Log progress.
         counter += 1
@@ -468,11 +469,11 @@ def process_compositetile(compositetile_id):
 
         # Loop over composite band tiles in blocks of four.
         counter = 0
-        batch = []
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
 
                 # Aggregate tiles for each composite band.
+                batch = []
                 for rasterlayer_id in rasterlayer_lookup.values():
                     result = []
                     none_found = True
@@ -498,17 +499,15 @@ def process_compositetile(compositetile_id):
 
                     # Write predicted pixels into a tile.
                     tile_to_register = write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
+
                     # Append tile to batch.
                     if tile_to_register:
                         batch.append(tile_to_register)
-                    # Commit batch if size is reached.
-                    if len(batch) >= CHUNK_SIZE:
-                        RasterTile.objects.bulk_create(batch)
-                        batch = []
 
-    # Commit remaining tiles if present.
-    if len(batch) > 0:
-        RasterTile.objects.bulk_create(batch)
+                # Commit batch.
+                if len(batch):
+                    RasterTile.objects.bulk_create(batch)
+                    batch = []
 
     ctile.end = timezone.now()
     ctile.write('Finished building composite tile.', CompositeTile.FINISHED)

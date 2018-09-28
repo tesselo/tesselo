@@ -80,7 +80,7 @@ class SentinelBucketParserTest(TestCase):
         # Check that the tiles have been created.
         self.assertEqual(
             [band.rasterlayer.rastertile_set.count() for band in self.composite.compositeband_set.all()],
-            [541, 541, 541, 541, 541, 539, 539, 537, 537, 537, 537, 537, 537],
+            [564, ] * 13,
         )
 
     def test_bucket_parser(self):
