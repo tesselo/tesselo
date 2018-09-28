@@ -17,28 +17,7 @@
         "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
         "domain": "dev.tesselo.com",
         "slim_handler": true,
-        "memory_size": 1024,
-        "events": [
-            {
-                "function": "apps.sentinel.tasks.process_sentinel_sns_message",
-                "event_source": {
-                    "arn":  "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
-                    "events": [
-                        "sns:Publish",
-                    ]
-                }
-            },
-            {
-                "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
-                "event_source": {
-                    "arn":  "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
-                    "events": [
-                        "sns:Publish",
-                    ]
-                }
-            },
-
-        ],
+        "memory_size": 1024
     },
     "staging": {
       "extends": "dev",
@@ -64,6 +43,27 @@
           "DB_USER": "tesselo",
           "DB_NAME": "tesselo_production"
       },
-      "domain": "tesselo.com"
+      "domain": "tesselo.com",
+      "events": [
+          {
+              "function": "apps.sentinel.tasks.process_sentinel_sns_message",
+              "event_source": {
+                  "arn":  "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
+                  "events": [
+                      "sns:Publish",
+                  ]
+              }
+          },
+          {
+              "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
+              "event_source": {
+                  "arn":  "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
+                  "events": [
+                      "sns:Publish",
+                  ]
+              }
+          },
+
+      ],
     }
 }
