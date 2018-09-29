@@ -36,7 +36,7 @@
       "extends": "dev",
       "environment_variables": {
           "AWS_REQUEST_PAYER": "requester",
-          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production",
+          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production-v2",
           "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
           "AWS_DEFAULT_REGION": "eu-west-1",
           "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
