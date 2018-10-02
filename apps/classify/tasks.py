@@ -154,6 +154,11 @@ def train_sentinel_classifier(classifier_id):
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
         raise
 
+    # Abort if there are no training pixels with the given configuration.
+    if len(Y) == 0:
+        classifier.write('No training sample pixels found - can not fit algorithm', classifier.FAILED)
+        return
+
     classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(Y)))
 
     # Constructing split data.
