@@ -9,8 +9,10 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from django.conf import settings
 from django.contrib.gis.gdal import GDALRaster, SpatialReference
+from django.core.files.storage import DefaultStorage
 from sentinel import const
 
+storage = DefaultStorage()
 s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
 
@@ -106,14 +108,22 @@ def get_raster_tile(layer_id, tilez, tilex, tiley):
             int(tilex / multiplier),
             int(tiley / multiplier),
         )
-        obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
-        try:
-            tile = obj.get()
-        except s3.meta.client.exceptions.NoSuchKey:
-            continue
 
-        # Read file data and convert it into a GDALRaster.
-        tile = GDALRaster(tile['Body'].read())
+        if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA'):
+            obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+            try:
+                tile = obj.get()
+            except s3.meta.client.exceptions.NoSuchKey:
+                continue
+            tile = tile['Body']
+        else:
+            if storage.exists(filename):
+                tile = storage.open(filename)
+            else:
+                continue
+
+        # Convert tile data into a GDALRaster.
+        tile = GDALRaster(tile.read())
 
         # If the tile is a parent of the original, warp it to the
         # original request tile.
