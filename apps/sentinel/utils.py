@@ -94,6 +94,7 @@ def get_raster_tile(layer_id, tilez, tilex, tiley):
     """
     # Loop through zoom levels to search for a tile
     for zoom in range(tilez, -1, -1):
+
         # Compute multiplier to find parent raster
         multiplier = 2 ** (tilez - zoom)
 
@@ -102,8 +103,8 @@ def get_raster_tile(layer_id, tilez, tilex, tiley):
         filename = 'tiles/{}/{}/{}/{}.tif'.format(
             layer_id,
             zoom,
-            tilex / multiplier,
-            tiley / multiplier,
+            int(tilex / multiplier),
+            int(tiley / multiplier),
         )
         obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
         try:
