@@ -87,18 +87,50 @@ def get_sentinel_tile_indices(sentineltile, zoom=const.ZOOM_LEVEL_10M):
 
 def get_raster_tile(layer_id, tilez, tilex, tiley):
     """
-    Bypass the database to fetch files using structured file name scheme.
+    Bypass the database to fetch files using structured file name scheme. If the
+    requested tile does not exists, higher level tiles are searched. If a higher
+    level tile is found, it is warped to the requested zoom level. This ensures
+    that a tile can be requested at any zoom level.
     """
-    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
+    # Loop through zoom levels to search for a tile
+    for zoom in range(tilez, -1, -1):
+        # Compute multiplier to find parent raster
+        multiplier = 2 ** (tilez - zoom)
 
-    # Get object from s3 if exists.
-    obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
-    try:
-        data = obj.get()
-    except s3.meta.client.exceptions.NoSuchKey:
-        return
-    data = data['Body'].read()
-    return GDALRaster(data)
+        # Get object from s3 if exists. Otherwise continue looking "upwards" to
+        # find higher level tiles.
+        filename = 'tiles/{}/{}/{}/{}.tif'.format(
+            layer_id,
+            zoom,
+            tilex / multiplier,
+            tiley / multiplier,
+        )
+        obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+        try:
+            tile = obj.get()
+        except s3.meta.client.exceptions.NoSuchKey:
+            continue
+
+        # Read file data and convert it into a GDALRaster.
+        tile = GDALRaster(tile['Body'].read())
+
+        # If the tile is a parent of the original, warp it to the
+        # original request tile.
+        if zoom < tilez:
+            # Compute bounds and scale of the requested tile.
+            bounds = tile_bounds(tilex, tiley, tilez)
+            tilescale = tile_scale(tilez)
+
+            # Warp parent tile to child tile in memory.
+            tile = tile.warp({
+                'driver': 'MEM',
+                'width': WEB_MERCATOR_TILESIZE,
+                'height': WEB_MERCATOR_TILESIZE,
+                'scale': [tilescale, -tilescale],
+                'origin': [bounds[0], bounds[3]],
+            })
+
+        return tile
 
 
 def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):
