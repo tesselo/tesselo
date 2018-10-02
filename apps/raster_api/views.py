@@ -45,6 +45,7 @@ from raster_api.serializers import (
 from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.models import Composite, SentinelTileAggregationLayer
+from sentinel.utils import get_raster_tile
 
 
 class UserViewSet(ReadOnlyModelViewSet):
@@ -70,6 +71,28 @@ class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
         response = super(RasterAPIView, self).dispatch(*args, **kwargs)
         response['Cache-Control'] = 'max-age=604800, private'  # 1 Week
         return response
+
+    def get_tile(self, layer_id, zlevel=None):
+        """
+        Returns a tile for rendering. If the tile does not exists, higher
+        level tiles are searched and warped to lower level if found.
+        """
+        if self.is_pixel_request:
+            tilez = self.max_zoom
+            # Derive the tile index from the input coordinates.
+            xcoord = float(self.kwargs.get('xcoord'))
+            ycoord = float(self.kwargs.get('ycoord'))
+            bbox = [xcoord, ycoord, xcoord, ycoord]
+            indexrange = tile_index_range(bbox, tilez)
+            tilex = indexrange[0]
+            tiley = indexrange[1]
+        else:
+            # Get tile indices from the request url parameters.
+            tilez = int(self.kwargs.get('z'))
+            tilex = int(self.kwargs.get('x'))
+            tiley = int(self.kwargs.get('y'))
+
+        return get_raster_tile(layer_id, tilez, tilex, tiley)
 
 
 class AlgebraAPIView(AlgebraView, RasterAPIView):
