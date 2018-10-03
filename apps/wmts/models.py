@@ -55,13 +55,19 @@ class WMTSLayer(models.Model):
     @property
     def rgb_url(self):
         if self.sentineltile:
-            red = self.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id
-            green = self.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id
-            blue = self.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id
+            try:
+                red = self.sentineltile.sentineltileband_set.get(band='B04.jp2').layer_id
+                green = self.sentineltile.sentineltileband_set.get(band='B03.jp2').layer_id
+                blue = self.sentineltile.sentineltileband_set.get(band='B02.jp2').layer_id
+            except SentinelTileBand.DoesNotExist:
+                return
         else:
-            red = self.composite.compositeband_set.get(band='B04.jp2').rasterlayer_id
-            green = self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id
-            blue = self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id
+            try:
+                red = self.composite.compositeband_set.get(band='B04.jp2').rasterlayer_id
+                green = self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id
+                blue = self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id
+            except CompositeBand.DoesNotExist:
+                return
 
         # Generate RGB url.
         return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=0,1e4&amp;alpha&amp;enhance_brightness=2.2&amp;enhance_sharpness=1.2&amp;enhance_color=1.2&amp;enhance_contrast=1.1".format(
