@@ -179,6 +179,9 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         tile_to_register = None
         # Get current pixel array for this tile.
         current = tile.bands[0].data()
+        # Flatten the data if the input was flat.
+        if result.shape[0] == 65536:
+            current = current.ravel()
         # Add values from current array to result for pixels
         # where result is nodata. This ensures that areas
         # not covered by this zone stay present in the upper
