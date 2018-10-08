@@ -122,9 +122,10 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
 
-        # Random forest
+        # Random forest with custom composite set.
         self.clf.algorithm = Classifier.RF
         self.clf.status = self.clf.UNPROCESSED
+        self.clf.composite = self.composite
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
@@ -134,6 +135,7 @@ class SentinelClassifierTest(TestCase):
         # Neural Network
         self.clf.algorithm = Classifier.NN
         self.clf.status = self.clf.UNPROCESSED
+        self.clf.composite = None
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)

@@ -69,7 +69,7 @@ def get_rasterlayer_ids(band_names, rasterlayer_lookup):
     return rasterlayer_ids
 
 
-def populate_training_matrix(traininglayer, band_names):
+def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None):
     # Create numpy arrays holding training data.
     number_of_bands = len(band_names)
     X = numpy.empty(shape=(0, number_of_bands), dtype='uint16')
@@ -89,10 +89,13 @@ def populate_training_matrix(traininglayer, band_names):
         idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
         for tilex in range(idx[0], idx[2] + 1):
             for tiley in range(idx[1], idx[3] + 1):
-                if sample.composite:
-                    rasterlayer_lookup = sample.composite.rasterlayer_lookup
-                else:
-                    rasterlayer_lookup = sample.sentineltile.rasterlayer_lookup
+                # Take rasterlayer lookup from the trainingsample if not
+                # it was not provided as input.
+                if not rasterlayer_lookup:
+                    if sample.composite:
+                        rasterlayer_lookup = sample.composite.rasterlayer_lookup
+                    else:
+                        rasterlayer_lookup = sample.sentineltile.rasterlayer_lookup
                 # Convert lookup to id list.
                 rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
                 # Get stacked tile data for this tile.
@@ -148,8 +151,20 @@ def train_sentinel_classifier(classifier_id):
     classifier = Classifier.objects.get(pk=classifier_id)
     classifier.write('Started collecting training data', classifier.PROCESSING)
 
+    # Check if the classifier has a custom data source specified.
+    if classifier.composite:
+        rasterlayer_lookup = classifier.composite.rasterlayer_lookup
+    elif classifier.sentineltile:
+        rasterlayer_lookup = classifier.sentineltile.rasterlayer_lookup
+    else:
+        rasterlayer_lookup = None
+
     try:
-        X, Y, PID = populate_training_matrix(classifier.traininglayer, classifier.band_names.split(','))
+        X, Y, PID = populate_training_matrix(
+            classifier.traininglayer,
+            classifier.band_names.split(','),
+            rasterlayer_lookup
+        )
     except ValueError:
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
         raise
@@ -390,18 +405,11 @@ def export_training_data(traininglayer_id, min_date, max_date, band_names=['B01'
     # Get training layer.
     obj = TrainingLayer.objects.get(id=traininglayer_id)
 
-    # Store initial composite id.
-    original_composite_id = obj.trainingsample_set.first().composite.id
-
     # Loop through composites.
-    for comp in composites:
-        print('Exporting training matrix for', comp)
-        # Update target composite layer.
-        for sample in obj.trainingsample_set.all():
-            sample.composite = comp
-            sample.save()
-        # Get training data.
-        X, Y, PID = populate_training_matrix(obj, band_names)
+    for composite in composites:
+        print('Exporting training matrix for', composite)
+        # Get training data for this composite.
+        X, Y, PID = populate_training_matrix(obj, band_names, composite.rasterlayer_lookup)
         # Append class values to matrix.
         data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('int64')
         # Append class names to matrix.
@@ -415,7 +423,7 @@ def export_training_data(traininglayer_id, min_date, max_date, band_names=['B01'
         header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + band_names)
         data = numpy.append(header.reshape((1, len(header))), data, 0)
         # Write data to csv file.
-        csv_name = 'traininglayer-{}-{}.csv'.format(obj.id, comp.min_date)
+        csv_name = 'traininglayer-{}-{}.csv'.format(obj.id, composite.min_date)
         csv_path = os.path.join('/tmp/', csv_name)
         numpy.savetxt(csv_path, data, delimiter=',', fmt='%s')
         # Create training layer export instance.
@@ -423,8 +431,3 @@ def export_training_data(traininglayer_id, min_date, max_date, band_names=['B01'
             traininglayer=obj,
             data=File(open(csv_path, 'rb'), name=csv_name)
         )
-
-    # Restore original composite ids.
-    for sample in obj.trainingsample_set.all():
-        sample.composite_id = original_composite_id
-        sample.save()
