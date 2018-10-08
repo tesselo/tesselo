@@ -72,7 +72,7 @@ class ClassifierAdmin(admin.ModelAdmin):
 
     readonly_fields = ['trained', ]
 
-    raw_id_fields = ('traininglayer', )
+    raw_id_fields = ('traininglayer', 'composite', 'sentineltile', )
 
     def train_classifier(self, request, queryset):
         """
