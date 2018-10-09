@@ -6,6 +6,8 @@ import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import RobustScaler
 from sklearn.svm import LinearSVC
 from tests.mock_functions import (
     client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_write_raster_tile, point_to_test_file
@@ -34,7 +36,7 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @mock.patch('classify.tasks.get_raster_tile', get_numpy_tile)
 @mock.patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@mock.patch('sys.stdout.write', lambda x: None)
+#@mock.patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 
@@ -87,9 +89,9 @@ class SentinelClassifierTest(TestCase):
 
         self.clf = Classifier.objects.create(
             name='Clouds',
-            algorithm=Classifier.SVM,
+            algorithm=Classifier.RF,
             traininglayer=self.traininglayer,
-            splitfraction=0.3,
+            splitfraction=0.6,
         )
 
         self.clf.traininglayer.trainingsample_set.add(self.cloud)
@@ -118,7 +120,9 @@ class SentinelClassifierTest(TestCase):
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
-        self.assertTrue(isinstance(self.clf.clf, LinearSVC))
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], LinearSVC))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
 
@@ -129,17 +133,18 @@ class SentinelClassifierTest(TestCase):
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
-        self.assertTrue(isinstance(self.clf.clf, RandomForestClassifier))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], RandomForestClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
 
         # Neural Network
         self.clf.algorithm = Classifier.NN
         self.clf.status = self.clf.UNPROCESSED
         self.clf.composite = None
+        self.clf.clf_args = {'max_iter': 500}
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
-        self.assertTrue(isinstance(self.clf.clf, MLPClassifier))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], MLPClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
 
         # Assert legend was created.

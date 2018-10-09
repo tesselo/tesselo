@@ -8,6 +8,8 @@ from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import RobustScaler
 
 from classify.models import (
     Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport
@@ -179,10 +181,29 @@ def train_sentinel_classifier(classifier_id):
     # Constructing split data.
     selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
-    # Instanciate and fit the classifier.
-    clf_mod, clf_class = classifier.ALGORITHM_MODULES[classifier.algorithm]
-    clf_mod = importlib.import_module('sklearn.' + clf_mod)
-    clf = getattr(clf_mod, clf_class)()
+    # Get the classifier class.
+    clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]
+    clf_module = importlib.import_module('sklearn.' + clf_module)
+    clf_class = getattr(clf_module, clf_class_name)
+
+    # Convert numerical arguments to numbers so that the input types match. This
+    # is necessary because the hstore field does not convert types back, it
+    # stores everything as strings.
+    args = {}
+    for key, val in classifier.clf_args.items():
+        try:
+            val = int(val)
+        except ValueError:
+            try:
+                val = float(val)
+            except ValueError:
+                pass
+        args[key] = val
+
+    # Create a pipeline with scaling and classification.
+    clf = make_pipeline(RobustScaler(), clf_class(**args))
+
+    # Fit the pipeline.
     clf.fit(X[selector, :], Y[selector])
 
     # Compute validation arrays. If full arrays were used for training, the
