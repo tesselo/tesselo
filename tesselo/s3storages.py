@@ -11,6 +11,7 @@ class StaticRootS3Boto3Storage(S3Boto3Storage):
     preload_metadata = True
     querystring_auth = False
     default_acl = 'public-read'
+    custom_domain = settings.AWS_S3_CUSTOM_DOMAIN_STATIC
 
 
 class PrivateMediaS3Boto3Storage(S3Boto3Storage):

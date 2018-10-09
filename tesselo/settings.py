@@ -200,13 +200,13 @@ else:
     # Set the url to the bucket for serving files.
     if AWS_STORAGE_BUCKET_NAME_STATIC == 'dev.static.tesselo.com':
         STATIC_URL = 'https://devstatic.tesselo.com/'
-        AWS_S3_CUSTOM_DOMAIN = 'devstatic.tesselo.com'
+        AWS_S3_CUSTOM_DOMAIN_STATIC = 'devstatic.tesselo.com'
     elif AWS_STORAGE_BUCKET_NAME_STATIC == 'staging.static.tesselo.com':
         STATIC_URL = 'https://stagingstatic.tesselo.com/'
-        AWS_S3_CUSTOM_DOMAIN = 'stagingstatic.tesselo.com'
+        AWS_S3_CUSTOM_DOMAIN_STATIC = 'stagingstatic.tesselo.com'
     elif AWS_STORAGE_BUCKET_NAME_STATIC == 'static.tesselo.com':
         STATIC_URL = 'https://static.tesselo.com/'
-        AWS_S3_CUSTOM_DOMAIN = 'static.tesselo.com'
+        AWS_S3_CUSTOM_DOMAIN_STATIC = 'static.tesselo.com'
 
 # Storage settings
 if DEBUG:
