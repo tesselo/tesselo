@@ -1,3 +1,5 @@
+from guardian.admin import GuardedModelAdmin
+
 from classify.models import (
     Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport,
     TrainingSample
@@ -55,7 +57,7 @@ class TrainingSampleInline(admin.TabularInline):
         return False
 
 
-class TrainingLayerAdmin(admin.ModelAdmin):
+class TrainingLayerAdmin(GuardedModelAdmin):
     inlines = (TrainingSampleInline, )
     readonly_fields = ('legend', )
 
@@ -65,7 +67,7 @@ class ClassifierAccuracyInline(admin.TabularInline):
     readonly_fields = ('accuracy_matrix', 'cohen_kappa', 'accuracy_score', )
 
 
-class ClassifierAdmin(admin.ModelAdmin):
+class ClassifierAdmin(GuardedModelAdmin):
     inlines = (ClassifierAccuracyInline, )
 
     actions = ['train_classifier', ]
@@ -85,7 +87,7 @@ class ClassifierAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started training classifiers.')
 
 
-class PredictedLayerAdmin(admin.ModelAdmin):
+class PredictedLayerAdmin(GuardedModelAdmin):
     raw_id_fields = ('composite', 'sentineltile', 'rasterlayer', )
     actions = ['predict_layer', ]
 

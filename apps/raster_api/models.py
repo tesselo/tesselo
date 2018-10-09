@@ -1,9 +1,10 @@
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from guardian.shortcuts import assign_perm, remove_perm
 from raster.models import Legend, LegendSemantics, RasterLayer
 from raster_aggregation.models import AggregationLayer
 
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from sentinel.models import Composite, CompositeBuild, SentinelTileAggregationLayer
 
@@ -148,6 +149,53 @@ class CompositeGroupObjectPermission(GroupObjectPermissionBase):
 
     def __str__(self):
         return '{0} | {1} | {2}'.format(self.group, self.permission, self.content_object)
+
+
+def update_composite_dependent_rasterlayer_permissions(sender, instance, funk, **kwargs):
+    """
+    Automatically set permissions on the dependent rasterlayer objects.
+    """
+    # Get permissions keyword.
+    permission = '{}_rasterlayer'.format(instance.permission.codename.split('_')[0])
+    # Get target user or group.
+    invitee = instance.user if hasattr(instance, 'user') else instance.group
+    # Assign permissions.
+    for cband in instance.content_object.compositeband_set.all():
+        funk(permission, invitee, cband.rasterlayer)
+
+
+def assign_composite_dependent_rasterlayer_permissions(sender, instance, **kwargs):
+    update_composite_dependent_rasterlayer_permissions(sender, instance, funk=assign_perm, **kwargs)
+
+
+def remove_composite_dependent_rasterlayer_permissions(sender, instance, **kwargs):
+    update_composite_dependent_rasterlayer_permissions(sender, instance, funk=remove_perm, **kwargs)
+
+
+post_save.connect(
+    assign_composite_dependent_rasterlayer_permissions,
+    sender=CompositeUserObjectPermission,
+    weak=False,
+    dispatch_uid="assign_composite_dependent_rasterlayer_permissions_usr",
+)
+pre_delete.connect(
+    remove_composite_dependent_rasterlayer_permissions,
+    sender=CompositeUserObjectPermission,
+    weak=False,
+    dispatch_uid="remove_composite_dependent_rasterlayer_permissions_usr",
+)
+post_save.connect(
+    assign_composite_dependent_rasterlayer_permissions,
+    sender=CompositeGroupObjectPermission,
+    weak=False,
+    dispatch_uid="assign_composite_dependent_rasterlayer_permissions_grp",
+)
+pre_delete.connect(
+    remove_composite_dependent_rasterlayer_permissions,
+    sender=CompositeGroupObjectPermission,
+    weak=False,
+    dispatch_uid="remove_composite_dependent_rasterlayer_permissions_grp",
+)
 
 
 class PublicComposite(models.Model):

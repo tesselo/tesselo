@@ -1,3 +1,5 @@
+from guardian.admin import GuardedModelAdmin
+
 from django.contrib.gis import admin
 from sentinel import ecs
 from sentinel.models import (
@@ -60,7 +62,7 @@ class MGRSTileAdmin(admin.OSMGeoAdmin):
     list_filter = ('utm_zone', 'latitude_band', )
 
 
-class CompositeAdmin(admin.ModelAdmin):
+class CompositeAdmin(GuardedModelAdmin):
     list_filter = ('active', )
     model = Composite
     readonly_fields = ('sentineltiles', )

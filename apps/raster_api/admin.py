@@ -1,20 +1,35 @@
-from django.contrib import admin
-from raster_api.models import (
-    AggregationLayerGroupObjectPermission, AggregationLayerUserObjectPermission, LegendGroupObjectPermission,
-    LegendSemanticsGroupObjectPermission, LegendSemanticsUserObjectPermission, LegendUserObjectPermission,
-    PublicAggregationLayer, PublicLegend, PublicLegendSemantics, PublicRasterLayer, RasterLayerGroupObjectPermission,
-    RasterLayerUserObjectPermission
-)
+from guardian.admin import GuardedModelAdmin
+from raster.admin import LegendAdmin, RasterLayerModelAdmin
+from raster.models import Legend, RasterLayer
+from raster_aggregation.admin import ComputeActivityAggregatesModelAdmin
+from raster_aggregation.models import AggregationLayer
 
+from django.contrib import admin
+from raster_api.models import PublicAggregationLayer, PublicLegend, PublicRasterLayer
+
+
+class GuardedRasterLayerModelAdmin(RasterLayerModelAdmin, GuardedModelAdmin):
+    pass
+
+
+admin.site.unregister(RasterLayer)
+admin.site.register(RasterLayer, GuardedRasterLayerModelAdmin)
 admin.site.register(PublicRasterLayer)
-admin.site.register(RasterLayerUserObjectPermission)
-admin.site.register(RasterLayerGroupObjectPermission)
+
+
+class GuardedLegendModelAdmin(LegendAdmin, GuardedModelAdmin):
+    pass
+
+
+admin.site.unregister(Legend)
+admin.site.register(Legend, GuardedLegendModelAdmin)
 admin.site.register(PublicLegend)
-admin.site.register(LegendUserObjectPermission)
-admin.site.register(LegendGroupObjectPermission)
-admin.site.register(PublicLegendSemantics)
-admin.site.register(LegendSemanticsUserObjectPermission)
-admin.site.register(LegendSemanticsGroupObjectPermission)
-admin.site.register(AggregationLayerUserObjectPermission)
-admin.site.register(AggregationLayerGroupObjectPermission)
+
+
+class GuardedAggregationLayerModelAdmin(ComputeActivityAggregatesModelAdmin, GuardedModelAdmin):
+    pass
+
+
+admin.site.unregister(AggregationLayer)
+admin.site.register(AggregationLayer, GuardedAggregationLayerModelAdmin)
 admin.site.register(PublicAggregationLayer)

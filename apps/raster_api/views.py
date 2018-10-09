@@ -178,11 +178,6 @@ class PermissionsModelViewSet(ModelViewSet):
 
         funk('{perm}_{model}'.format(perm=permission, model=self._model), invitee, obj)
 
-        # Handle compositeband case.
-        if self._model == 'composite':
-            for wlayer in obj.compositeband_set.all():
-                funk('{perm}_rasterlayer'.format(perm=permission), invitee, wlayer.rasterlayer)
-
         return Response('{}d {} {} to {} {} {}'.format(action, model, invitee.id, permission, self._model, obj.id))
 
     @detail_route(methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
