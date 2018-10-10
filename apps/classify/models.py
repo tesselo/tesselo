@@ -104,6 +104,7 @@ class Classifier(models.Model):
     composite = models.ForeignKey(Composite, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
     sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used..')
     clf_args = HStoreField(default={}, blank=True, help_text='Keyword Arguments passed to the classifier.')
+    needs_large_instance = models.BooleanField(default=False)
 
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
