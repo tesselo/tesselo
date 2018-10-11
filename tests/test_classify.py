@@ -91,7 +91,7 @@ class SentinelClassifierTest(TestCase):
             name='Clouds',
             algorithm=Classifier.RF,
             traininglayer=self.traininglayer,
-            splitfraction=0.6,
+            splitfraction=0.4,
         )
 
         self.clf.traininglayer.trainingsample_set.add(self.cloud)
