@@ -229,7 +229,8 @@ def train_sentinel_classifier(classifier_id):
     acc.save()
 
     # Store result in classifier.
-    classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name='trained')
+    name = 'classifier-{}.pickle'.format(classifier.id)
+    classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name=name)
     classifier.write('Finished training algorithm', classifier.FINISHED)
 
 
