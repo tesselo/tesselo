@@ -2,7 +2,7 @@ import os
 
 import boto3
 
-from classify.models import PredictedLayerChunk
+from classify.models import Classifier, PredictedLayerChunk
 from django.conf import settings
 from django.core.management import call_command
 
@@ -110,7 +110,12 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
 
 
 def train_sentinel_classifier(classifier_id):
-    return run_ecs_command(['train_sentinel_classifier', classifier_id], vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
+    # Get large instance flag for this chunk.
+    # Run ecs command with required instance size.
+    if Classifier.objects.get(id=classifier_id).needs_large_instance:
+        return run_ecs_command(['train_sentinel_classifier', classifier_id], vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
+    else:
+        return run_ecs_command(['train_sentinel_classifier', classifier_id])
 
 
 def predict_sentinel_layer(predicted_layer_id):
