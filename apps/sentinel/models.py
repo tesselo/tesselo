@@ -296,15 +296,17 @@ class Composite(models.Model):
     def get_sentineltiles(self):
         if self.sentineltiles.count() > 0:
             # Get specific sentinel tiles if specified.
-            return self.sentineltiles.all()
+            qs = self.sentineltiles.all()
         else:
             # Preload tiles that are populated on the bands based on the composite
             # layer group settings.
-            return SentinelTile.objects.filter(
+            qs = SentinelTile.objects.filter(
                 collected__gte=self.min_date,
                 collected__lte=self.max_date,
                 cloudy_pixel_percentage__lte=self.max_cloudy_pixel_percentage,
             )
+        # Return data ordered by decending date.
+        return qs.order_by('-collected')
 
 
 @receiver(post_save, sender=Composite)
@@ -353,6 +355,7 @@ class CompositeTile(models.Model):
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=CT_STATUS_CHOICES, default=UNPROCESSED)
     cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
+    cloud_classifier = models.ForeignKey('classify.Classifier', null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         unique_together = (("composite", "tilez", "tilex", "tiley"), )
@@ -373,6 +376,12 @@ class CompositeTile(models.Model):
         if status:
             self.status = status
         self.save()
+
+    def get_version_string(self):
+        if self.cloud_classifier_id:
+            return 'Classifier {}'.format(self.cloud_classifier_id)
+        else:
+            return 'Version {}'.format(self.cloud_version)
 
 
 class CompositeBuild(models.Model):
@@ -401,6 +410,7 @@ class CompositeBuild(models.Model):
     sentineltiles = models.ManyToManyField(SentinelTile)
     compositetiles = models.ManyToManyField(CompositeTile)
     cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
+    cloud_classifier = models.ForeignKey('classify.Classifier', null=True, blank=True, on_delete=models.SET_NULL, help_text='Use a classifier based cloud removal. The classifier is assumed to return a cloud probability or rank (the higher the output the more likely its a cloud). If specified, the cloud_version flag is ignored.')
 
     def __str__(self):
         return '{} - {} - {}'.format(self.composite, self.aggregationlayer, self.status)

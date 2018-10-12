@@ -351,13 +351,8 @@ def process_compositetile(compositetile_id):
     ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
 
     # Get cloud algorithm.
-    clouds = Clouds(ctile.cloud_version)
-    ctile.write('Using cloud removal algorithm version V{}'.format(clouds.version))
-
-    # Write the used type if it was not set manually.
-    if ctile.cloud_version is None:
-        ctile.cloud_version = clouds.version
-        ctile.save()
+    clouds = Clouds(ctile)
+    ctile.write('Using cloud removal algorithm {}'.format(ctile.get_version_string()))
 
     # Get the list of master layers for all 13 bands.
     rasterlayer_lookup = ctile.composite.rasterlayer_lookup
@@ -842,7 +837,10 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         for compositetile in compositetiles:
             # Log scheduling of composite tile build.
             compositetile.scheduled = timezone.now()
-            compositetile.cloud_version = compositebuild.cloud_version
+            if compositebuild.cloud_version:
+                compositetile.cloud_version = compositebuild.cloud_version
+            else:
+                compositetile.cloud_classifier = compositebuild.cloud_classifier
             compositetile.write('Scheduled composite builder, waiting for worker availability.', CompositeTile.PENDING)
             # Call build task.
             ecs.process_compositetile(compositetile.id)

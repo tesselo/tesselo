@@ -18,17 +18,33 @@ class Clouds(object):
 
     latest_version = 7
 
-    def __init__(self, version):
-        # Get default latest version.
-        if version is None:
-            version = self.latest_version
-        if version not in self.available_versions:
-            raise NotImplementedError('Requested version {} is not implemented.'.format(version))
+    classifier = None
 
-        self.version = version
+    def __init__(self, ctile):
+        if ctile.cloud_classifier:
+            self.classifier = ctile.cloud_classifier
+        elif ctile.cloud_version is None:
+            # Get default latest version.
+            ctile.cloud_version = self.latest_version
+            ctile.save()
+            self.cloud_version = ctile.cloud_version
+        else:
+            if ctile.cloud_version not in self.available_versions:
+                raise NotImplementedError('Requested version {} is not implemented.'.format(ctile.cloud_version))
+            self.cloud_version = ctile.cloud_version
 
     def clouds(self, stack):
-        return getattr(self, 'clouds_v{}'.format(self.version))(stack)
+        if self.classifier:
+            # Convert stack data into input for classifier.
+            bands = ['{}.jp2'.format(bnd) for bnd in self.classifier.band_names.split(',')]
+            data = numpy.array([stack[bnd].ravel() for bnd in bands]).T
+            # Predict cloud probability based on classifier.
+            predicted = self.classifier.clf.predict(data).reshape(stack[const.SCL].shape)
+            # Add cirrus band values in decimal range as a tie breaker for
+            # pixels that do not have a dense.
+            return predicted + (numpy.clip(stack[const.BD10], 0, 9999) / 10000)
+        else:
+            return getattr(self, 'clouds_v{}'.format(self.cloud_version))(stack)
 
     def clouds_v7(self, stack):
         """

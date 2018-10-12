@@ -36,7 +36,7 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @mock.patch('classify.tasks.get_raster_tile', get_numpy_tile)
 @mock.patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
 @mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@mock.patch('sys.stdout.write', lambda x: None)
+#@mock.patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 

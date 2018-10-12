@@ -7,8 +7,10 @@ from tests.mock_functions import (
     client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_write_raster_tile, point_to_test_file
 )
 
+from classify.models import Classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
+from django.core.files import File
 from django.test import TestCase, override_settings
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
@@ -74,6 +76,7 @@ class SentinelBucketParserTest(TestCase):
         self.assertIn('Scheduled composite builder, waiting for worker availability.', ctile.log)
         self.assertIn('Starting to build composite at max zoom level.', ctile.log)
         self.assertIn('Finished building composite tile at max zoom level, starting Pyramid.', ctile.log)
+        self.assertIn('Using cloud removal algorithm Version ', ctile.log)
         self.assertIn('Finished building composite tile.', ctile.log)
         # The status has been set to finished.
         self.assertEqual(ctile.status, CompositeTile.FINISHED)
@@ -82,6 +85,13 @@ class SentinelBucketParserTest(TestCase):
             [band.rasterlayer.rastertile_set.count() for band in self.composite.compositeband_set.all()],
             [564, ] * 13,
         )
+        # Run the classifier based version.
+        with open('tests/data/classifier-1.pickle', 'rb') as fl:
+            self.build.cloud_classifier = Classifier.objects.create(name='Test', trained=File(fl))
+            self.build.save()
+        composite_build_callback(self.build.id, rebuild=True)
+        ctile.refresh_from_db()
+        self.assertIn('Using cloud removal algorithm Classifier ', ctile.log)
 
     def test_bucket_parser(self):
         sync_sentinel_bucket_utm_zone(1)
