@@ -86,8 +86,7 @@ class CompositeBuildViewSet(PermissionsModelViewSet):
 
     _model = 'compositebuild'
 
-    def get_queryset(self):
-        return CompositeBuild.objects.all().order_by('id')
+    queryset = CompositeBuild.objects.all().order_by('id')
 
     @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def build(self, request, pk):

@@ -30,8 +30,7 @@ class TrainingSampleViewSet(PermissionsModelViewSet):
 
     _model = 'trainingsample'
 
-    def get_queryset(self):
-        return TrainingSample.objects.all().order_by('id')
+    queryset = TrainingSample.objects.all().order_by('id')
 
 
 class ClassifierViewSet(PermissionsModelViewSet):
@@ -42,8 +41,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
 
     _model = 'classifier'
 
-    def get_queryset(self):
-        return Classifier.objects.all().order_by('id')
+    queryset = Classifier.objects.all().order_by('id')
 
     @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def train(self, request, pk):
@@ -122,8 +120,7 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
 
     _model = 'predictedlayer'
 
-    def get_queryset(self):
-        return PredictedLayer.objects.all().order_by('id')
+    queryset = PredictedLayer.objects.all().order_by('id')
 
     @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def predict(self, request, pk):
