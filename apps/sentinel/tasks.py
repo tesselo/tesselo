@@ -729,16 +729,20 @@ def run_sen2cor(tile):
                 tile_id=tile.id,
                 band=band,
             )
-            bandpath = glob.glob(glob_pattern, recursive=True)[0]
+            bandpath = glob.glob(glob_pattern, recursive=True)
         else:
             glob_pattern = '/rasterwd/products/{tile_id}/S2*_MSIL2A*.SAFE/GRANULE/**/*{band}*{resolution}m.jp2'.format(
                 tile_id=tile.id,
                 band=band.split('.jp2')[0],
                 resolution=resolution,
             )
-            bandpath = glob.glob(glob_pattern, recursive=True)[0]
+            bandpath = glob.glob(glob_pattern, recursive=True)
 
-        shutil.move(bandpath, '/rasterwd/products/{tile_id}/{band}'.format(tile_id=tile.id, band=band))
+        if not len(bandpath):
+            tile.write('Output for band {} of Sen2Cor algorithm not found. This is likely related to a Sen2Cor failure.'.format(band), SentinelTile.FAILED)
+            raise ValueError('Could not find band {}'.format(band))
+
+        shutil.move(bandpath[0], '/rasterwd/products/{tile_id}/{band}'.format(tile_id=tile.id, band=band))
 
     # Remove unnecessary data.
     glob_pattern = '/rasterwd/products/{tile_id}/S2*.SAFE'.format(tile_id=tile.id)
