@@ -521,7 +521,7 @@ def process_l2a(sentineltile_id, push_rasters=False):
     tile = SentinelTile.objects.get(id=sentineltile_id)
 
     # Don't duplicate the effort.
-    if tile.status in (SentinelTile.PROCESSING, SentinelTile.FINISHED):
+    if tile.status in (SentinelTile.PROCESSING, SentinelTile.FINISHED, SentinelTile.BROKEN):
         tile.write('Status is {}, aborted additional L2A update.'.format(tile.status))
         return
     else:
@@ -803,10 +803,11 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         for ctile in compositebuild.compositetiles.filter(status__in=(CompositeTile.FINISHED, CompositeTile.FAILED)):
             ctile.write('Rebuilding composite tile, setting status to unprocessed.', CompositeTile.UNPROCESSED)
 
-    # Flag to check scene status.
-    scene_ingestion_complete = not compositebuild.sentineltiles.exclude(status=SentinelTile.FINISHED).exists()
+    # Flag to check scene status. If non-finished or non-broken tiles exist,
+    # ingestion is assumed to be incomplete.
+    scene_ingestion_incomplete = compositebuild.sentineltiles.exclude(status__in=(SentinelTile.FINISHED, SentinelTile.BROKEN)).exists()
 
-    if not scene_ingestion_complete:
+    if scene_ingestion_incomplete:
         # Ensure compsitebuild status is "ingesting scenes".
         if compositebuild.status != CompositeBuild.INGESTING_SCENES:
             compositebuild.status = CompositeBuild.INGESTING_SCENES
