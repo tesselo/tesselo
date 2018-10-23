@@ -57,12 +57,14 @@ class SentinelTile(models.Model):
     PROCESSING = 'Processing'
     FINISHED = 'Finished'
     FAILED = 'Failed'
+    BROKEN = 'Broken'
     ST_STATUS_CHOICES = (
         (UNPROCESSED, UNPROCESSED),
         (PENDING, PENDING),
         (PROCESSING, PROCESSING),
         (FINISHED, FINISHED),
         (FAILED, FAILED),
+        (BROKEN, BROKEN),
     )
     prefix = models.TextField(unique=True)
     datastrip = models.TextField()
