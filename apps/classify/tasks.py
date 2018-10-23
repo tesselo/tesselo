@@ -14,6 +14,7 @@ from sklearn.preprocessing import RobustScaler
 from classify.models import (
     Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport
 )
+from classify.const import ZOOM, SCALE, PIXELTYPE, VALUE_CONFIG_ERROR_MSG, CHUNK_SIZE
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
@@ -24,15 +25,7 @@ from sentinel.utils import (
     aggregate_tile, get_composite_tile_indices, get_raster_tile, get_sentinel_tile_indices, write_raster_tile
 )
 
-ZOOM = 14
 
-SCALE = tile_scale(ZOOM)
-
-PIXELTYPE = 2
-
-VALUE_CONFIG_ERROR_MSG = 'Found different values for same category.'
-
-CHUNK_SIZE = 100
 
 
 def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
