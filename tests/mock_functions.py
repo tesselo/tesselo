@@ -16,8 +16,6 @@ from django.utils import timezone
 from sentinel import const
 from sentinel.models import SentinelTile, SentinelTileBand, SentinelTileSceneClass
 
-storage = DefaultStorage()
-
 
 def iterator_search(self, searchstring):
     return [
@@ -150,7 +148,7 @@ def point_to_test_file(source_url, filepath):
     })
 
 
-def get_numpy_tile(layer_id, tilez, tilex, tiley):
+def patch_get_raster_tile(layer_id, tilez, tilex, tiley):
     try:
         SentinelTileSceneClass.objects.get(layer_id=layer_id)
     except:
@@ -174,6 +172,8 @@ def get_numpy_tile(layer_id, tilez, tilex, tiley):
 
 
 def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):
+    storage = DefaultStorage()
+
     # Convert data to file-like object and store.
     rst = GDALRaster({
         'width': 256,

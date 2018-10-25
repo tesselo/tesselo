@@ -1,5 +1,6 @@
 
-import mock
+from unittest.mock import patch
+
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
@@ -11,10 +12,10 @@ from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild
 
 
-@mock.patch('sentinel.ecs.composite_build_callback', lambda *args, **kwargs: None)
-@mock.patch('sentinel.ecs.process_compositetile', lambda *args, **kwargs: None)
-@mock.patch('sentinel.ecs.train_sentinel_classifier', lambda *args, **kwargs: None)
-@mock.patch('sentinel.ecs.predict_sentinel_layer', lambda *args, **kwargs: None)
+@patch('sentinel.ecs.composite_build_callback', lambda *args, **kwargs: None)
+@patch('sentinel.ecs.process_compositetile', lambda *args, **kwargs: None)
+@patch('sentinel.ecs.train_sentinel_classifier', lambda *args, **kwargs: None)
+@patch('sentinel.ecs.predict_sentinel_layer', lambda *args, **kwargs: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelApiTriggers(TestCase):
 

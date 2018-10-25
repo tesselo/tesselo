@@ -141,5 +141,5 @@ def build_predicted_pyramid(predicted_layer_id):
     return run_ecs_command(['build_predicted_pyramid', predicted_layer_id])
 
 
-def export_training_data(traininglayer_id, min_date, max_date):
-    return run_ecs_command(['export_training_data', traininglayer_id, min_date, max_date])
+def export_training_data(traininglayerexport_id):
+    return run_ecs_command(['export_training_data', traininglayerexport_id])

@@ -7,25 +7,23 @@ import numpy
 from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+from raster.tiles.utils import tile_bounds, tile_index_range
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler
 
-from classify.models import (
-    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport
+from classify.const import (
+    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL,
+    SCALE, SENTINEL_PIXELTYPE, VALUE_CONFIG_ERROR_MSG, ZOOM
 )
-from classify.const import ZOOM, SCALE, PIXELTYPE, VALUE_CONFIG_ERROR_MSG, CHUNK_SIZE
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayerExport
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
 from django.core.files import File
 from sentinel import ecs
-from sentinel.models import Composite
 from sentinel.utils import (
     aggregate_tile, get_composite_tile_indices, get_raster_tile, get_sentinel_tile_indices, write_raster_tile
 )
-
-
 
 
 def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
@@ -64,22 +62,27 @@ def get_rasterlayer_ids(band_names, rasterlayer_lookup):
     return rasterlayer_ids
 
 
-def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None):
+def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None, is_regressor=False):
+    # Determine sample value datatype.
+    target_type = REGRESSION_DATATYPE if is_regressor else CLASSIFICATION_DATATYPE
     # Create numpy arrays holding training data.
     number_of_bands = len(band_names)
-    X = numpy.empty(shape=(0, number_of_bands), dtype='uint16')
-    Y = numpy.empty(shape=(0, ), dtype='uint8')
+    X = numpy.empty(shape=(0, number_of_bands), dtype=SENTINEL_PIXELTYPE)
+    Y = numpy.empty(shape=(0, ), dtype=target_type)
+    # Track pixel IDs to allow merging different training matrices from
+    # different traininglayers.
     PID = numpy.empty(shape=(0, ), dtype='int64')
-    # Dictionary for categories.
+    # Dictionary for categories or statistics.
     categories = {}
     # Loop through training tiles to build training set.
     for sample in traininglayer.trainingsample_set.all():
-        # Check for consistency in training samples
-        if sample.category in categories:
-            if sample.value != categories[sample.category]:
-                raise ValueError(VALUE_CONFIG_ERROR_MSG)
-        else:
-            categories[sample.category] = sample.value
+        # Check for consistency in training samples for dicrete datasets.
+        if not is_regressor:
+            if sample.category in categories:
+                if sample.value != categories[sample.category]:
+                    raise ValueError(VALUE_CONFIG_ERROR_MSG)
+            else:
+                categories[sample.category] = sample.value if is_regressor else int(sample.value)
         # Loop over index range for tiles intersecting with the sample geom.
         idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
         for tilex in range(idx[0], idx[2] + 1):
@@ -106,7 +109,7 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None)
                         'srid': WEB_MERCATOR_SRID,
                         'scale': [SCALE, -SCALE],
                         'origin': [bounds[0], bounds[3]],
-                        'datatype': PIXELTYPE,
+                        'datatype': 1,
                         'nr_of_bands': 1,
                     }
                 )
@@ -116,7 +119,7 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None)
                 sample_pixels = sample_rast.bands[0].data().ravel()
                 selector = sample_pixels == 1
                 # Create a constant array with sample value for all intersecting pixels.
-                sample_values = sample.value * numpy.ones(sum(selector))
+                sample_values = (sample.value * numpy.ones(sum(selector))).astype(target_type)
                 # Add sample values to dependent variable.
                 Y = numpy.hstack([sample_values, Y])
                 # Use selector to pick sample pixels over geom.
@@ -129,7 +132,18 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None)
                 pids = numpy.arange(pid_from, pid_to)
                 PID = numpy.hstack([pids[selector], PID])
 
-    traininglayer.legend = {str(int(val)): key for key, val in categories.items()}
+    if is_regressor:
+        # For continuous values, track statistics instead of a legend.
+        traininglayer.legend = {
+            'min': numpy.min(Y),
+            'max': numpy.max(Y),
+            'std': numpy.std(Y),
+            'avg': numpy.average(Y),
+        }
+    else:
+        # For discrete values, store the category lookup.
+        traininglayer.legend = {str(int(val)): key for key, val in categories.items()}
+
     traininglayer.save()
 
     return X, Y, PID
@@ -144,7 +158,20 @@ def train_sentinel_classifier(classifier_id):
 
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
-    classifier.write('Started collecting training data', classifier.PROCESSING)
+
+    # Make consistency checks.
+    if classifier.is_regressor and not classifier.traininglayer.continuous:
+        classifier.write('Regressors require continuous input datasets.', classifier.FAILED)
+        return
+    elif not classifier.is_regressor and classifier.traininglayer.continuous:
+        classifier.write('Classifiers require discrete input datasets.', classifier.FAILED)
+        return
+    else:
+        classifier.write('Started collecting training data', classifier.PROCESSING)
+
+    # Remove current accuracy matrix.
+    if hasattr(classifier, 'classifieraccuracy'):
+        classifier.classifieraccuracy.delete()
 
     # Check if the classifier has a custom data source specified.
     if classifier.composite:
@@ -158,7 +185,8 @@ def train_sentinel_classifier(classifier_id):
         X, Y, PID = populate_training_matrix(
             classifier.traininglayer,
             classifier.band_names.split(','),
-            rasterlayer_lookup
+            rasterlayer_lookup,
+            classifier.is_regressor,
         )
     except ValueError:
         classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
@@ -209,16 +237,19 @@ def train_sentinel_classifier(classifier_id):
         validation_pixels = X[numpy.logical_not(selector), :]
         control_pixels = Y[numpy.logical_not(selector)]
 
-    # Predict validation pixels.
-    validation_pixels = clf.predict(validation_pixels)
-
     # Instanciate data container model.
     acc, created = ClassifierAccuracy.objects.get_or_create(classifier=classifier)
 
-    # Compute accuracy matrix and coefficients.
-    acc.accuracy_matrix = confusion_matrix(control_pixels, validation_pixels).tolist()
-    acc.cohen_kappa = cohen_kappa_score(control_pixels, validation_pixels)
-    acc.accuracy_score = accuracy_score(control_pixels, validation_pixels)
+    if classifier.is_regressor:
+        # Compute rsquared.
+        acc.rsquared = clf.score(validation_pixels, control_pixels)
+    else:
+        # Predict validation pixels.
+        validation_pixels = clf.predict(validation_pixels)
+        # Compute accuracy matrix and coefficients.
+        acc.accuracy_matrix = confusion_matrix(control_pixels, validation_pixels).tolist()
+        acc.cohen_kappa = cohen_kappa_score(control_pixels, validation_pixels)
+        acc.accuracy_score = accuracy_score(control_pixels, validation_pixels)
     acc.save()
 
     # Store result in classifier.
@@ -319,10 +350,13 @@ def predict_sentinel_chunk(chunk_id):
         data = get_classifier_data(rasterlayer_ids, tilez, tilex, tiley)
         if data is None:
             continue
+        # Determine numpy and GDAL datatypes.
+        dtype = REGRESSION_DATATYPE if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE
+        dtype_gdal = REGRESSION_DATATYPE_GDAL if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE_GDAL
         # Predict classes.
-        predicted = chunk.predictedlayer.classifier.clf.predict(data).astype('uint8')
+        predicted = chunk.predictedlayer.classifier.clf.predict(data).astype(dtype)
         # Write predicted pixels into a tile.
-        tile_to_register = write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=1)
+        tile_to_register = write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=dtype_gdal)
         # Append tile to batch.
         if tile_to_register:
             batch.append(tile_to_register)
@@ -374,7 +408,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) if tile is None else tile.bands[0].data() for tile in tiles
             ]
             # Aggregate tile to lower resolution.
-            tile_data = [aggregate_tile(tile, target_dtype='uint8', discrete=True) for tile in tile_data]
+            tile_data = [aggregate_tile(tile, target_dtype=tile.dtype, discrete=tile.dtype is CLASSIFICATION_DATATYPE) for tile in tile_data]
             # Combine data to larger tile.
             tile_data = numpy.concatenate([
                 numpy.concatenate(tile_data[:2], axis=1),
@@ -405,44 +439,53 @@ def build_predicted_pyramid(predicted_layer_id):
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
 
 
-def export_training_data(traininglayer_id, min_date, max_date, band_names=['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']):
+def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B10,B11,B12'):
     """
     Export training data to a file over a date range for monthly composites.
     """
-    # Get composite list.
-    composites = Composite.objects.filter(
-        official=True,
-        interval=Composite.MONTHLY,
-        min_date__gte=min_date,
-        max_date__lte=max_date,
-    )
+    # Get export object.
+    exp = TrainingLayerExport.objects.get(pk=traininglayerexport_id)
 
-    # Get training layer.
-    obj = TrainingLayer.objects.get(id=traininglayer_id)
+    # Get rasterlayer lookup if source was provided.
+    rasterlayer_lookup = None
+    if exp.composite:
+        rasterlayer_lookup = exp.composite.rasterlayer_lookup
+    elif exp.sentineltile:
+        rasterlayer_lookup = exp.sentineltile.rasterlayer_lookup
 
-    # Loop through composites.
-    for composite in composites:
-        print('Exporting training matrix for', composite)
-        # Get training data for this composite.
-        X, Y, PID = populate_training_matrix(obj, band_names, composite.rasterlayer_lookup)
-        # Append class values to matrix.
-        data = numpy.append(Y.reshape((len(Y), 1)), X, 1).astype('int64')
-        # Append class names to matrix.
-        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in obj.legend.values()))
-        for category_dn, category_name in obj.legend.items():
+    # Export all bands.
+    bands_to_export = bands_to_export.split(',')
+
+    # Get training data for this composite as floating point data.
+    X, Y, PID = populate_training_matrix(exp.traininglayer, bands_to_export, rasterlayer_lookup, is_regressor=exp.traininglayer.continuous)
+
+    # Append training class values to pixel matrix.
+    data = numpy.append(Y.reshape((len(Y), 1)), X, 1)
+
+    # Append training class names to pixel matrix if this is a discrete dataset.
+    if not exp.traininglayer.continuous:
+        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in exp.traininglayer.legend.values()))
+        for category_dn, category_name in exp.traininglayer.legend.items():
             names[Y == int(category_dn)] = category_name
         data = numpy.append(names.reshape((len(names), 1)), data, 1)
-        # Append pixel ids to matrix.
-        data = numpy.append(PID.reshape((len(PID), 1)).astype('int64'), data, 1)
-        # Append header to matrix.
-        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + band_names)
-        data = numpy.append(header.reshape((1, len(header))), data, 0)
-        # Write data to csv file.
-        csv_name = 'traininglayer-{}-{}.csv'.format(obj.id, composite.min_date)
-        csv_path = os.path.join('/tmp/', csv_name)
-        numpy.savetxt(csv_path, data, delimiter=',', fmt='%s')
-        # Create training layer export instance.
-        TrainingLayerExport.objects.create(
-            traininglayer=obj,
-            data=File(open(csv_path, 'rb'), name=csv_name)
-        )
+
+    # Append pixel ids to matrix.
+    data = numpy.append(PID.reshape((len(PID), 1)).astype('int64'), data, 1)
+
+    # Append header to matrix, the class name column is only present for
+    # discrete datasets.
+    if exp.traininglayer.continuous:
+        header = numpy.array(['PixelId', 'ClassDigitalNumber'] + bands_to_export)
+    else:
+        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + bands_to_export)
+
+    data = numpy.append(header.reshape((1, len(header))), data, 0)
+
+    # Write data to csv file.
+    csv_name = 'traininglayer-export-{}.csv'.format(exp.id)
+    csv_path = os.path.join('/tmp/', csv_name)
+    numpy.savetxt(csv_path, data, delimiter=',', fmt='%s')
+
+    # Save table in export instance.
+    exp.data = File(open(csv_path, 'rb'), name=csv_name)
+    exp.save()

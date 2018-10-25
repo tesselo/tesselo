@@ -17,7 +17,7 @@ s3 = boto3.resource('s3')
 s3_client = boto3.client('s3')
 
 
-def aggregate_tile(tile, target_dtype=numpy.int16, discrete=False):
+def aggregate_tile(tile, target_dtype=None, discrete=False):
     """
     Aggregate a tile array to the next zoom level using movin average. Create
     a 1-D array of half the size of the input data.
@@ -34,8 +34,9 @@ def aggregate_tile(tile, target_dtype=numpy.int16, discrete=False):
     else:
         # Average it for continuous values.
         tile = numpy.mean(tile, axis=(1, 2))
-
-    tile = tile.astype(target_dtype)
+    # Convert to a specific type if requested.
+    if target_dtype:
+        tile = tile.astype(target_dtype)
     tile.shape = (const.AGG_TILE_SIZE, const.AGG_TILE_SIZE)
     return tile
 

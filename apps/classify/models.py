@@ -18,8 +18,10 @@ class TrainingLayer(models.Model):
     """
     A group of training sample polygons and the extracted training pixels.
     """
+
     name = models.CharField(max_length=500)
     legend = HStoreField(default={}, editable=False)
+    continuous = models.BooleanField(default=False, help_text='Are the target values of this traininglayer continuous values? If false, its assumed to be discrete.')
 
     def __str__(self):
         return self.name
@@ -35,7 +37,9 @@ class TrainingLayerExport(models.Model):
     Export training pixels to files and store permanently.
     """
     traininglayer = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
-    data = models.FileField(upload_to='clouds/traininglayer_exports')
+    composite = models.ForeignKey(Composite, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as export data source if specified. If left blank, the original traininglayer pixels are exported.')
+    sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as export data source if specified. If left blank, the original traininglayer pixels are exported.')
+    data = models.FileField(upload_to='clouds/traininglayer_exports', blank=True, null=True)
     created = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -49,8 +53,8 @@ class TrainingSample(models.Model):
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.CASCADE)
     composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.CASCADE)
     geom = models.PolygonField()
-    category = models.CharField(max_length=100)
-    value = models.IntegerField()
+    category = models.CharField(max_length=100, default='', blank=True)
+    value = models.FloatField()
     traininglayer = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -67,20 +71,37 @@ class Classifier(models.Model):
     Pickled cloud classifier models.
     """
     SVM = 'svm'
+    LSVM = 'lsvm'
+    SVR = 'svr'
+    LSVR = 'lsvr'
     RF = 'rf'
+    RFR = 'rfr'
     NN = 'nn'
+    NNR = 'nnr'
 
     ALGORITHM_CHOICES = (
         (SVM, 'Support Vector Machines'),
+        (LSVM, 'Linear Support Vector Machines'),
         (RF, 'Random Forest'),
         (NN, 'Neural Network'),
+        (SVR, 'Support Vector Machines Regressor'),
+        (LSVR, 'Linear Support Vector Machines Regressor'),
+        (RFR, 'Random Forest Regressor'),
+        (NNR, 'Neural Network Regressor'),
     )
 
     ALGORITHM_MODULES = {
-        SVM: ('svm', 'LinearSVC'),
+        SVM: ('svm', 'SVC'),
+        LSVM: ('svm', 'LinearSVC'),
+        SVR: ('svm', 'SVR'),
+        LSVR: ('svm', 'LinearSVR'),
         RF: ('ensemble', 'RandomForestClassifier'),
+        RFR: ('ensemble', 'RandomForestRegressor'),
         NN: ('neural_network', 'MLPClassifier'),
+        NNR: ('neural_network', 'MLPRegressor'),
     }
+
+    REGRESSORS = (SVR, LSVR, RFR, NNR)
 
     UNPROCESSED = 'Unprocessed'
     PENDING = 'Pending'
@@ -102,10 +123,9 @@ class Classifier(models.Model):
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
     band_names = models.CharField(max_length=500, default='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12', help_text='Comma-separated list of band names and layer ids. If an integer value is added, it is assumed to be a rasterlayer id that should be included in the export.')
     composite = models.ForeignKey(Composite, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
-    sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used..')
+    sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
     clf_args = HStoreField(default={}, blank=True, help_text='Keyword Arguments passed to the classifier.')
     needs_large_instance = models.BooleanField(default=False)
-
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
 
@@ -132,6 +152,10 @@ class Classifier(models.Model):
             self.status = status
         self.save()
 
+    @property
+    def is_regressor(self):
+        return self.algorithm in self.REGRESSORS
+
 
 class ClassifierAccuracy(models.Model):
     """
@@ -141,9 +165,13 @@ class ClassifierAccuracy(models.Model):
     accuracy_matrix = ArrayField(ArrayField(models.FloatField(), default=[]), default=[])
     cohen_kappa = models.FloatField(default=0)
     accuracy_score = models.FloatField(default=0)
+    rsquared = models.FloatField(default=0)
 
     def __str__(self):
-        return '{} Accuracy {}'.format(self.classifier, self.accuracy_score)
+        return '{} Accuracy {}'.format(
+            self.classifier,
+            self.rsqared if self.classifier.is_regressor else self.accuracy_score
+        )
 
 
 class PredictedLayer(models.Model):

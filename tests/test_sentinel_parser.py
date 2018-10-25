@@ -1,10 +1,11 @@
 import shutil
 import tempfile
+from unittest.mock import patch
 
-import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import (
-    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_write_raster_tile, point_to_test_file
+    client_get_object, iterator_search, patch_get_raster_tile, patch_process_l2a, patch_write_raster_tile,
+    point_to_test_file
 )
 
 from classify.models import Classifier
@@ -18,12 +19,13 @@ from sentinel.models import (
 from sentinel.tasks import composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
 
 
-@mock.patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
-@mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
-@mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
-@mock.patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
-@mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
-@mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
+@patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
+@patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
+@patch('sentinel.tasks.get_raster_tile', patch_get_raster_tile)
+@patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
+@patch('raster.tiles.parser.urlretrieve', point_to_test_file)
+@patch('sentinel.ecs.process_l2a', patch_process_l2a)
+@patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelBucketParserTest(TestCase):
 

@@ -477,7 +477,7 @@ def process_compositetile(compositetile_id):
                         tile = get_raster_tile(rasterlayer_id, zoom, tilex + dat[0], tiley + dat[1])
                         if tile:
                             none_found = False
-                            agg = aggregate_tile(tile.bands[0].data())
+                            agg = aggregate_tile(tile.bands[0].data(), target_dtype=numpy.int16)
                         else:
                             size = WEB_MERCATOR_TILESIZE // 2
                             agg = numpy.zeros((size, size), dtype=numpy.int16)

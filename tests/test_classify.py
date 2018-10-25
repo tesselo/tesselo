@@ -1,16 +1,17 @@
 import shutil
 import tempfile
 from unittest import skip
+from unittest.mock import patch
 
-import mock
 from raster_aggregation.models import AggregationArea, AggregationLayer
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC, SVR, LinearSVC, LinearSVR
 from tests.mock_functions import (
-    client_get_object, get_numpy_tile, iterator_search, patch_process_l2a, patch_write_raster_tile, point_to_test_file
+    client_get_object, iterator_search, patch_get_raster_tile, patch_process_l2a, patch_write_raster_tile,
+    point_to_test_file
 )
 
 from classify.models import (
@@ -28,19 +29,21 @@ from sentinel.models import Composite, CompositeBuild, SentinelTile
 from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
 
 
-@mock.patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
-@mock.patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
-@mock.patch('raster.tiles.parser.urlretrieve', point_to_test_file)
-@mock.patch('sentinel.tasks.get_raster_tile', get_numpy_tile)
-@mock.patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
-@mock.patch('classify.tasks.get_raster_tile', get_numpy_tile)
-@mock.patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
-@mock.patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@mock.patch('sys.stdout.write', lambda x: None)
+@patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
+@patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
+@patch('raster.tiles.parser.urlretrieve', point_to_test_file)
+@patch('sentinel.tasks.get_raster_tile', patch_get_raster_tile)
+@patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
+@patch('classify.tasks.get_raster_tile', patch_get_raster_tile)
+@patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
+@patch('sentinel.ecs.process_l2a', patch_process_l2a)
+@patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 
     def setUp(self):
+        settings.MEDIA_ROOT = tempfile.mkdtemp()
+
         bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
         bbox = OGRGeometry.from_bbox(bbox)
         bbox.srid = 3857
@@ -60,8 +63,6 @@ class SentinelClassifierTest(TestCase):
             composite=self.composite,
             aggregationlayer=self.agglayer,
         )
-
-        settings.MEDIA_ROOT = tempfile.mkdtemp()
 
         self.traininglayer = TrainingLayer.objects.create(name='Test Training Layer')
 
@@ -98,19 +99,23 @@ class SentinelClassifierTest(TestCase):
         self.clf.traininglayer.trainingsample_set.add(self.shadow)
         self.clf.traininglayer.trainingsample_set.add(self.cloudfree)
 
-    def tearDown(self):
-        shutil.rmtree(settings.MEDIA_ROOT)
-
-    def _get_data(self):
-        sync_sentinel_bucket_utm_zone(1)
-        composite_build_callback(self.build.id, initiate=True, rebuild=True)
-        composite_build_callback(self.build.id, initiate=False)
         self.cloud.composite = self.composite
         self.cloud.save()
         self.shadow.composite = self.composite
         self.shadow.save()
         self.cloudfree.composite = self.composite
         self.cloudfree.save()
+
+    def tearDown(self):
+        try:
+            shutil.rmtree(settings.MEDIA_ROOT)
+        except:
+            pass
+
+    def _get_data(self):
+        sync_sentinel_bucket_utm_zone(1)
+        composite_build_callback(self.build.id, initiate=True, rebuild=True)
+        composite_build_callback(self.build.id, initiate=False)
 
     def test_classifier_training(self):
         self._get_data()
@@ -122,11 +127,20 @@ class SentinelClassifierTest(TestCase):
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, Pipeline))
         self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
-        self.assertTrue(isinstance(self.clf.clf.steps[1][1], LinearSVC))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], SVC))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
-
-        # Random forest with custom composite set.
+        # LSVM
+        self.clf.algorithm = Classifier.LSVM
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], LinearSVC))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        # Random Forest with custom composite set.
         self.clf.algorithm = Classifier.RF
         self.clf.status = self.clf.UNPROCESSED
         self.clf.composite = self.composite
@@ -135,7 +149,6 @@ class SentinelClassifierTest(TestCase):
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf.steps[1][1], RandomForestClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
-
         # Neural Network
         self.clf.algorithm = Classifier.NN
         self.clf.status = self.clf.UNPROCESSED
@@ -153,10 +166,66 @@ class SentinelClassifierTest(TestCase):
         # Assert accuracy statistic has been calculated.
         self.assertNotEqual(self.clf.classifieraccuracy.accuracy_score, 0)
 
+        # For regressor use cases, set the traininglayer to continuous.
+        self.clf.traininglayer.continuous = True
+        self.clf.traininglayer.save()
+
+        # SVR
+        self.clf.algorithm = Classifier.SVR
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.clf_args = {}
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], SVR))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        # LSVR.
+        self.clf.algorithm = Classifier.LSVR
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], LinearSVR))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        # Random Forest Regressor.
+        self.clf.algorithm = Classifier.RFR
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.composite = self.composite
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], RandomForestRegressor))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        # Neural Network Regressor
+        self.clf.algorithm = Classifier.NNR
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.composite = None
+        self.clf.clf_args = {'max_iter': 500}
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], MLPRegressor))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+
+        # Assert legend was created.
+        self.assertIn('max', self.clf.traininglayer.legend)
+        self.assertIn('std', self.clf.traininglayer.legend)
+
+        # Assert rsquared was computed.
+        self.assertNotEqual(self.clf.classifieraccuracy.rsquared, 0)
+
         # Error due to broken input data.
         self.cloud.pk = None
         self.cloud.value = 99
         self.cloud.save()
+        self.clf.traininglayer.continuous = False
+        self.clf.traininglayer.save()
+        self.clf.algorithm = Classifier.RF
+        self.clf.save()
         with self.assertRaisesMessage(ValueError, VALUE_CONFIG_ERROR_MSG):
             train_sentinel_classifier(self.clf.id)
         try:
@@ -221,14 +290,47 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
 
+    def test_training_inconsistent_configuration(self):
+        self.clf.algorithm = Classifier.NNR
+        self.clf.save()
+        self.clf.traininglayer.continuous = False
+        self.clf.traininglayer.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, Classifier.FAILED)
+        self.assertIn('Regressors require continuous input datasets.', self.clf.log)
+        self.clf.algorithm = Classifier.NN
+        self.clf.save()
+        self.clf.traininglayer.continuous = True
+        self.clf.traininglayer.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, Classifier.FAILED)
+        self.assertIn('Classifiers require discrete input datasets.', self.clf.log)
+
     def test_training_export(self):
         self._get_data()
         # Get rasterlayer id.
         band_names = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B8A', 'RL{}'.format(self.composite.compositeband_set.first().rasterlayer_id)]
+        band_names = ','.join(band_names)
+        # Create export task.
+        exp = TrainingLayerExport.objects.create(traininglayer=self.clf.traininglayer)
         # Run export task.
-        export_training_data(self.clf.traininglayer.id, '2015-12-01', '2015-12-31', band_names)
-        export = TrainingLayerExport.objects.filter(traininglayer=self.clf.traininglayer.id).first()
-        self.assertTrue(len(export.data.read()) > 2500)
+        export_training_data(exp.id, band_names)
+        # Check export file has been created.
+        exp.refresh_from_db()
+        dat = exp.data.read()
+        self.assertTrue(len(dat) > 2500)
+
+        exp = TrainingLayerExport.objects.create(traininglayer=self.clf.traininglayer)
+        self.clf.traininglayer.continuous = True
+        self.clf.traininglayer.save()
+        # Run export task.
+        export_training_data(exp.id, band_names)
+        # Check export file has been created.
+        exp.refresh_from_db()
+        dat = exp.data.read()
+        self.assertTrue(len(dat) > 2500)
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):
@@ -249,6 +351,8 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.SVM
         self.clf.status = self.clf.UNPROCESSED
         self.clf.save()
+        self.clf.traininglayer.continuous = False
+        self.clf.traininglayer.save()
         train_sentinel_classifier(self.clf.id)
         # Create and authenticate user.
         self.michael = User.objects.create_superuser(
