@@ -1,3 +1,5 @@
+import io
+
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer
@@ -27,6 +29,7 @@ from django.contrib.auth.models import Group, User
 from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
@@ -44,6 +47,7 @@ from raster_api.serializers import (
 )
 from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
+from sentinel.clouds.inspect_composite import inspect_composite
 from sentinel.models import Composite, SentinelTileAggregationLayer
 from sentinel.utils import get_raster_tile
 
@@ -189,8 +193,8 @@ class PermissionsModelViewSet(ModelViewSet):
         public_obj = getattr(obj, 'public{0}'.format(self._model.lower()))
         public_obj.public = not public_obj.public
         public_obj.save()
-
         # Handle compositeband case.
+
         if self._model == 'composite':
             for wlayer in obj.compositeband_set.all():
                 child = wlayer.rasterlayer.publicrasterlayer
@@ -366,6 +370,39 @@ class CompositeViewSet(PermissionsModelViewSet):
         # Assign permissions to the dependent rasterlayers.
         for wlayer in obj.compositeband_set.all():
             super(CompositeViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
+
+    @detail_route(methods=['get'])
+    def inspect(self, request, pk=None):
+        """
+        Returns the RGB and SceneClass input to a specific composite tile.
+        """
+        ### Remove this test image block.
+        # tilez = 11
+        # tilex = 375 * 2
+        # tiley = 518 * 2
+        #
+        # tilez = 12
+        # tilex = 1956
+        # tiley = 1586
+        #
+        # composite_id = 172
+        # Get tile index from query params.
+        tilez = self.request.QUERY_PARAMS.get('tilez', None)
+        tilex = self.request.QUERY_PARAMS.get('tilex', None)
+        tiley = self.request.QUERY_PARAMS.get('tiley', None)
+        # Check that all query params have been provided.
+        if not tilez or not tilex or not tiley:
+            return Response()
+        # Construct inspection image.
+        img = inspect_composite(pk, tilez, tilex, tiley)
+        # Save image to io buffer.
+        with io.BytesIO() as output:
+            img.save(output, format='png')
+            # Create response with image content.
+            return HttpResponse(
+                output.getvalue(),
+                content_type='image/png',
+            )
 
 
 class SentinelTileAggregationLayerViewSet(ModelViewSet):
