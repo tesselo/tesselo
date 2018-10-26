@@ -82,7 +82,7 @@ class SentinelTile(models.Model):
     log = models.TextField(default='', blank=True)
 
     def __str__(self):
-        return '{0} {1}'.format(self.mgrstile.code, self.collected)
+        return '{} | {} | {}'.format(self.mgrstile.code, self.collected.date(), self.status)
 
     class Meta:
         permissions = (
