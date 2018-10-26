@@ -66,19 +66,19 @@ class SentinelTile(models.Model):
         (FAILED, FAILED),
         (BROKEN, BROKEN),
     )
-    prefix = models.TextField(unique=True)
+    prefix = models.TextField(unique=True, db_index=True)
     datastrip = models.TextField()
     product_name = models.TextField()
     mgrstile = models.ForeignKey(MGRSTile, on_delete=models.CASCADE)
     tile_geom = models.PolygonField(null=True)
     tile_data_geom = models.MultiPolygonField(null=True)
-    collected = models.DateTimeField()
-    cloudy_pixel_percentage = models.FloatField()
+    collected = models.DateTimeField(db_index=True)
+    cloudy_pixel_percentage = models.FloatField(db_index=True)
     data_coverage_percentage = models.FloatField()
     angle_azimuth = models.FloatField(default=0)
     angle_altitude = models.FloatField(default=0)
     level = models.CharField(max_length=10, choices=const.PROCESS_LEVELS, default=const.LEVEL_L1C)
-    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED, db_index=True)
     log = models.TextField(default='', blank=True)
 
     def __str__(self):
