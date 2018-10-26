@@ -698,6 +698,7 @@ def run_sen2cor(tile):
             product_id=tile.product_name,
             data_folder='/rasterwd/products/{tile_id}'.format(tile_id=tile.id),
             safe_format=True,
+            tile_list=[tile.mgrstile.code],
         )
         product_request.save_data()
     except:
