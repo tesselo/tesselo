@@ -170,7 +170,7 @@ class ClassifierAccuracy(models.Model):
     def __str__(self):
         return '{} Accuracy {}'.format(
             self.classifier,
-            self.rsqared if self.classifier.is_regressor else self.accuracy_score
+            self.rsquared if self.classifier.is_regressor else self.accuracy_score
         )
 
 
