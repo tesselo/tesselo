@@ -333,6 +333,8 @@
               <!-- Contact Form -->
               <form action="php/contact-process.php" id="contact-form" method="post">
 
+                {% csrf_token %}
+
                 <!-- Input Name -->
                 <div class="form-group" id="name-field">
                   <label for="form-name" class="sr-only">Name</label>
