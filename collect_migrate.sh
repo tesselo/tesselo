@@ -5,7 +5,6 @@ echo Collecting staticfiles...
 python manage.py collectstatic --noinput \
     -i tesselo \
     -i docs \
-    -i fonts \
     -i *.md \
     -i *.txt \
     -i *.scss \
