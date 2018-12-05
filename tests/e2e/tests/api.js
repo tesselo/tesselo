@@ -23,6 +23,8 @@ casper.test.begin('Tesselo API is up and running', has_creds ? 3 : 0 , function 
       }, true);
     });
 
+    casper.wait(500);
+
     casper.then(function() {
       test.assertTitle("Tesselo REST API", "Tesselo API title is the one expected");
     });
