@@ -373,4 +373,4 @@ class SentinelClassifierTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertNotEqual(data['results'][0]['classifieraccuracy']['cohen_kappa'], 0)
+        self.assertGreater(data['results'][0]['classifieraccuracy']['accuracy_score'], 0)
