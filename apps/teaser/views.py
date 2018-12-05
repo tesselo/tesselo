@@ -39,17 +39,18 @@ def teasercontact(request):
             )
             try:
                 send_mail('Teaser contact by {}'.format(name), message, from_email, ['teaser@tesselo.com'])
-            except BadHeaderError:
-                return JsonResponse('Invalid header found.')
-
-            data['success'] = True
-            data['confirmation'] = 'Congratulations. Your message has been sent successfully'
+            except:
+                data['success'] = False
+                data['message'] = {'email': 'Failed to send message. Please try again.'}
+            else:
+                data['success'] = True
+                data['confirmation'] = 'Congratulations. Your message has been sent successfully'
         else:
             errors = {}
             if 'name' in form.errors:
                 errors['name'] = 'Name is required.'
             if 'email' in form.errors:
-                errors['email'] = 'Email is invalid.'
+                errors['email'] = 'Email is not valid.'
             if 'message' in form.errors:
                 errors['message'] = 'Message is required.'
 
