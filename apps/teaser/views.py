@@ -1,4 +1,4 @@
-from django.core.mail import BadHeaderError, send_mail
+from django.core.mail import send_mail
 from django.http import JsonResponse
 from teaser.forms import ContactForm
 
