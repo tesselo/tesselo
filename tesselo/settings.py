@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'formulary',
     'naip',
     'wmts',
+    'teaser',
 ]
 
 MIDDLEWARE = [
@@ -247,6 +248,16 @@ CELERY_TASK_ALWAYS_EAGER = True
 RASTER_USE_CELERY = True
 RASTER_PARSE_SINGLE_TASK = True
 RASTER_WORKDIR = os.environ.get('RASTER_WORKDIR', None)
+
+# Email settings.
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_HOST = 'smtp.fastmail.com'
+    EMAIL_PORT = '587'
+    EMAIL_HOST_USER = 'daniel@tesselo.com'
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = True
 
 # Logger settings.
 if not DEBUG:
