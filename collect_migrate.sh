@@ -11,7 +11,6 @@ python manage.py collectstatic --noinput \
     -i *.less \
     -i *.json \
     -i *.hbs \
-    -i *.html \
     -i package.json \
     -i bootswatch \
     -i LICENSE.md \
