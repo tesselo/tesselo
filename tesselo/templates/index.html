@@ -56,8 +56,7 @@
   <link rel="stylesheet" href="{% static "teaser/css/style.css" %}">
 
   <!-- Responsive CSS -->
-  <link href="{% static "teaser/css/responsive.css" rel="stylesheet" %}">
-
+  <link rel="stylesheet" href="{% static "teaser/css/responsive.css" %}">
 
   <script type="text/javascript" src="{% static "teaser/js/plugins/svg-morpheus.js" %}"></script>
   <meta name="google-site-verification" content="sHjaYHHIlWua-mW70RmZeZMkC-euffvL66GcoRgLCV4" />
@@ -331,7 +330,7 @@
               <!-- /End Description -->
 
               <!-- Contact Form -->
-              <form action="php/contact-process.php" id="contact-form" method="post">
+              <form action="teasercontact" id="contact-form" method="post">
 
                 {% csrf_token %}
 
@@ -354,9 +353,9 @@
                 <!-- Input Message -->
                 <div class="form-group" id="message-field">
                   <label for="form-message" class="sr-only">Message</label>
-                                <textarea class="form-control form-control-dark" rows="1"
-                                          id="form-message" name="form-message"
-                                          placeholder="Message"></textarea>
+                  <textarea class="form-control form-control-dark" rows="1"
+                            id="form-message" name="form-message"
+                            placeholder="Message"></textarea>
                 </div>
                 <!-- /End Input Message -->
 
@@ -475,9 +474,10 @@
 <!-- /#page -->
 <div id="photoswipe"></div>
 
-<!-- Scripts -->
-<script>var STATIC_URL={{ STATIC_URL }}; console.log(STATIC_URL)</script>
+<!-- Get static url for use in JS scripts. -->
+<script>var STATIC_URL={{ STATIC_URL }}</script>
 
+<!-- Scripts -->
 <script src="{% static "teaser/js/plugins/jquery1.11.2.min.js" %}"></script>
 <script src="{% static "teaser/js/plugins/bootstrap.min.js" %}"></script>
 <script src="{% static "teaser/js/plugins/scrollreveal.min.js" %}"></script>

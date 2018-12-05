@@ -18,9 +18,22 @@
     messageContainer = $('#message-contact'),
     messageText = $('#message-contact .message-text');
 
+  // CSRF Protection stuff.
+  function csrfSafeMethod(method) {
+      // these HTTP methods do not require CSRF protection
+      return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+  }
+
+  $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+        var csrftoken = $("[name=csrfmiddlewaretoken]").val();
+        if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+      }
+  });
 
   form.submit(function (e) {
-
 
     // remove the error class
     form.find('.form-group').removeClass('error');
@@ -35,11 +48,10 @@
       'message': $('textarea[name="form-message"]').val()
     };
 
-
     // process the form
     $.ajax({
       type: 'POST',
-      url: 'php/contact-process.php',
+      url: 'contact-process',
       data: formData,
       dataType: 'json',
       encode: true
