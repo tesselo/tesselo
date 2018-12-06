@@ -2,7 +2,7 @@ from django.core.mail import send_mail
 from django.http import JsonResponse
 from teaser.forms import ContactForm
 
-MSG_TEMPLATE = '''A message has been submitted to the Tesselo contact form
+MSG_TEMPLATE = '''A message has been submitted to the Tesselo contact form through {uri}
 
 ----------------------------------
 
@@ -33,6 +33,7 @@ def teasercontact(request):
             from_email = form.cleaned_data['email']
             message_text = form.cleaned_data['message']
             message = MSG_TEMPLATE.format(
+                uri=request.build_absolute_uri(),
                 name=name,
                 from_email=from_email,
                 message=message_text,
