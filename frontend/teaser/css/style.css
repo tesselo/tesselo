@@ -494,7 +494,7 @@ a.link-light, a.link-light:hover, a.link-light:active, a.link-light:focus {
   font-family: "Akz-Grotesk", Helvetica, Arial, sans-serif;
   font-size: 14px;
   font-weight: 400;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   letter-spacing: 0.05em;
   background-color: transparent;
   color: #333;
@@ -1575,7 +1575,7 @@ body.show-content .slider-text {
     left: 50%;
     max-width: 60vw!important;
     transform: translateX(-50%);
- 
+
   }
 
   .pattern.show-it{
@@ -1661,10 +1661,10 @@ body.show-content .slider-text {
   border-bottom: none;
 }
 
-@media only screen 
-and (min-device-width : 768px) 
-and (max-device-width : 1024px) 
-{ 
+@media only screen
+and (min-device-width : 768px)
+and (max-device-width : 1024px)
+{
   .navbar-title {
     opacity: 0;
   }
