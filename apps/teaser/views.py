@@ -42,7 +42,7 @@ def teasercontact(request):
                 send_mail('Teaser contact by {}'.format(name), message, from_email, ['teaser@tesselo.com'])
             except:
                 data['success'] = False
-                data['message'] = {'email': 'Failed to send message. Please try again.'}
+                data['errors'] = {'email': 'Failed to send message. Please try again.'}
             else:
                 data['success'] = True
                 data['confirmation'] = 'Congratulations. Your message has been sent successfully'
