@@ -14,7 +14,7 @@ casper.test.begin('Tesselo API is up and running', has_creds ? 3 : 0 , function 
     casper.start(setup.get_base_url(casper) + 'api-auth/login/?next=/api/');
 
     // Skip these tests if
-    casper.thenBypassIf(function(){ return !has_creds }, 4);
+    casper.thenBypassIf(function(){ return !has_creds }, 5);
 
     casper.then(function() {
       casper.fill('form', {
