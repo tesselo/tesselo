@@ -516,7 +516,7 @@ SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process {product_path}'
 
 
 @task
-def process_l2a(sentineltile_id, push_rasters=False):
+def process_l2a(sentineltile_id):
     # Open sentinel tile instance.
     tile = SentinelTile.objects.get(id=sentineltile_id)
 
