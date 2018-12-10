@@ -112,6 +112,12 @@ class PredictedLayerChunkAdmin(admin.ModelAdmin):
 
 class TrainingLayerExportAdmin(GuardedModelAdmin):
     raw_id_fields = ('sentineltile', 'composite', )
+    actions = ['export_layer', ]
+
+    def export_layer(self, request, queryset):
+        for exp in queryset:
+            ecs.export_training_data(exp.id)
+        self.message_user(request, 'Exporting layers.')
 
 
 admin.site.register(Classifier, ClassifierAdmin)
