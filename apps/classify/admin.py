@@ -110,9 +110,13 @@ class PredictedLayerChunkAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started predicting chunk.')
 
 
+class TrainingLayerExportAdmin(GuardedModelAdmin):
+    raw_id_fields = ('sentineltile', 'composite', )
+
+
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
-admin.site.register(TrainingLayerExport)
+admin.site.register(TrainingLayerExport, TrainingLayerExportAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
 admin.site.register(PredictedLayerChunk, PredictedLayerChunkAdmin)
