@@ -263,7 +263,7 @@ class Composite(models.Model):
     interval = models.CharField(max_length=200, choices=INTERVAL_CHOICES, default=CUSTOM, editable=False)
 
     def __str__(self):
-        return self.name
+        return '{} ({} to {})'.format(self.name, self.min_date, self.max_date)
 
     class Meta:
         permissions = (
