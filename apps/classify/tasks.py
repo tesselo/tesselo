@@ -2,7 +2,6 @@ import importlib
 import io
 import os
 import pickle
-from zipfile import ZipFile
 
 import numpy
 from raster.models import RasterTile
@@ -482,17 +481,11 @@ def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B0
 
     data = numpy.append(header.reshape((1, len(header))), data, 0)
 
-    # Write data to csv file.
-    csv_name = 'traininglayer-export-{}.csv'.format(exp.id)
-    csv_path = os.path.join('/tmp/', csv_name)
-    numpy.savetxt(csv_path, data, delimiter=',', fmt='%s')
-
-    # Compress table.
-    zip_name = csv_name + '.zip'
-    zip_path = csv_path + '.zip'
-    with ZipFile(zip_path, 'w') as myzip:
-        myzip.write(csv_path, arcname=zip_name)
+    # Write data to compressed numpy file.
+    npz_name = 'traininglayer-export-{}.npz'.format(exp.id)
+    npz_path = os.path.join('/tmp/', npz_name)
+    numpy.savez_compressed(npz_path, X=X, Y=Y, PID=PID)
 
     # Save table in export instance.
-    exp.data = File(open(zip_path, 'rb'), name=zip_name)
+    exp.data = File(open(npz_path, 'rb'), name=npz_name)
     exp.save()
