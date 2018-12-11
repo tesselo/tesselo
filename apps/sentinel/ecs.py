@@ -142,4 +142,4 @@ def build_predicted_pyramid(predicted_layer_id):
 
 
 def export_training_data(traininglayerexport_id):
-    return run_ecs_command(['export_training_data', traininglayerexport_id])
+    return run_ecs_command(['export_training_data', traininglayerexport_id], vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
