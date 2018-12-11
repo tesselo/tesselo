@@ -41,9 +41,15 @@ class TrainingLayerExport(models.Model):
     sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as export data source if specified. If left blank, the original traininglayer pixels are exported.')
     data = models.FileField(upload_to='clouds/traininglayer_exports', blank=True, null=True)
     created = models.DateTimeField(auto_now=True)
+    log = models.TextField(blank=True, default='')
 
     def __str__(self):
         return '{} {}'.format(self.traininglayer.name, self.created)
+
+    def write(self, data):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        self.save()
 
 
 class TrainingSample(models.Model):

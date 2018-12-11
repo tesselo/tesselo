@@ -445,6 +445,7 @@ def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B0
     """
     # Get export object.
     exp = TrainingLayerExport.objects.get(pk=traininglayerexport_id)
+    exp.write('Starting training data export.')
 
     # Get rasterlayer lookup if source was provided.
     rasterlayer_lookup = None
@@ -457,35 +458,17 @@ def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B0
     bands_to_export = bands_to_export.split(',')
 
     # Get training data for this composite as floating point data.
+    exp.write('Extracting pixel values.')
     X, Y, PID = populate_training_matrix(exp.traininglayer, bands_to_export, rasterlayer_lookup, is_regressor=exp.traininglayer.continuous)
 
-    # Append training class values to pixel matrix.
-    data = numpy.append(Y.reshape((len(Y), 1)), X, 1)
-
-    # Append training class names to pixel matrix if this is a discrete dataset.
-    if not exp.traininglayer.continuous:
-        names = numpy.chararray(Y.shape, itemsize=max(len(category_name) for category_name in exp.traininglayer.legend.values()))
-        for category_dn, category_name in exp.traininglayer.legend.items():
-            names[Y == int(category_dn)] = category_name
-        data = numpy.append(names.reshape((len(names), 1)), data, 1)
-
-    # Append pixel ids to matrix.
-    data = numpy.append(PID.reshape((len(PID), 1)).astype('int64'), data, 1)
-
-    # Append header to matrix, the class name column is only present for
-    # discrete datasets.
-    if exp.traininglayer.continuous:
-        header = numpy.array(['PixelId', 'ClassDigitalNumber'] + bands_to_export)
-    else:
-        header = numpy.array(['PixelId', 'ClassName', 'ClassDigitalNumber'] + bands_to_export)
-
-    data = numpy.append(header.reshape((1, len(header))), data, 0)
-
     # Write data to compressed numpy file.
+    exp.write('Writing pixel values to compressed numpy file (npz).')
     npz_name = 'traininglayer-export-{}.npz'.format(exp.id)
     npz_path = os.path.join('/tmp/', npz_name)
     numpy.savez_compressed(npz_path, X=X, Y=Y, PID=PID)
 
     # Save table in export instance.
+    exp.write('Uploading file to remote storage.')
     exp.data = File(open(npz_path, 'rb'), name=npz_name)
     exp.save()
+    exp.write('Finished exporting training data.')
