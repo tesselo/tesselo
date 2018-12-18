@@ -377,9 +377,9 @@ class CompositeViewSet(PermissionsModelViewSet):
         Returns the RGB and SceneClass input to a specific composite tile.
         """
         # Get tile index from query params.
-        tilez = self.request.QUERY_PARAMS.get('tilez', None)
-        tilex = self.request.QUERY_PARAMS.get('tilex', None)
-        tiley = self.request.QUERY_PARAMS.get('tiley', None)
+        tilez = self.request.query_params.get('tilez', None)
+        tilex = self.request.query_params.get('tilex', None)
+        tiley = self.request.query_params.get('tiley', None)
         # Check that all query params have been provided.
         if not tilez or not tilex or not tiley:
             return Response()
