@@ -83,19 +83,20 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
                     raise ValueError(VALUE_CONFIG_ERROR_MSG)
             else:
                 categories[sample.category] = sample.value if is_regressor else int(sample.value)
+        # Take rasterlayer lookup from the trainingsample if it was not
+        # provided as input.
+        if rasterlayer_lookup:
+            rasterlayer_lookup_sample = rasterlayer_lookup
+        elif sample.composite:
+            rasterlayer_lookup_sample = sample.composite.rasterlayer_lookup
+        else:
+            rasterlayer_lookup_sample = sample.sentineltile.rasterlayer_lookup
+        # Convert lookup to id list.
+        rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup_sample)
         # Loop over index range for tiles intersecting with the sample geom.
         idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
         for tilex in range(idx[0], idx[2] + 1):
             for tiley in range(idx[1], idx[3] + 1):
-                # Take rasterlayer lookup from the trainingsample if not
-                # it was not provided as input.
-                if not rasterlayer_lookup:
-                    if sample.composite:
-                        rasterlayer_lookup = sample.composite.rasterlayer_lookup
-                    else:
-                        rasterlayer_lookup = sample.sentineltile.rasterlayer_lookup
-                # Convert lookup to id list.
-                rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
                 # Get stacked tile data for this tile.
                 data = get_classifier_data(rasterlayer_ids, ZOOM, tilex, tiley)
                 if data is None:
