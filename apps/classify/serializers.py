@@ -49,16 +49,19 @@ class ClassifierSerializer(ModelSerializer):
 class PredictedLayerSerializer(ModelSerializer):
 
     classifier_name = SerializerMethodField()
+    classifier_type = SerializerMethodField()
     source_name = SerializerMethodField()
     chunks_count = SerializerMethodField()
     chunks_done = SerializerMethodField()
+    aggregationlayer_name = SerializerMethodField()
 
     class Meta:
         model = PredictedLayer
         fields = (
             'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
             'log', 'chunks_count', 'chunks_done', 'classifier_name',
-            'source_name', 'status', 'aggregationlayer',
+            'source_name', 'status', 'aggregationlayer', 'classifier_type',
+            'aggregationlayer_name',
         )
         read_only_fields = (
             'rasterlayer', 'log', 'chunks_count', 'chunks_done',
@@ -68,11 +71,20 @@ class PredictedLayerSerializer(ModelSerializer):
     def get_classifier_name(self, obj):
         return obj.classifier.name
 
+    def get_classifier_type(self, obj):
+        return obj.classifier.get_algorithm_display()
+
     def get_source_name(self, obj):
         if obj.composite:
             return obj.composite.name
         else:
             return obj.sentineltile.collected.date()
+
+    def get_aggregationlayer_name(self, obj):
+        if obj.aggregationlayer:
+            return obj.aggregationlayer.name
+        else:
+            return ''
 
     def get_chunks_count(self, obj):
         return obj.predictedlayerchunk_set.count()
