@@ -8,4 +8,5 @@ class WMTSLayerSerializer(PermissionsModelSerializer):
         model = WMTSLayer
         fields = (
             'id', 'title', 'formula', 'sentineltile', 'composite',
+            'predictedlayer',
         )
