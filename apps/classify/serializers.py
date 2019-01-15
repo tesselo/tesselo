@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.serializers import CharField, ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField
 
 from classify.models import (
@@ -54,6 +56,7 @@ class PredictedLayerSerializer(ModelSerializer):
     chunks_count = SerializerMethodField()
     chunks_done = SerializerMethodField()
     aggregationlayer_name = SerializerMethodField()
+    legend = SerializerMethodField()
 
     class Meta:
         model = PredictedLayer
@@ -61,11 +64,11 @@ class PredictedLayerSerializer(ModelSerializer):
             'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
             'log', 'chunks_count', 'chunks_done', 'classifier_name',
             'source_name', 'status', 'aggregationlayer', 'classifier_type',
-            'aggregationlayer_name',
+            'aggregationlayer_name', 'legend',
         )
         read_only_fields = (
             'rasterlayer', 'log', 'chunks_count', 'chunks_done',
-            'classifier_name', 'source_name', 'status',
+            'classifier_name', 'source_name', 'status', 'legend',
         )
 
     def get_classifier_name(self, obj):
@@ -91,3 +94,9 @@ class PredictedLayerSerializer(ModelSerializer):
 
     def get_chunks_done(self, obj):
         return obj.predictedlayerchunk_set.filter(status=PredictedLayerChunk.FINISHED).count()
+
+    def get_legend(self, obj):
+        if obj.rasterlayer.legend:
+            return json.loads(obj.rasterlayer.legend.json)
+        else:
+            return {}

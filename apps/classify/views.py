@@ -120,7 +120,11 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
 
     _model = 'predictedlayer'
 
-    queryset = PredictedLayer.objects.all().order_by('id')
+    queryset = PredictedLayer.objects.all().select_related(
+        'rasterlayer', 'rasterlayer__legend', 'classifier', 'aggregationlayer'
+    ).prefetch_related(
+        'predictedlayerchunk_set'
+    ).order_by('id')
 
     @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def predict(self, request, pk):
