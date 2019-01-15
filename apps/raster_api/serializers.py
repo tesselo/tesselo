@@ -257,10 +257,21 @@ class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
     rasterlayer_lookup = SerializerMethodField()
     name = CharField(source='sentineltile.prefix')
     date = SerializerMethodField()
+    mgrs = CharField(source='sentineltile.mgrstile.code')
+    cloudy_pixel_percentage = CharField(source='sentineltile.cloudy_pixel_percentage')
+    data_coverage_percentage = CharField(source='sentineltile.data_coverage_percentage')
+    angle_azimuth = CharField(source='sentineltile.angle_azimuth')
+    angle_altitude = CharField(source='sentineltile.angle_altitude')
+    level = CharField(source='sentineltile.level')
+    status = CharField(source='sentineltile.status')
 
     class Meta:
         model = SentinelTileAggregationLayer
-        fields = ('id', 'name', 'rasterlayer_lookup', 'active', 'date', )
+        fields = (
+            'id', 'name', 'rasterlayer_lookup', 'active', 'date', 'mgrs',
+            'cloudy_pixel_percentage', 'data_coverage_percentage',
+            'angle_azimuth', 'angle_altitude', 'level', 'status',
+        )
 
     def get_rasterlayer_lookup(self, obj):
         return {band.band: band.layer_id for band in obj.sentineltile.sentineltileband_set.all()}

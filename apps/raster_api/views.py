@@ -405,7 +405,7 @@ class SentinelTileAggregationLayerViewSet(ModelViewSet):
 
     _parent_model = 'aggregationlayer'
 
-    queryset = SentinelTileAggregationLayer.objects.all().order_by('id')
+    queryset = SentinelTileAggregationLayer.objects.all().select_related('sentineltile', 'sentineltile__mgrstile').order_by('id')
 
 
 class ObtainExpiringAuthToken(ObtainAuthToken):
