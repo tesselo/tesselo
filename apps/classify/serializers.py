@@ -80,8 +80,10 @@ class PredictedLayerSerializer(ModelSerializer):
     def get_source_name(self, obj):
         if obj.composite:
             return obj.composite.name
-        else:
+        elif obj.sentineltile:
             return obj.sentineltile.collected.date()
+        else:
+            return ''
 
     def get_aggregationlayer_name(self, obj):
         if obj.aggregationlayer:
