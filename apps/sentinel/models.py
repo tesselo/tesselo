@@ -17,15 +17,15 @@ from sentinel.utils import populate_raster_metadata
 
 
 def get_duration(obj):
-        if obj.end:
-            if not obj.start:
-                return ''
-            else:
-                return '{0}'.format(obj.end - obj.start)
-        elif obj.start:
-            return '{0}'.format(timezone.now() - obj.start)
+    if obj.end:
+        if not obj.start:
+            return ''
         else:
-            return 'Not started yet'
+            return '{0}'.format(obj.end - obj.start)
+    elif obj.start:
+        return '{0}'.format(timezone.now() - obj.start)
+    else:
+        return 'Not started yet'
 
 
 class MGRSTile(models.Model):
