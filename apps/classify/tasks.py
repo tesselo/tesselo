@@ -2,18 +2,24 @@ import importlib
 import io
 import os
 import pickle
+import zipfile
 
+import h5py
 import numpy
+from keras.models import model_from_json
+from keras.wrappers.scikit_learn import KerasClassifier
 from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
-from sklearn.pipeline import make_pipeline
+from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 from classify.const import (
-    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL,
-    SCALE, SENTINEL_PIXELTYPE, VALUE_CONFIG_ERROR_MSG, ZOOM
+    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
+    PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
+    VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayerExport
 from django.contrib.gis.db.models import Extent
@@ -21,9 +27,7 @@ from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
 from django.core.files import File
 from sentinel import ecs
-from sentinel.utils import (
-    aggregate_tile, get_composite_tile_indices, get_raster_tile, get_sentinel_tile_indices, write_raster_tile
-)
+from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
 
 
 def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
@@ -150,12 +154,23 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
     return X, Y, PID
 
 
+def get_keras_model(keras_model_json, optimizer, loss=None, metrics=None, loss_weights=None, sample_weight_mode=None, weighted_metrics=None, target_tensors=None):
+    """
+    Wrap Keras model to scikit learn api.
+    """
+    clf = model_from_json(keras_model_json)
+    clf.compile(
+        optimizer, loss=loss, metrics=metrics, loss_weights=loss_weights,
+        sample_weight_mode=sample_weight_mode, weighted_metrics=weighted_metrics,
+        target_tensors=target_tensors
+    )
+    return clf
+
+
 def train_sentinel_classifier(classifier_id):
     """
     Trains a classifier based on the registered tiles and sample data.
     """
-    # Import sklearn here, its not installed in web app servers.
-    from sklearn.metrics import confusion_matrix, cohen_kappa_score, accuracy_score
 
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
@@ -203,30 +218,45 @@ def train_sentinel_classifier(classifier_id):
     # Constructing split data.
     selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
-    # Get the classifier class.
-    clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]
-    clf_module = importlib.import_module('sklearn.' + clf_module)
-    clf_class = getattr(clf_module, clf_class_name)
+    args = classifier.clf_args_dict
 
-    # Convert numerical arguments to numbers so that the input types match. This
-    # is necessary because the hstore field does not convert types back, it
-    # stores everything as strings.
-    args = {}
-    for key, val in classifier.clf_args.items():
-        try:
-            val = int(val)
-        except ValueError:
-            try:
-                val = float(val)
-            except ValueError:
-                pass
-        args[key] = val
+    # Get the classifier class.
+    if classifier.is_keras:
+        if not args:
+            args = {
+                'optimizer': 'adagrad',
+                'loss': 'categorical_crossentropy',
+                'metrics': ['accuracy'],
+            }
+        clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **args)
+    else:
+        # Instantiate sklearn classifier.
+        clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]
+        clf_module = importlib.import_module('sklearn.' + clf_module)
+        clf_class = getattr(clf_module, clf_class_name)
+        clf = clf_class(**args)
 
     # Create a pipeline with scaling and classification.
-    clf = make_pipeline(RobustScaler(), clf_class(**args))
+    clf = Pipeline([
+        (PIPELINE_SCALER_NAME, RobustScaler()),
+        (PIPELINE_ESTIMATOR_NAME, clf),
+    ])
 
-    # Fit the pipeline.
+    # Fit the model.
     clf.fit(X[selector, :], Y[selector])
+
+    # Do Keras related logging.
+    if classifier.is_keras:
+        # Get training accuracy history per epoch.
+        hist_str = ''
+        hist = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.history
+        epochs = len(hist['loss'])
+        # Convert the history to string.
+        for i in range(epochs):
+            hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist['acc'][i])
+        # Write Keras parameters and training history to classifier log.
+        classifier.write('Keras parameters: {}'.format(clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.params))
+        classifier.write('Keras history:\n {}'.format(hist_str))
 
     # Compute validation arrays. If full arrays were used for training, the
     # validation array is empty. In this case, compute accuracy agains full
@@ -254,8 +284,28 @@ def train_sentinel_classifier(classifier_id):
     acc.save()
 
     # Store result in classifier.
-    name = 'classifier-{}.pickle'.format(classifier.id)
-    classifier.trained = File(io.BytesIO(pickle.dumps(clf)), name=name)
+    if classifier.is_keras:
+        name = 'classifier-{}.hdf5'.format(classifier.id)
+        trained_io = io.BytesIO()
+        trained = h5py.File(trained_io)
+        # Save the Keras model.
+        clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.save(trained)
+        trained.flush()
+        # Unset the estimator to pickle the pipline.
+        clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = None
+        # Pickle the pipeline.
+        pipe = io.BytesIO(pickle.dumps(clf))
+
+        save_trained = io.BytesIO()
+
+        with zipfile.ZipFile(save_trained, 'w', zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(ZIP_PIPELINE_NAME, pipe.getvalue())
+            zf.writestr(ZIP_ESTIMATOR_NAME, trained_io.getvalue())
+    else:
+        name = 'classifier-{}.pickle'.format(classifier.id)
+        save_trained = io.BytesIO(pickle.dumps(clf))
+
+    classifier.trained = File(save_trained, name=name)
     classifier.write('Finished training algorithm', classifier.FINISHED)
 
 
@@ -275,12 +325,10 @@ def get_aggregationlayer_tile_indices(aggregationlayer, zoom):
 def get_prediction_index_range(pred, zoom=ZOOM):
     # Get tile range for aggregationlayer, compositeband or sentineltile for
     # this prediction.
-    if pred.aggregationlayer:
-        return get_aggregationlayer_tile_indices(pred.aggregationlayer, zoom)
-    elif pred.composite:
-        return get_composite_tile_indices(pred.composite, zoom)
-    else:
-        return get_sentinel_tile_indices(pred.sentineltile, zoom)
+    if not pred.aggregationlayer:
+        pred.write('ERROR: {}'.format(PREDICTION_CONFIG_ERROR_MSG), PredictedLayer.FAILED)
+        raise ValueError(PREDICTION_CONFIG_ERROR_MSG)
+    return get_aggregationlayer_tile_indices(pred.aggregationlayer, zoom)
 
 
 def predict_sentinel_layer(predicted_layer_id):

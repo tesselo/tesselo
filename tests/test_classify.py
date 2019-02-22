@@ -3,6 +3,9 @@ import tempfile
 from unittest import skip
 from unittest.mock import patch
 
+from keras.layers import Dense, Dropout
+from keras.models import Sequential
+from keras.wrappers.scikit_learn import KerasClassifier
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -14,12 +17,11 @@ from tests.mock_functions import (
     point_to_test_file
 )
 
+from classify.const import PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
 from classify.models import (
     Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport, TrainingSample
 )
-from classify.tasks import (
-    VALUE_CONFIG_ERROR_MSG, export_training_data, predict_sentinel_layer, train_sentinel_classifier
-)
+from classify.tasks import export_training_data, predict_sentinel_layer, train_sentinel_classifier
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
@@ -153,7 +155,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.NN
         self.clf.status = self.clf.UNPROCESSED
         self.clf.composite = None
-        self.clf.clf_args = {'max_iter': 500}
+        self.clf.clf_args = '{"max_iter": 500}'
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
@@ -173,7 +175,7 @@ class SentinelClassifierTest(TestCase):
         # SVR
         self.clf.algorithm = Classifier.SVR
         self.clf.status = self.clf.UNPROCESSED
-        self.clf.clf_args = {}
+        self.clf.clf_args = '{}'
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
@@ -204,7 +206,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.NNR
         self.clf.status = self.clf.UNPROCESSED
         self.clf.composite = None
-        self.clf.clf_args = {'max_iter': 500}
+        self.clf.clf_args = '{"max_iter": 500}'
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
@@ -250,26 +252,16 @@ class SentinelClassifierTest(TestCase):
     def test_classifier_prediction_composite_aggregationlayer(self):
         self._get_data()
         train_sentinel_classifier(self.clf.id)
-
-        # Test with compisite range.
+        # Test error if no aggregationlayer was specified.
         pred = PredictedLayer.objects.create(
             composite=self.composite,
             classifier=self.clf,
         )
-        predict_sentinel_layer(pred.id)
+        with self.assertRaisesMessage(ValueError, PREDICTION_CONFIG_ERROR_MSG):
+            predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
-        # Tiles have been created.
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
-        # Pyramid has been built.
-        self.assertTrue(pred.predictedlayerchunk_set.count() > 0)
-        self.assertEqual(
-            pred.predictedlayerchunk_set.count(),
-            pred.predictedlayerchunk_set.filter(status=PredictedLayerChunk.FINISHED).count(),
-        )
-        self.assertEqual(pred.status, PredictedLayer.FINISHED)
-        self.assertIn('Finished layer prediction at full resolution', pred.log)
-        self.assertIn('Finished building pyramid', pred.log)
-        self.assertEqual(pred.status, pred.FINISHED)
+        self.assertIn('ERROR: {}'.format(PREDICTION_CONFIG_ERROR_MSG), pred.log)
+        self.assertEqual(pred.status, PredictedLayer.FAILED)
         # Test with aggregationlayer argument.
         pred = PredictedLayer.objects.create(
             aggregationlayer=self.agglayer,
@@ -289,6 +281,45 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished layer prediction at full resolution', pred.log)
         self.assertIn('Finished building pyramid', pred.log)
         self.assertEqual(pred.status, pred.FINISHED)
+
+    def test_keras_classifier(self):
+        self._get_data()
+        self.clf.algorithm = Classifier.KERAS
+        self.clf.status = self.clf.UNPROCESSED
+        model = Sequential()
+        model.add(Dense(20, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(20, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(3, activation='softmax'))
+        self.clf.keras_model_json = model.to_json()
+        self.clf.clf_args = '''{
+            "optimizer": "adagrad",
+            "loss': "categorical_crossentropy",
+            "metrics': ["accuracy"],
+            "epochs": 10,
+            "batch_size": 5,
+        }'''
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        self.assertIn('Finished training algorithm', self.clf.log)
+        self.assertIn("Keras history:", self.clf.log)
+        self.assertIn("Keras parameters:", self.clf.log)
+        # Test prediction.
+        pred = PredictedLayer.objects.create(
+            composite=self.composite,
+            classifier=self.clf,
+            aggregationlayer=self.agglayer,
+        )
+        predict_sentinel_layer(pred.id)
+        pred.refresh_from_db()
+        # Tiles have been created.
+        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
 
     def test_training_inconsistent_configuration(self):
         self.clf.algorithm = Classifier.NNR

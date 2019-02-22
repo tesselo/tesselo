@@ -1,10 +1,14 @@
 import datetime
+import io
+import json
 import pickle
+import zipfile
 
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import RasterLayer
 from raster_aggregation.models import AggregationLayer
 
+from classify.const import PIPELINE_ESTIMATOR_NAME, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db.models.signals import post_save
@@ -84,6 +88,7 @@ class Classifier(models.Model):
     RFR = 'rfr'
     NN = 'nn'
     NNR = 'nnr'
+    KERAS = 'keras'
 
     ALGORITHM_CHOICES = (
         (SVM, 'Support Vector Machines'),
@@ -94,6 +99,7 @@ class Classifier(models.Model):
         (LSVR, 'Linear Support Vector Machines Regressor'),
         (RFR, 'Random Forest Regressor'),
         (NNR, 'Neural Network Regressor'),
+        (KERAS, 'Keras Model'),
     )
 
     ALGORITHM_MODULES = {
@@ -130,7 +136,8 @@ class Classifier(models.Model):
     band_names = models.CharField(max_length=500, default='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12', help_text='Comma-separated list of band names and layer ids. If an integer value is added, it is assumed to be a rasterlayer id that should be included in the export.')
     composite = models.ForeignKey(Composite, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
     sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
-    clf_args = HStoreField(default={}, blank=True, help_text='Keyword Arguments passed to the classifier.')
+    clf_args = models.TextField(default='{}', blank=True, help_text='Keyword arguments passed to the classifier. This will be ignored if clf_args is not a valid json string.')
+    keras_model_json = models.TextField(default='', blank=True, null=True, help_text='A Keras model definition string created by model.to_json().')
     needs_large_instance = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
@@ -148,7 +155,15 @@ class Classifier(models.Model):
     @property
     def clf(self):
         if self._clf is None:
-            self._clf = pickle.loads(self.trained.read())
+            if self.algorithm == self.KERAS:
+                from keras.models import load_model
+                import h5py
+                with zipfile.ZipFile(io.BytesIO(self.trained.read()), 'r') as zf:
+                    self._clf = pickle.loads(zf.read(ZIP_PIPELINE_NAME))
+                    model = load_model(h5py.File(io.BytesIO(zf.read(ZIP_ESTIMATOR_NAME))))
+                    self._clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = model
+            else:
+                self._clf = pickle.loads(self.trained.read())
         return self._clf
 
     def write(self, data, status=None):
@@ -161,6 +176,17 @@ class Classifier(models.Model):
     @property
     def is_regressor(self):
         return self.algorithm in self.REGRESSORS
+
+    @property
+    def is_keras(self):
+        return self.algorithm == self.KERAS
+
+    @property
+    def clf_args_dict(self):
+        try:
+            return json.loads(self.clf_args)
+        except json.decoder.JSONDecodeError:
+            return {}
 
 
 class ClassifierAccuracy(models.Model):
