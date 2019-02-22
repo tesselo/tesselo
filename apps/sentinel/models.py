@@ -84,11 +84,6 @@ class SentinelTile(models.Model):
     def __str__(self):
         return '{} | {} | {}'.format(self.mgrstile.code, self.collected.date(), self.status)
 
-    class Meta:
-        permissions = (
-            ('view_sentineltile', 'View sentinel tile'),
-        )
-
     def write(self, data, status=None, level=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
         self.log += now + str(data) + '\n'
@@ -265,11 +260,6 @@ class Composite(models.Model):
     def __str__(self):
         return '{} ({} to {})'.format(self.name, self.min_date, self.max_date)
 
-    class Meta:
-        permissions = (
-            ('view_composite', 'View composite'),
-        )
-
     @property
     def rasterlayer_lookup(self):
         return {lyr.band: lyr.rasterlayer_id for lyr in self.compositeband_set.all()}
@@ -416,11 +406,6 @@ class CompositeBuild(models.Model):
 
     def __str__(self):
         return '{} - {} - {}'.format(self.composite, self.aggregationlayer, self.status)
-
-    class Meta:
-        permissions = (
-            ('view_compositebuild', 'View composite build'),
-        )
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))

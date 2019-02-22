@@ -24,16 +24,11 @@ class TrainingLayer(models.Model):
     """
 
     name = models.CharField(max_length=500)
-    legend = HStoreField(default={}, editable=False)
+    legend = HStoreField(default=dict, editable=False)
     continuous = models.BooleanField(default=False, help_text='Are the target values of this traininglayer continuous values? If false, its assumed to be discrete.')
 
     def __str__(self):
         return self.name
-
-    class Meta:
-        permissions = (
-            ('view_traininglayer', 'View training layer'),
-        )
 
 
 class TrainingLayerExport(models.Model):
@@ -69,11 +64,6 @@ class TrainingSample(models.Model):
 
     def __str__(self):
         return '{0} - {1}'.format(self.category, self.composite if self.composite else self.sentineltile)
-
-    class Meta:
-        permissions = (
-            ('view_trainingsample', 'View training sample'),
-        )
 
 
 class Classifier(models.Model):
@@ -145,11 +135,6 @@ class Classifier(models.Model):
     def __str__(self):
         return '{0} ({1})'.format(self.name, self.get_algorithm_display())
 
-    class Meta:
-        permissions = (
-            ('view_classifier', 'View classifier'),
-        )
-
     _clf = None
 
     @property
@@ -194,7 +179,7 @@ class ClassifierAccuracy(models.Model):
     Accuracy data for the classifier.
     """
     classifier = models.OneToOneField(Classifier, on_delete=models.CASCADE)
-    accuracy_matrix = ArrayField(ArrayField(models.FloatField(), default=[]), default=[])
+    accuracy_matrix = ArrayField(ArrayField(models.FloatField(), default=list), default=list)
     cohen_kappa = models.FloatField(default=0)
     accuracy_score = models.FloatField(default=0)
     rsquared = models.FloatField(default=0)
@@ -234,11 +219,6 @@ class PredictedLayer(models.Model):
         return 'Layer for {0} over {1}.'.format(
             self.classifier,
             self.composite if self.composite else self.sentineltile
-        )
-
-    class Meta:
-        permissions = (
-            ('view_predictedlayer', 'View predicted layer'),
         )
 
     def save(self, *args, **kwargs):

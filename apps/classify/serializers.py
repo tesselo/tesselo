@@ -72,10 +72,14 @@ class PredictedLayerSerializer(ModelSerializer):
         )
 
     def get_classifier_name(self, obj):
-        return obj.classifier.name
+        if obj.classifier:
+            return obj.classifier.name
+        return ''
 
     def get_classifier_type(self, obj):
-        return obj.classifier.get_algorithm_display()
+        if obj.classifier:
+            return obj.classifier.get_algorithm_display()
+        return ''
 
     def get_source_name(self, obj):
         if obj.composite:

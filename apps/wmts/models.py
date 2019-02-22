@@ -38,11 +38,6 @@ class WMTSLayer(models.Model):
             formula = self.formula if self.formula else 'RGB'
         return '{} - {} for {} "{}"'.format(self.title, formula, layer_type, layer)
 
-    class Meta:
-        permissions = (
-            ('view_wmtslayer', 'View WMTS layer'),
-        )
-
     @property
     def url(self):
         if self.formula:
