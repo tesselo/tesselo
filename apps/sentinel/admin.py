@@ -65,7 +65,7 @@ class MGRSTileAdmin(admin.OSMGeoAdmin):
 class CompositeAdmin(GuardedModelAdmin):
     list_filter = ('active', )
     model = Composite
-    readonly_fields = ('sentineltiles', )
+    raw_id_fields = ('sentineltiles', )
     list_display = ('name', 'min_date', 'max_date')
 
 
