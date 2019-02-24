@@ -9,17 +9,4 @@ class Migration(migrations.Migration):
         ('classify', '0001_initial'),
     ]
 
-    operations = [
-        migrations.AlterModelOptions(
-            name='classifier',
-            options={'permissions': (('view_classifier', 'View classifier'),)},
-        ),
-        migrations.AlterModelOptions(
-            name='predictedlayer',
-            options={'permissions': (('view_predictedlayer', 'View predicted layer'),)},
-        ),
-        migrations.AlterModelOptions(
-            name='trainingsample',
-            options={'permissions': (('view_trainingsample', 'View training sample'),)},
-        ),
-    ]
+    operations = []

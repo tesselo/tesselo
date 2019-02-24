@@ -9,9 +9,4 @@ class Migration(migrations.Migration):
         ('formulary', '0001_initial'),
     ]
 
-    operations = [
-        migrations.AlterModelOptions(
-            name='formula',
-            options={'permissions': (('view_formula', 'View formula'),)},
-        ),
-    ]
+    operations = []

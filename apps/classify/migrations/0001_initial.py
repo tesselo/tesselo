@@ -152,9 +152,6 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=500)),
                 ('legend', django.contrib.postgres.fields.hstore.HStoreField(default={}, editable=False)),
             ],
-            options={
-                'permissions': (('view_traininglayer', 'View training layer'),),
-            },
         ),
         migrations.CreateModel(
             name='TrainingLayerExport',

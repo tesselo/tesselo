@@ -35,9 +35,6 @@ class Migration(migrations.Migration):
                 ('predictedlayer', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='classify.PredictedLayer')),
                 ('sentineltile', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='sentinel.SentinelTile')),
             ],
-            options={
-                'permissions': (('view_wmtslayer', 'View WMTS layer'),),
-            },
         ),
         migrations.CreateModel(
             name='WMTSLayerGroupObjectPermission',

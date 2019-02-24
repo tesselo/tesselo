@@ -9,17 +9,4 @@ class Migration(migrations.Migration):
         ('sentinel', '0001_initial'),
     ]
 
-    operations = [
-        migrations.AlterModelOptions(
-            name='composite',
-            options={'permissions': (('view_composite', 'View composite'),)},
-        ),
-        migrations.AlterModelOptions(
-            name='compositebuild',
-            options={'permissions': (('view_compositebuild', 'View composite build'),)},
-        ),
-        migrations.AlterModelOptions(
-            name='sentineltile',
-            options={'permissions': (('view_sentineltile', 'View sentinel tile'),)},
-        ),
-    ]
+    operations = []
