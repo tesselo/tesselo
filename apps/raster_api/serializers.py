@@ -108,7 +108,7 @@ class LegendEntrySerializer(ModelSerializer):
 
 class LegendSerializer(PermissionsModelSerializer):
 
-    entries = LegendEntrySerializer(many=True, source='legendentry_set')
+    entries = LegendEntrySerializer(many=True, source='legendentry_set', required=False)
     json = SerializerMethodField()
 
     class Meta:
@@ -162,8 +162,9 @@ class LegendSerializer(PermissionsModelSerializer):
         if 'description' in validated_data:
             instance.description = validated_data['description']
 
-        entries = validated_data.pop('legendentry_set')
-        self.create_or_update_entries(instance, entries)
+        entries = validated_data.pop('legendentry_set', None)
+        if entries:
+            self.create_or_update_entries(instance, entries)
 
         instance.save()
 

@@ -166,7 +166,7 @@ class PermissionsTests(TestCase):
         response = view(request, pk=self.legend_michael.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # Michael can change see his legend after getting permission.
+        # Michael can change his legend after getting permission.
         assign_perm('change_legend', self.michael, self.legend_michael)
         response = view(request, pk=self.legend_michael.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
