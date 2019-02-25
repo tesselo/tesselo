@@ -3,7 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from PIL import Image
 from raster.tiles.lookup import get_raster_tile
 from raster.views import RasterView
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -88,7 +88,7 @@ class CompositeBuildViewSet(PermissionsModelViewSet):
 
     queryset = CompositeBuild.objects.all().order_by('id')
 
-    @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def build(self, request, pk):
         """
         Schedule a composite build task to build this composite.
@@ -114,7 +114,7 @@ class CompositeTileViewSet(ReadOnlyModelViewSet):
     serializer_class = CompositeTileSerializer
     _parent_model = 'composite'
 
-    @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def build(self, request, pk):
         """
         Manually force a new composite tile build. Should only be necessary in

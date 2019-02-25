@@ -14,7 +14,7 @@ from raster_aggregation.views import ValueCountResultViewSet as ValueCountResult
 from rest_framework import renderers
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
@@ -165,7 +165,7 @@ class PermissionsModelViewSet(ModelViewSet):
             raise PermissionDenied('Public objects can not be deleted.')
         super(PermissionsModelViewSet, self).perform_destroy(instance)
 
-    @detail_route(methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def invite(self, request, pk, action, model, permission, invitee):
         """
         Invite or exclude users and groups from having view, change, or delete
@@ -184,7 +184,7 @@ class PermissionsModelViewSet(ModelViewSet):
 
         return Response('{}d {} {} to {} {} {}'.format(action, model, invitee.id, permission, self._model, obj.id))
 
-    @detail_route(methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def publish(self, request, pk=None):
         """
         Publish this object.
@@ -202,7 +202,7 @@ class PermissionsModelViewSet(ModelViewSet):
                 child.save()
         return Response({'success': 'Made {} {} {}'.format(self._model, obj.id, 'public' if public_obj.public else 'private')})
 
-    @detail_route(methods=['get'])
+    @action(detail=True, methods=['get'])
     def groups(self, request, pk=None):
         """
         List groups with permissions on this object.
@@ -211,7 +211,7 @@ class PermissionsModelViewSet(ModelViewSet):
         serializer = GroupSerializer(get_groups_with_perms(obj), many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=['get'])
+    @action(detail=True, methods=['get'])
     def users(self, request, pk=None):
         """
         List users with permissions on this object.
@@ -371,7 +371,7 @@ class CompositeViewSet(PermissionsModelViewSet):
         for wlayer in obj.compositeband_set.all():
             super(CompositeViewSet, self)._assign_perms(wlayer.rasterlayer, 'rasterlayer')
 
-    @detail_route(methods=['get'])
+    @action(detail=True, methods=['get'])
     def inspect(self, request, pk=None):
         """
         Returns the RGB and SceneClass input to a specific composite tile.

@@ -1,5 +1,5 @@
 import numpy
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -43,7 +43,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
 
     queryset = Classifier.objects.all().order_by('id')
 
-    @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def train(self, request, pk):
         """
         Train this classifier.
@@ -54,7 +54,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
         ecs.train_sentinel_classifier(classifier.id)
         return Response({'success': 'Triggered Classifier Training {}'.format(classifier.id)})
 
-    @detail_route(methods=['get'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def report(self, request, pk):
         """
         Accuracy assessment report.
@@ -126,7 +126,7 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
         'predictedlayerchunk_set'
     ).order_by('id')
 
-    @detail_route(methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
     def predict(self, request, pk):
         """
         Predict this layer.
