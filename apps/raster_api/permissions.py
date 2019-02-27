@@ -8,6 +8,17 @@ from rest_framework import permissions
 from django.http import Http404
 
 
+class IsReadOnly(permissions.BasePermission):
+    """
+    Checks if a user's account is read_only.
+    """
+    def has_permission(self, request, view):
+        if request.method not in permissions.SAFE_METHODS:
+            if hasattr(request.user, 'tesselouseraccount') and request.user.tesselouseraccount.read_only:
+                return False
+        return True
+
+
 class RasterTilePermission(permissions.BasePermission):
     """
     Checks if a user can request a tms or algebra tile.

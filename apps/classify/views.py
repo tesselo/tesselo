@@ -9,7 +9,7 @@ from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
 )
 from django.http import HttpResponse
-from raster_api.permissions import ChangePermissionObjectPermission
+from raster_api.permissions import ChangePermissionObjectPermission, IsReadOnly
 from raster_api.views import PermissionsModelViewSet
 from sentinel import ecs
 
@@ -43,7 +43,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
 
     queryset = Classifier.objects.all().order_by('id')
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def train(self, request, pk):
         """
         Train this classifier.
@@ -54,7 +54,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
         ecs.train_sentinel_classifier(classifier.id)
         return Response({'success': 'Triggered Classifier Training {}'.format(classifier.id)})
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def report(self, request, pk):
         """
         Accuracy assessment report.
@@ -126,7 +126,7 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
         'predictedlayerchunk_set'
     ).order_by('id')
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def predict(self, request, pk):
         """
         Predict this layer.

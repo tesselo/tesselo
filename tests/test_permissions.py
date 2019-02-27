@@ -8,6 +8,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 from django.urls import reverse
+from raster_api.models import TesseloUserAccount
 from raster_api.views import LegendEntryViewSet, LegendViewSet
 from sentinel.models import Composite
 
@@ -386,3 +387,36 @@ class PermissionsTests(TestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertFalse(self.lucille.has_perm('{0}_composite'.format(perm), self.world))
             self.assertFalse(self.lucille.has_perm('{0}_rasterlayer'.format(perm), self.layer))
+
+    def test_readonly_account(self):
+        # Use the client for this call, the factory ignores the method level
+        # permissions.
+        self.client.login(username='michael', password='bananastand')
+        # Set read only flag on user account.
+        account = TesseloUserAccount.objects.create(user=self.michael, read_only=True)
+        # Add changing permission.
+        assign_perm('change_legend', self.michael, self.legend_michael)
+        # Try a post to change permisson.
+        url = reverse(
+            'legend-invite',
+            kwargs={'pk': self.legend_michael.id, 'action': 'invite', 'model': 'user', 'permission': 'view', 'invitee': self.lucille.id},
+        )
+        response = self.client.post(url)
+        # Ensure that the request was denied.
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Try creating object.
+        self.world = {
+            'name': 'Sentinel',
+            'all_zones': False,
+            'min_date': '2000-01-01',
+            'max_date': '2001-01-01',
+        }
+        url = reverse('composite-list')
+        self.client.login(username='michael', password='bananastand')
+        response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Change user account flag and try again.
+        account.read_only = False
+        account.save()
+        response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

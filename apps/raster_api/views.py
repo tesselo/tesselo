@@ -36,8 +36,8 @@ from naip.utils import get_naip_tile
 from raster_api.exceptions import MissingZoomLevel
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.permissions import (
-    AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, RasterTilePermission,
-    TesseloObjectPermission, ValueCountResultPermission
+    AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, IsReadOnly,
+    RasterTilePermission, TesseloObjectPermission, ValueCountResultPermission
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
@@ -67,7 +67,7 @@ class GroupViewSet(ReadOnlyModelViewSet):
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
-    permission_classes = (IsAuthenticated, RasterTilePermission, )
+    permission_classes = (IsAuthenticated, IsReadOnly, RasterTilePermission, )
     renderer_classes = (BinaryRenderer, )
     pagination_class = None
 
@@ -118,7 +118,7 @@ class ExportAPIView(ExportView, RasterAPIView):
 
 class PermissionsModelViewSet(ModelViewSet):
 
-    permission_classes = (IsAuthenticated, TesseloObjectPermission)
+    permission_classes = (IsAuthenticated, IsReadOnly, TesseloObjectPermission)
 
     def get_queryset(self):
         """
@@ -165,7 +165,7 @@ class PermissionsModelViewSet(ModelViewSet):
             raise PermissionDenied('Public objects can not be deleted.')
         super(PermissionsModelViewSet, self).perform_destroy(instance)
 
-    @action(detail=True, methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['get', 'post'], url_name='invite', url_path='(?P<action>invite|exclude)/(?P<model>user|group)/(?P<permission>view|change|delete)/(?P<invitee>[0-9]+)', permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def invite(self, request, pk, action, model, permission, invitee):
         """
         Invite or exclude users and groups from having view, change, or delete
@@ -184,7 +184,7 @@ class PermissionsModelViewSet(ModelViewSet):
 
         return Response('{}d {} {} to {} {} {}'.format(action, model, invitee.id, permission, self._model, obj.id))
 
-    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def publish(self, request, pk=None):
         """
         Publish this object.
@@ -233,7 +233,7 @@ class LegendEntryViewSet(RetrieveModelMixin,
                          UpdateModelMixin,
                          DestroyModelMixin,
                          GenericViewSet):
-    permission_classes = (IsAuthenticated, DependentObjectPermission)
+    permission_classes = (IsAuthenticated, IsReadOnly, DependentObjectPermission)
     queryset = LegendEntry.objects.all().order_by('id')
     serializer_class = LegendEntrySerializer
 
@@ -286,7 +286,7 @@ class AggregationAreaViewSet(ModelViewSet):
 
     queryset = AggregationArea.objects.all().order_by('id')
     serializer_class = AggregationAreaSerializer
-    permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
+    permission_classes = (IsAuthenticated, IsReadOnly, DependentObjectPermission, AggregationAreaListPermission, )
     filter_fields = ('aggregationlayer', )
 
     _parent_model = 'aggregationlayer'
@@ -294,7 +294,7 @@ class AggregationAreaViewSet(ModelViewSet):
 
 class ValueCountResultViewSet(ValueCountResultViewSetOrig):
 
-    permission_classes = (IsAuthenticated, ValueCountResultPermission, )
+    permission_classes = (IsAuthenticated, IsReadOnly, ValueCountResultPermission, )
     queryset = ValueCountResult.objects.all().order_by('id')
     serializer_class = ValueCountResultSerializer
 
@@ -398,7 +398,7 @@ class CompositeViewSet(PermissionsModelViewSet):
 class SentinelTileAggregationLayerViewSet(ModelViewSet):
     serializer_class = SentinelTileAggregationLayerSerializer
     pagination_class = LargeResultsSetPagination
-    permission_classes = (IsAuthenticated, DependentObjectPermission, AggregationAreaListPermission, )
+    permission_classes = (IsAuthenticated, IsReadOnly, DependentObjectPermission, AggregationAreaListPermission, )
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     filter_class = SentinelTileAggregationLayerFilter
     search_fields = ('sentineltile__prefix', )
@@ -490,7 +490,7 @@ class LambdaView(AlgebraView, RasterAPIView):
 
     https://tesselo.com/api/naip/al/2015/1m/rgbir/30085/m_3008501_ne_16_1_20151014/17/34246/53654.png?layers=r=1,b=2&formula=(B4-B1)/(B1%2BB4)&colormap={"continuous":true,"range":[-1,1],"from":[165,0,38],"to":[0,104,55],"over":[249,247,174]}
     """
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated, IsReadOnly, )
 
     def get_ids(self):
         if 'sentinel' in self.kwargs or 'composite' in self.kwargs:

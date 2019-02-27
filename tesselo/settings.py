@@ -226,6 +226,7 @@ else:
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
+        'raster_api.permissions.IsReadOnly',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'raster_api.authentication.ExpiringTokenAuthentication',

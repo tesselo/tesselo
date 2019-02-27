@@ -3,10 +3,19 @@ from guardian.shortcuts import assign_perm, remove_perm
 from raster.models import Legend, LegendSemantics, RasterLayer
 from raster_aggregation.models import AggregationLayer
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from sentinel.models import Composite, CompositeBuild, SentinelTileAggregationLayer
+
+
+class TesseloUserAccount(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    read_only = models.BooleanField(default=False)
+
+    def __str__(self):
+        return 'Account for {}'.format(self.user.username)
 
 
 class RasterLayerUserObjectPermission(UserObjectPermissionBase):

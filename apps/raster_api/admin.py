@@ -5,7 +5,7 @@ from raster_aggregation.admin import ComputeActivityAggregatesModelAdmin
 from raster_aggregation.models import AggregationLayer
 
 from django.contrib import admin
-from raster_api.models import PublicAggregationLayer, PublicLegend, PublicRasterLayer
+from raster_api.models import PublicAggregationLayer, PublicLegend, PublicRasterLayer, TesseloUserAccount
 
 
 class GuardedRasterLayerModelAdmin(RasterLayerModelAdmin, GuardedModelAdmin):
@@ -33,3 +33,4 @@ class GuardedAggregationLayerModelAdmin(ComputeActivityAggregatesModelAdmin, Gua
 admin.site.unregister(AggregationLayer)
 admin.site.register(AggregationLayer, GuardedAggregationLayerModelAdmin)
 admin.site.register(PublicAggregationLayer)
+admin.site.register(TesseloUserAccount)

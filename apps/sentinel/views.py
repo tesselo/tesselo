@@ -14,7 +14,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from raster_api.permissions import ChangePermissionObjectPermission, DependentObjectPermission
-from raster_api.views import PermissionsModelViewSet
+from raster_api.views import IsReadOnly, PermissionsModelViewSet
 from sentinel import clouds, ecs
 from sentinel.filters import SentinelTileFilter
 from sentinel.models import CompositeBuild, CompositeTile, SentinelTile
@@ -27,7 +27,7 @@ class SentinelTilePageNumberPagination(PageNumberPagination):
 
 class SentinelTileViewSet(ReadOnlyModelViewSet):
 
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated, IsReadOnly, )
     serializer_class = SentinelTileSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     pagination_class = SentinelTilePageNumberPagination
@@ -88,7 +88,7 @@ class CompositeBuildViewSet(PermissionsModelViewSet):
 
     queryset = CompositeBuild.objects.all().order_by('id')
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def build(self, request, pk):
         """
         Schedule a composite build task to build this composite.
@@ -109,12 +109,12 @@ class CompositeBuildViewSet(PermissionsModelViewSet):
 
 
 class CompositeTileViewSet(ReadOnlyModelViewSet):
-    permission_classes = (IsAuthenticated, DependentObjectPermission)
+    permission_classes = (IsAuthenticated, IsReadOnly, DependentObjectPermission)
     queryset = CompositeTile.objects.all().order_by('id')
     serializer_class = CompositeTileSerializer
     _parent_model = 'composite'
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, ChangePermissionObjectPermission])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
     def build(self, request, pk):
         """
         Manually force a new composite tile build. Should only be necessary in
