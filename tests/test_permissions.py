@@ -8,7 +8,8 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 from django.urls import reverse
-from raster_api.models import TesseloUserAccount
+from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
+from raster_api.models import ReadOnlyToken, TesseloUserAccount
 from raster_api.views import LegendEntryViewSet, LegendViewSet
 from sentinel.models import Composite
 
@@ -415,8 +416,36 @@ class PermissionsTests(TestCase):
         self.client.login(username='michael', password='bananastand')
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        # Change user account flag and try again.
+        # Change user read only flag and try again.
         account.read_only = False
         account.save()
+        response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_readonly_authentication_using_get_query_parameter(self):
+        # Create read only token for michael.
+        token = ReadOnlyToken.objects.create(user=self.michael)
+        url = reverse('composite-list')
+        # Try to list composites.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        # Try to list composites with query token.
+        url += '?{}={}'.format(GET_QUERY_PARAMETER_AUTH_KEY, token.key)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Try creating object wit hquery token.
+        self.world = {
+            'name': 'Sentinel',
+            'all_zones': False,
+            'min_date': '2000-01-01',
+            'max_date': '2001-01-01',
+        }
+        response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # Ensure order in checking permissions.
+        self.client.login(username='michael', password='bananastand')
+        response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        url = url.split('?')[0]
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

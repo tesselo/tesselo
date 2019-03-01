@@ -6,15 +6,21 @@ from raster_aggregation.models import AggregationLayer
 from rest_framework import permissions
 
 from django.http import Http404
+from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 
 
 class IsReadOnly(permissions.BasePermission):
     """
-    Checks if a user's account is read_only.
+    Checks if a user's account is read-only, or if the authentication method
+    was the read-only GET query parameter authentication.
     """
     def has_permission(self, request, view):
         if request.method not in permissions.SAFE_METHODS:
+            # Check for read-only account flag.
             if hasattr(request.user, 'tesselouseraccount') and request.user.tesselouseraccount.read_only:
+                return False
+            # Check for read-only authentication method.
+            if GET_QUERY_PARAMETER_AUTH_KEY in request.GET:
                 return False
         return True
 

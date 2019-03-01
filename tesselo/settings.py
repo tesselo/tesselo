@@ -229,6 +229,7 @@ REST_FRAMEWORK = {
         'raster_api.permissions.IsReadOnly',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'raster_api.authentication.QueryKeyAuthentication',
         'raster_api.authentication.ExpiringTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',

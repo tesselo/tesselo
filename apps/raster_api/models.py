@@ -1,13 +1,38 @@
+import binascii
+import os
+
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, remove_perm
 from raster.models import Legend, LegendSemantics, RasterLayer
 from raster_aggregation.models import AggregationLayer
+from rest_framework.authtoken.models import Token
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from sentinel.models import Composite, CompositeBuild, SentinelTileAggregationLayer
+
+
+class ReadOnlyToken(models.Model):
+    """
+    A clone of the token-auth token. This clone can be used to make read-only
+    requests to the API using a GET request query paramter.
+    """
+    key = models.CharField(max_length=40, primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(ReadOnlyToken, self).save(*args, **kwargs)
+
+    def generate_key(self):
+        return binascii.hexlify(os.urandom(20)).decode()
+
+    def __str__(self):
+        return self.key
 
 
 class TesseloUserAccount(models.Model):

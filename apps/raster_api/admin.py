@@ -3,9 +3,10 @@ from raster.admin import LegendAdmin, RasterLayerModelAdmin
 from raster.models import Legend, RasterLayer
 from raster_aggregation.admin import ComputeActivityAggregatesModelAdmin
 from raster_aggregation.models import AggregationLayer
+from rest_framework.authtoken.admin import TokenAdmin
 
 from django.contrib import admin
-from raster_api.models import PublicAggregationLayer, PublicLegend, PublicRasterLayer, TesseloUserAccount
+from raster_api.models import PublicAggregationLayer, PublicLegend, PublicRasterLayer, TesseloUserAccount, ReadOnlyToken
 
 
 class GuardedRasterLayerModelAdmin(RasterLayerModelAdmin, GuardedModelAdmin):
@@ -34,3 +35,4 @@ admin.site.unregister(AggregationLayer)
 admin.site.register(AggregationLayer, GuardedAggregationLayerModelAdmin)
 admin.site.register(PublicAggregationLayer)
 admin.site.register(TesseloUserAccount)
+admin.site.register(ReadOnlyToken, TokenAdmin)
