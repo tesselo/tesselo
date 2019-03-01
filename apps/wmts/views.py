@@ -3,6 +3,7 @@ from raster.tiles.utils import tile_bounds, tile_scale
 from rest_framework.views import APIView
 
 from django.http import HttpResponse
+from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 from raster_api.views import PermissionsModelViewSet
 from wmts.models import WMTSLayer
 from wmts.serializers import WMTSLayerSerializer
@@ -93,6 +94,10 @@ class WMTSAPIView(APIView):
             url = layer.url
             if not url:
                 continue
+            # Add auth key if provided in the original WMTS reuest.
+            key = request.GET.get(GET_QUERY_PARAMETER_AUTH_KEY, None)
+            if key:
+                url += '&amp;{}={}'.format(GET_QUERY_PARAMETER_AUTH_KEY, key)
             layer_list += TILE_LAYER_TEMPLATE.format(
                 title=layer.title,
                 identifier='wmtslayer{}'.format(layer.id),

@@ -9,6 +9,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from formulary.models import Formula
+from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
+from raster_api.models import ReadOnlyToken
 from sentinel.const import BD2, BD3, BD4
 from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
 from wmts.models import WMTSLayer
@@ -159,3 +161,16 @@ class WMTSViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('Shuturmurg Classified', response.content.decode())
         self.assertIn('/tile/{}/'.format(self.pred.rasterlayer_id), response.content.decode())
+
+    def test_wmts_read_only_auth_key(self):
+        self.client.logout()
+        assign_perm('view_wmtslayer', self.usr, self.wmtslayer2)
+        token = ReadOnlyToken.objects.create(user=self.usr)
+        url = self.url + '?{}={}'.format(GET_QUERY_PARAMETER_AUTH_KEY, token.key)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('Sudden Valley Formula', response.content.decode())
+        self.assertIn(
+            'https://testserver/api/algebra/{TileMatrix}/{TileCol}/{TileRow}.png?layers=B4',
+            response.content.decode(),
+        )
