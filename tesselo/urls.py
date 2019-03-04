@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from rest_framework.documentation import include_docs_urls
+from rest_framework.permissions import IsAdminUser
 
 from django.conf.urls import include, url
 from django.contrib.gis import admin
@@ -21,7 +22,7 @@ from django.views.generic.base import TemplateView
 from tesselo.apiurls import apiurlpatterns
 
 urlpatterns = [
-    url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False)),
+    url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False, permission_classes=[IsAdminUser])),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
     url(r'^sentinel/', include('sentinel.urls')),
