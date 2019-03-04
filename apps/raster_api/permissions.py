@@ -64,8 +64,11 @@ class ValueCountResultPermission(permissions.DjangoObjectPermissions):
         view_all_rasters = all(request.user.has_perm('view_rasterlayer', lyr) for lyr in qs)
 
         # Check for permission on aggregation area through aggregationlayer.
-        agglyr = AggregationLayer.objects.get(aggregationarea=aggarea_id)
-        view_agg = request.user.has_perm('view_aggregationlayer', agglyr)
+        if aggarea_id is None:
+            view_agg = True
+        else:
+            agglyr = AggregationLayer.objects.get(aggregationarea=aggarea_id)
+            view_agg = request.user.has_perm('view_aggregationlayer', agglyr)
 
         return view_all_rasters and view_agg
 
