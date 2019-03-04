@@ -35,6 +35,7 @@ from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
 from raster_api.exceptions import MissingZoomLevel
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
+from raster_api.models import ReadOnlyToken
 from raster_api.permissions import (
     AggregationAreaListPermission, ChangePermissionObjectPermission, DependentObjectPermission, IsReadOnly,
     RasterTilePermission, TesseloObjectPermission, ValueCountResultPermission
@@ -42,14 +43,21 @@ from raster_api.permissions import (
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
     AggregationLayerSerializer, CompositeSerializer, GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer,
-    LegendSerializer, RasterLayerSerializer, SentinelTileAggregationLayerSerializer, UserSerializer,
-    ValueCountResultSerializer
+    LegendSerializer, RasterLayerSerializer, ReadOnlyTokenSerializer, SentinelTileAggregationLayerSerializer,
+    UserSerializer, ValueCountResultSerializer
 )
 from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
 from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
 from sentinel.clouds.inspect_composite import inspect_composite
 from sentinel.models import Composite, SentinelTileAggregationLayer
 from sentinel.utils import get_raster_tile
+
+
+class ReadOnlyTokenViewSet(ModelViewSet):
+    serializer_class = ReadOnlyTokenSerializer
+
+    def get_queryset(self):
+        return ReadOnlyToken.objects.filter(user=self.request.user)
 
 
 class UserViewSet(ReadOnlyModelViewSet):

@@ -6,7 +6,9 @@ from raster_aggregation.models import AggregationLayer
 from rest_framework.authtoken.admin import TokenAdmin
 
 from django.contrib import admin
-from raster_api.models import PublicAggregationLayer, PublicLegend, PublicRasterLayer, TesseloUserAccount, ReadOnlyToken
+from raster_api.models import (
+    PublicAggregationLayer, PublicLegend, PublicRasterLayer, ReadOnlyToken, TesseloUserAccount
+)
 
 
 class GuardedRasterLayerModelAdmin(RasterLayerModelAdmin, GuardedModelAdmin):

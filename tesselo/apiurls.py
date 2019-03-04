@@ -7,8 +7,8 @@ from formulary.views import FormulaViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
     CompositeViewSet, ExportAPIView, GroupViewSet, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet,
-    LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet, RemoveAuthToken, SentinelTileAggregationLayerViewSet,
-    UserViewSet, ValueCountResultViewSet
+    LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet, ReadOnlyTokenViewSet, RemoveAuthToken,
+    SentinelTileAggregationLayerViewSet, UserViewSet, ValueCountResultViewSet
 )
 from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
 from wmts.views import WMTSAPIView, WMTSLayerViewSet
@@ -101,6 +101,7 @@ router.register(r'predictedlayer', PredictedLayerViewSet, base_name='predictedla
 
 router.register(r'user', UserViewSet, base_name='user')
 router.register(r'group', GroupViewSet, base_name='group')
+router.register(r'readonlytoken', ReadOnlyTokenViewSet, base_name='readonlytoken')
 
 apiurlpatterns = [
     url(r'^api/token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view())),

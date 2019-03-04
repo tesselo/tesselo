@@ -449,3 +449,12 @@ class PermissionsTests(TestCase):
         url = url.split('?')[0]
         response = self.client.post(url, json.dumps(self.world), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_readonly_token_api(self):
+        url = reverse('readonlytoken-list')
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.client.login(username='michael', password='bananastand')
+        response = self.client.post(url, json.dumps({}), format='json', content_type='application/json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(json.loads(response.content)['user'], self.michael.id)

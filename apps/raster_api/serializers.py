@@ -17,7 +17,20 @@ from django.contrib.auth.models import Group, User
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.geos import Polygon
 from django.shortcuts import get_object_or_404
+from raster_api.models import ReadOnlyToken
 from sentinel.models import Composite, SentinelTileAggregationLayer
+
+
+class ReadOnlyTokenSerializer(ModelSerializer):
+
+    class Meta:
+        model = ReadOnlyToken
+        fields = ('key', 'user', )
+        read_only_fields = ('user', 'key', )
+
+    def create(self, validated_data):
+        validated_data.update({'user': self.context['request'].user})
+        return super(ReadOnlyTokenSerializer, self).create(validated_data)
 
 
 class UserSerializer(ModelSerializer):

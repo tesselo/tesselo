@@ -5,7 +5,6 @@ from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, remove_perm
 from raster.models import Legend, LegendSemantics, RasterLayer
 from raster_aggregation.models import AggregationLayer
-from rest_framework.authtoken.models import Token
 
 from django.contrib.auth.models import User
 from django.db import models
