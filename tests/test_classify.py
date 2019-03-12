@@ -3,7 +3,7 @@ import tempfile
 from unittest import skip
 from unittest.mock import patch
 
-from keras.layers import Dense, Dropout
+from keras.layers import GRU, BatchNormalization, Dense, Dropout
 from keras.models import Sequential
 from keras.wrappers.scikit_learn import KerasClassifier
 from raster_aggregation.models import AggregationArea, AggregationLayer
@@ -22,6 +22,7 @@ from classify.models import (
     Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport, TrainingSample
 )
 from classify.tasks import export_training_data, predict_sentinel_layer, train_sentinel_classifier
+from classify.utils import RNNRobustScaler
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
@@ -61,8 +62,18 @@ class SentinelClassifierTest(TestCase):
             min_date='2015-12-01',
             max_date='2015-12-31',
         )
+        self.composite2 = Composite.objects.create(
+            name='The World 2',
+            official=True,
+            min_date='2016-01-01',
+            max_date='2016-01-31',
+        )
         self.build = CompositeBuild.objects.create(
             composite=self.composite,
+            aggregationlayer=self.agglayer,
+        )
+        self.build2 = CompositeBuild.objects.create(
+            composite=self.composite2,
             aggregationlayer=self.agglayer,
         )
 
@@ -295,10 +306,10 @@ class SentinelClassifierTest(TestCase):
         self.clf.keras_model_json = model.to_json()
         self.clf.clf_args = '''{
             "optimizer": "adagrad",
-            "loss': "categorical_crossentropy",
-            "metrics': ["accuracy"],
+            "loss": "categorical_crossentropy",
+            "metrics": ["accuracy"],
             "epochs": 10,
-            "batch_size": 5,
+            "batch_size": 5
         }'''
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
@@ -310,9 +321,53 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished training algorithm', self.clf.log)
         self.assertIn("Keras history:", self.clf.log)
         self.assertIn("Keras parameters:", self.clf.log)
+        self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
         # Test prediction.
         pred = PredictedLayer.objects.create(
             composite=self.composite,
+            classifier=self.clf,
+            aggregationlayer=self.agglayer,
+        )
+        predict_sentinel_layer(pred.id)
+        pred.refresh_from_db()
+        # Tiles have been created.
+        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+
+    def test_keras_classifier_time(self):
+        self._get_data()
+        composite_build_callback(self.build2.id, initiate=True, rebuild=True)
+        composite_build_callback(self.build2.id, initiate=False)
+        self.clf.algorithm = Classifier.KERAS
+        self.clf.status = self.clf.UNPROCESSED
+        # expected input data shape: (batch_size, timesteps, data_dim)
+        model = Sequential()
+        model.add(GRU(32, return_sequences=True, return_state=False))  # returns a sequence of vectors of dimension 32
+        model.add(BatchNormalization())
+        model.add(GRU(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
+        model.add(BatchNormalization())
+        model.add(GRU(32))  # return a single vector of dimension 32
+        model.add(BatchNormalization())
+        model.add(Dense(3, activation='softmax'))
+        self.clf.keras_model_json = model.to_json()
+        self.clf.clf_args = '''{
+            "optimizer": "rmsprop",
+            "loss": "categorical_crossentropy",
+            "metrics": ["accuracy"],
+            "epochs": 10,
+            "batch_size": 5
+        }'''
+        self.clf.save()
+        self.clf.composites.add(self.composite)
+        self.clf.composites.add(self.composite2)
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RNNRobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        self.assertIn('Finished training algorithm', self.clf.log)
+        # Test prediction.
+        pred = PredictedLayer.objects.create(
             classifier=self.clf,
             aggregationlayer=self.agglayer,
         )

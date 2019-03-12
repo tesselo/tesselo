@@ -74,7 +74,7 @@ class ClassifierAdmin(GuardedModelAdmin):
 
     readonly_fields = ['trained', ]
 
-    raw_id_fields = ('traininglayer', 'composite', 'sentineltile', )
+    raw_id_fields = ('traininglayer', 'sentineltile', )
 
     def train_classifier(self, request, queryset):
         """

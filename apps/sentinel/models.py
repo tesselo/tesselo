@@ -257,6 +257,9 @@ class Composite(models.Model):
     official = models.BooleanField(default=False)
     interval = models.CharField(max_length=200, choices=INTERVAL_CHOICES, default=CUSTOM, editable=False)
 
+    class Meta:
+        ordering = ['min_date', ]
+
     def __str__(self):
         return '{} ({} to {})'.format(self.name, self.min_date, self.max_date)
 

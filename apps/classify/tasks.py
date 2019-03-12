@@ -22,6 +22,7 @@ from classify.const import (
     VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayerExport
+from classify.utils import RNNRobustScaler
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
@@ -167,6 +168,44 @@ def get_keras_model(keras_model_json, optimizer, loss=None, metrics=None, loss_w
     return clf
 
 
+def populate_training_matrix_time(classifier):
+    Xs = None
+    Ys = None
+    PIDs = None
+    for composite in classifier.composites.all():
+        rasterlayer_lookup = composite.rasterlayer_lookup
+        try:
+            X, Y, PID = populate_training_matrix(
+                classifier.traininglayer,
+                classifier.band_names.split(','),
+                rasterlayer_lookup,
+                classifier.is_regressor,
+            )
+        except ValueError:
+            classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
+            raise
+
+        if Xs is None:
+            Xs = X
+            Ys = Y
+            PIDs = PID
+        else:
+            Ys = numpy.hstack([Ys, Y])
+            Xs = numpy.vstack([Xs, X])
+            PIDs = numpy.hstack([PIDs, PID])
+    # Combine data
+    all_data = numpy.vstack([PIDs, Ys, Xs.T]).T
+    # Sort by PID
+    all_data = all_data[PIDs.argsort()]
+    # Split into groups.
+    all_data = numpy.array(numpy.vsplit(all_data, numpy.unique(PIDs).shape[0]))
+    # Extract individual arrays.
+    PIDs = all_data[:, 0, 0]
+    Ys = all_data[:, 0, 1]
+    Xs = all_data[:, :, 2:]
+    return Xs, Ys, PIDs
+
+
 def train_sentinel_classifier(classifier_id):
     """
     Trains a classifier based on the registered tiles and sample data.
@@ -190,23 +229,24 @@ def train_sentinel_classifier(classifier_id):
         classifier.classifieraccuracy.delete()
 
     # Check if the classifier has a custom data source specified.
-    if classifier.composite:
-        rasterlayer_lookup = classifier.composite.rasterlayer_lookup
-    elif classifier.sentineltile:
-        rasterlayer_lookup = classifier.sentineltile.rasterlayer_lookup
+    if classifier.composites.count():
+        X, Y, PID = populate_training_matrix_time(classifier)
     else:
-        rasterlayer_lookup = None
+        if classifier.sentineltile:
+            rasterlayer_lookup = classifier.sentineltile.rasterlayer_lookup
+        else:
+            rasterlayer_lookup = None
 
-    try:
-        X, Y, PID = populate_training_matrix(
-            classifier.traininglayer,
-            classifier.band_names.split(','),
-            rasterlayer_lookup,
-            classifier.is_regressor,
-        )
-    except ValueError:
-        classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
-        raise
+        try:
+            X, Y, PID = populate_training_matrix(
+                classifier.traininglayer,
+                classifier.band_names.split(','),
+                rasterlayer_lookup,
+                classifier.is_regressor,
+            )
+        except ValueError:
+            classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
+            raise
 
     # Abort if there are no training pixels with the given configuration.
     if len(Y) == 0:
@@ -218,32 +258,38 @@ def train_sentinel_classifier(classifier_id):
     # Constructing split data.
     selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
-    args = classifier.clf_args_dict
+    clf_args = classifier.clf_args_dict
 
     # Get the classifier class.
     if classifier.is_keras:
-        if not args:
-            args = {
+        if not clf_args:
+            clf_args = {
                 'optimizer': 'adagrad',
                 'loss': 'categorical_crossentropy',
                 'metrics': ['accuracy'],
             }
-        clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **args)
+        clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **clf_args)
     else:
         # Instantiate sklearn classifier.
         clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]
         clf_module = importlib.import_module('sklearn.' + clf_module)
         clf_class = getattr(clf_module, clf_class_name)
-        clf = clf_class(**args)
+        clf = clf_class(**clf_args)
+
+    # Select scaler.
+    if len(X.shape) <= 2:
+        scaler = RobustScaler()
+    else:
+        scaler = RNNRobustScaler()
 
     # Create a pipeline with scaling and classification.
     clf = Pipeline([
-        (PIPELINE_SCALER_NAME, RobustScaler()),
+        (PIPELINE_SCALER_NAME, scaler),
         (PIPELINE_ESTIMATOR_NAME, clf),
     ])
 
     # Fit the model.
-    clf.fit(X[selector, :], Y[selector])
+    clf.fit(X[selector], Y[selector])
 
     # Do Keras related logging.
     if classifier.is_keras:
@@ -251,12 +297,16 @@ def train_sentinel_classifier(classifier_id):
         hist_str = ''
         hist = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.history
         epochs = len(hist['loss'])
-        # Convert the history to string.
+        # Write Keras parameters to classifier log.
+        classifier.write('Keras parameters: {}'.format(clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.params))
+        # Write Keras model summary to classifier log.
+        with io.StringIO() as fl:
+            clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.summary(print_fn=lambda x: fl.write(x + '\n'))
+            classifier.write('Keras summary:\n{}'.format(fl.getvalue()))
+        # Write Keras training history to classifier log.
         for i in range(epochs):
             hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist['acc'][i])
-        # Write Keras parameters and training history to classifier log.
-        classifier.write('Keras parameters: {}'.format(clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.params))
-        classifier.write('Keras history:\n {}'.format(hist_str))
+        classifier.write('Keras history:\n{}'.format(hist_str))
 
     # Compute validation arrays. If full arrays were used for training, the
     # validation array is empty. In this case, compute accuracy agains full
@@ -265,7 +315,7 @@ def train_sentinel_classifier(classifier_id):
         validation_pixels = X
         control_pixels = Y
     else:
-        validation_pixels = X[numpy.logical_not(selector), :]
+        validation_pixels = X[numpy.logical_not(selector)]
         control_pixels = Y[numpy.logical_not(selector)]
 
     # Instanciate data container model.
@@ -386,19 +436,40 @@ def predict_sentinel_chunk(chunk_id):
     # Get band names for data matrix construction.
     band_names = chunk.predictedlayer.classifier.band_names.split(',')
     # Get rasterlayer ids.
-    if chunk.predictedlayer.composite_id:
+    is_rnn = False
+    if chunk.predictedlayer.classifier.composites.count() > 1:
+        is_rnn = True
+        rasterlayer_lookup = [composite.rasterlayer_lookup for composite in chunk.predictedlayer.classifier.composites.all()]
+    elif chunk.predictedlayer.composite_id:
         rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
     else:
         rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
     # Predict tiles over this chunk's range.
     batch = []
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
-        # Convert lookup to id list.
-        rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
-        # Get data from tiles for prediction.
-        data = get_classifier_data(rasterlayer_ids, tilez, tilex, tiley)
-        if data is None:
-            continue
+
+        if is_rnn:
+            data = []
+            for lookup in rasterlayer_lookup:
+                # Convert lookup to id list.
+                rasterlayer_ids = get_rasterlayer_ids(band_names, lookup)
+                # Get data from tiles for prediction.
+                pixels = get_classifier_data(rasterlayer_ids, tilez, tilex, tiley)
+                data.append(pixels)
+                if pixels is None:
+                    data = None
+                    break
+            if data is None:
+                continue
+            # Reshape array to right format.
+            data = numpy.swapaxes(numpy.array(data), 0, 1)
+        else:
+            # Convert lookup to id list.
+            rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup)
+            # Get data from tiles for prediction.
+            data = get_classifier_data(rasterlayer_ids, tilez, tilex, tiley)
+            if data is None:
+                continue
         # Determine numpy and GDAL datatypes.
         dtype = REGRESSION_DATATYPE if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE
         dtype_gdal = REGRESSION_DATATYPE_GDAL if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE_GDAL
