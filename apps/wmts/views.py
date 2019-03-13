@@ -97,7 +97,10 @@ class WMTSAPIView(APIView):
             # Add auth key if provided in the original WMTS reuest.
             key = request.GET.get(GET_QUERY_PARAMETER_AUTH_KEY, None)
             if key:
-                url += '&amp;{}={}'.format(GET_QUERY_PARAMETER_AUTH_KEY, key)
+                # Determine query string template.
+                query = '&amp;{}={}' if '?' in url else '?{}={}'
+                # Add token query string to url.
+                url += query.format(GET_QUERY_PARAMETER_AUTH_KEY, key)
             layer_list += TILE_LAYER_TEMPLATE.format(
                 title=layer.title,
                 identifier='wmtslayer{}'.format(layer.id),
