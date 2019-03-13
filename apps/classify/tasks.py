@@ -229,32 +229,47 @@ def train_sentinel_classifier(classifier_id):
     if hasattr(classifier, 'classifieraccuracy'):
         classifier.classifieraccuracy.delete()
 
-    # Check if the classifier has a custom data source specified.
-    if classifier.composites.count():
-        X, Y, PID = populate_training_matrix_time(classifier)
+    # Check if pixels have already been collected.
+    if classifier.collected_pixels.name:
+        action = 'Loaded from file'
+        loaded = numpy.load(classifier.collected_pixels)
+        X = loaded['X']
+        Y = loaded['Y']
+        PID = loaded['PID']
     else:
-        if classifier.sentineltile:
-            rasterlayer_lookup = classifier.sentineltile.rasterlayer_lookup
+        action = 'Collected'
+        # Check if the classifier has a custom data source specified.
+        if classifier.composites.count():
+            X, Y, PID = populate_training_matrix_time(classifier)
         else:
-            rasterlayer_lookup = None
+            if classifier.sentineltile:
+                rasterlayer_lookup = classifier.sentineltile.rasterlayer_lookup
+            else:
+                rasterlayer_lookup = None
 
-        try:
-            X, Y, PID = populate_training_matrix(
-                classifier.traininglayer,
-                classifier.band_names.split(','),
-                rasterlayer_lookup,
-                classifier.is_regressor,
-            )
-        except ValueError:
-            classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
-            raise
+            try:
+                X, Y, PID = populate_training_matrix(
+                    classifier.traininglayer,
+                    classifier.band_names.split(','),
+                    rasterlayer_lookup,
+                    classifier.is_regressor,
+                )
+            except ValueError:
+                classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
+                raise
 
-    # Abort if there are no training pixels with the given configuration.
-    if len(Y) == 0:
-        classifier.write('No training sample pixels found - can not fit algorithm', classifier.FAILED)
-        return
+        # Abort if there are no training pixels with the given configuration.
+        if len(Y) == 0:
+            classifier.write('No training sample pixels found - can not fit algorithm', classifier.FAILED)
+            return
 
-    classifier.write('Collected {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(len(Y), X.shape))
+        # Store collected pixels.
+        with io.BytesIO() as fl:
+            numpy.savez_compressed(fl, X=X, Y=Y, PID=PID)
+            name = 'classifier-collected-pixels-{}.pickle'.format(classifier.id)
+            classifier.collected_pixels.save(name, File(fl))
+
+    classifier.write('{} {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(action, len(Y), X.shape))
 
     # Constructing split data.
     selector = numpy.random.random(len(Y)) >= classifier.splitfraction

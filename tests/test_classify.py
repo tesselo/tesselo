@@ -3,6 +3,7 @@ import tempfile
 from unittest import skip
 from unittest.mock import patch
 
+import numpy
 from keras.layers import GRU, BatchNormalization, Dense, Dropout
 from keras.models import Sequential
 from keras.wrappers.scikit_learn import KerasClassifier
@@ -460,3 +461,26 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertGreater(data['results'][0]['classifieraccuracy']['accuracy_score'], 0)
+
+    def test_classifier_training_from_preloaded_pixels(self):
+        self._get_data()
+        # SVM
+        self.clf.algorithm = Classifier.SVM
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        dat = self.clf.collected_pixels.read()
+        self.assertTrue(len(dat) > 0)
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertIn('Loaded from file', self.clf.log)
+        loaded = numpy.load(self.clf.collected_pixels)
+        X = loaded['X']
+        Y = loaded['Y']
+        PID = loaded['PID']
+        self.assertTrue(Y.shape[0] > 0)
+        self.assertEqual(Y.shape[0], X.shape[0])
+        self.assertEqual(Y.shape[0], PID.shape[0])

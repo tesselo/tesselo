@@ -121,6 +121,7 @@ class Classifier(models.Model):
     name = models.CharField(max_length=100)
     algorithm = models.CharField(max_length=10, choices=ALGORITHM_CHOICES)
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
+    collected_pixels = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
     band_names = models.CharField(max_length=500, default='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12', help_text='Comma-separated list of band names and layer ids. If an integer value is added, it is assumed to be a rasterlayer id that should be included in the export.')
