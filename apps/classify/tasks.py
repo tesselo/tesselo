@@ -173,6 +173,7 @@ def populate_training_matrix_time(classifier):
     Ys = None
     PIDs = None
     for composite in classifier.composites.all():
+        classifier.write('Collecting training data for "{}"'.format(composite))
         rasterlayer_lookup = composite.rasterlayer_lookup
         try:
             X, Y, PID = populate_training_matrix(
