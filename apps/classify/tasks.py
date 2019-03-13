@@ -253,7 +253,7 @@ def train_sentinel_classifier(classifier_id):
         classifier.write('No training sample pixels found - can not fit algorithm', classifier.FAILED)
         return
 
-    classifier.write('Collected {} training sample pixels - fitting algorithm'.format(len(Y)))
+    classifier.write('Collected {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(len(Y), X.shape))
 
     # Constructing split data.
     selector = numpy.random.random(len(Y)) >= classifier.splitfraction
