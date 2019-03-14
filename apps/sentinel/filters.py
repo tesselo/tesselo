@@ -5,15 +5,15 @@ from sentinel.models import SentinelTile
 
 class SentinelTileFilter(FilterSet):
 
-    max_clouds = NumberFilter(name='cloudy_pixel_percentage', lookup_expr='lte')
-    min_data_coverage = NumberFilter(name='data_coverage_percentage', lookup_expr='gte')
+    max_clouds = NumberFilter(field_name='cloudy_pixel_percentage', lookup_expr='lte')
+    min_data_coverage = NumberFilter(field_name='data_coverage_percentage', lookup_expr='gte')
 
-    collected_after = DateFilter(name='collected', lookup_expr='gte')
-    collected_before = DateFilter(name='collected', lookup_expr='lte')
+    collected_after = DateFilter(field_name='collected', lookup_expr='gte')
+    collected_before = DateFilter(field_name='collected', lookup_expr='lte')
 
-    coords = CharFilter(name='tile_data_geom', method='coords_filter')
+    coords = CharFilter(field_name='tile_data_geom', method='coords_filter')
 
-    populated_only = BooleanFilter(name='sentineltileband', method='populated_only_filter', label='Populated only')
+    populated_only = BooleanFilter(field_name='sentineltileband', method='populated_only_filter', label='Populated only')
 
     class Meta:
         model = SentinelTile

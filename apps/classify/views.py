@@ -4,6 +4,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from classify.filters import PredictedLayerFilter
 from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
 from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
@@ -116,7 +117,7 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
 
     serializer_class = PredictedLayerSerializer
 
-    filter_fields = ('classifier', 'sentineltile', )
+    filter_class = PredictedLayerFilter
 
     _model = 'predictedlayer'
 
