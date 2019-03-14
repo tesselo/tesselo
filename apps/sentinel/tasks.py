@@ -11,8 +11,6 @@ import uuid
 
 import boto3
 import numpy
-from celery import task
-from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
@@ -35,14 +33,13 @@ from sentinel.models import (
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, write_raster_tile
 
-logger = get_task_logger(__name__)
+logger = logging.getLogger(__name__)
 
 boto3.set_stream_logger('boto3', logging.ERROR)
 
 CHUNK_SIZE = 100
 
 
-@task
 def drive_sentinel_bucket_parser():
     for utm_zone in range(1, const.NUMBER_OF_UTM_ZONES + 1):
         if BucketParseLog.objects.filter(utm_zone=utm_zone, status__in=(BucketParseLog.PENDING, BucketParseLog.PROCESSING)).exists():
@@ -58,7 +55,6 @@ def drive_sentinel_bucket_parser():
             log.write('Scheduled parsing utm zone "{0}".'.format(utm_zone))
 
 
-@task
 def sync_sentinel_bucket_utm_zone(utm_zone):
     """
     Synchronize the local database of sentinel scenes with the sentinel S3
@@ -337,7 +333,6 @@ def compositetile_stacks(ctile):
                             yield tilex10, tiley10, list(stacks.values())
 
 
-@task
 def process_compositetile(compositetile_id):
     """
     Build a cloud free unified base layer for a given areas of interest and for
@@ -515,7 +510,6 @@ def process_compositetile(compositetile_id):
 SEN2COR_CMD_TMPL = '/Sen2Cor-2.4.0-Linux64/bin/L2A_Process {product_path}'
 
 
-@task
 def process_l2a(sentineltile_id):
     # Open sentinel tile instance.
     tile = SentinelTile.objects.get(id=sentineltile_id)

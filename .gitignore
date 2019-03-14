@@ -64,9 +64,6 @@ target/
 # sqlite databases
 *.sqlite3
 
-# Celerybeat db
-celerybeat-schedule
-
 # Frontend components
 frontend/node_modules
 frontend/js/dist.js

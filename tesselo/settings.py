@@ -11,9 +11,13 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 """
 import glob
 import os
+import sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Add apps dir to sys path.
+sys.path.append(os.path.join(BASE_DIR, 'apps'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'j7$22brg^e@qpnnwtgw%1l@&=9=2yjbo-ky3ox-m_jgym*8iap'
@@ -239,15 +243,8 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend', ),
 }
 
-
-# Celery settings.
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_ACKS_LATE = True
-CELERY_TASK_ALWAYS_EAGER = True
-
 # Django-raster settings
-RASTER_USE_CELERY = True
+RASTER_USE_CELERY = False
 RASTER_PARSE_SINGLE_TASK = True
 RASTER_WORKDIR = os.environ.get('RASTER_WORKDIR', None)
 

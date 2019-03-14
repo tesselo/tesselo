@@ -19,7 +19,6 @@ django-filter==2.1.0
 django-crispy-forms==1.7.2
 django-guardian==1.5.0
 django-cors-headers==2.5.1
-celery==4.2.1
 rasterio==1.0.21
 zappa==0.47.1
 https://github.com/geodesign/django-raster/archive/raster_file_field_jp2.tar.gz
