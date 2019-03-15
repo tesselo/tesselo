@@ -408,7 +408,7 @@ class SentinelClassifierTest(TestCase):
         # Check export file has been created.
         exp.refresh_from_db()
         dat = exp.data.read()
-        self.assertTrue(len(dat) > 1000)
+        self.assertTrue(len(dat) > 500)
 
         exp = TrainingLayerExport.objects.create(traininglayer=self.clf.traininglayer)
         self.clf.traininglayer.continuous = True
@@ -418,7 +418,7 @@ class SentinelClassifierTest(TestCase):
         # Check export file has been created.
         exp.refresh_from_db()
         dat = exp.data.read()
-        self.assertTrue(len(dat) > 1000)
+        self.assertTrue(len(dat) > 500)
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):
