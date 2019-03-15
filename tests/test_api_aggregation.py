@@ -1,5 +1,4 @@
 import tempfile
-from unittest import skip
 
 from guardian.shortcuts import assign_perm
 from raster_aggregation.models import AggregationArea, AggregationLayer
@@ -37,10 +36,19 @@ class AggregationViewTests(TestCase):
     def test_list_aggregation_layers(self):
         url = reverse('aggregationlayer-list')
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
+        self.assertDictEqual(
+            response.json(),
+            {'count': 0, 'next': None, 'previous': None, 'results': []},
+        )
 
-        response = self.client.get(url + '?aggregationlayer=23')
-        self.assertEqual(response.status_code, 404)
+        assign_perm('view_aggregationlayer', self.usr, self.agglayer)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertDictEqual(
+            response.json(),
+            {'count': 1, 'next': None, 'previous': None, 'results': [{'aggregationareas': [2], 'description': None, 'extent': [4.999999999999991, 4.9999999999999805, 44.999999999999986, 40.00000000000001], 'id': 2, 'max_zoom_level': 18, 'min_zoom_level': 0, 'name': 'Testfile', 'nr_of_areas': 1}]},
+        )
 
     def test_list_aggregation_areas(self):
         url = reverse('aggregationarea-list')
