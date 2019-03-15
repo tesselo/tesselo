@@ -240,6 +240,8 @@ class SentinelClassifierTest(TestCase):
         self.clf.traininglayer.continuous = False
         self.clf.traininglayer.save()
         self.clf.algorithm = Classifier.RF
+        self.clf.collected_pixels.delete()
+        self.clf.clf_args = '{}'
         self.clf.save()
         with self.assertRaisesMessage(ValueError, VALUE_CONFIG_ERROR_MSG):
             train_sentinel_classifier(self.clf.id)
