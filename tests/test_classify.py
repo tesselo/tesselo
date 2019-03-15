@@ -182,6 +182,7 @@ class SentinelClassifierTest(TestCase):
 
         # For regressor use cases, set the traininglayer to continuous.
         self.clf.traininglayer.continuous = True
+        self.clf.collected_pixels.delete()
         self.clf.traininglayer.save()
 
         # SVR

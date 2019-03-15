@@ -597,14 +597,10 @@ def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B0
     exp.write('Extracting pixel values.')
     X, Y, PID = populate_training_matrix(exp.traininglayer, bands_to_export, rasterlayer_lookup, is_regressor=exp.traininglayer.continuous)
 
-    # Write data to compressed numpy file.
-    exp.write('Writing pixel values to compressed numpy file (npz).')
-    npz_name = 'traininglayer-export-{}.npz'.format(exp.id)
-    npz_path = os.path.join('/tmp/', npz_name)
-    numpy.savez_compressed(npz_path, X=X, Y=Y, PID=PID)
-
     # Save table in export instance.
     exp.write('Uploading file to remote storage.')
-    exp.data = File(open(npz_path, 'rb'), name=npz_name)
-    exp.save()
+    with io.BytesIO() as fl:
+        numpy.savez_compressed(fl, X=X, Y=Y, PID=PID)
+        name = 'traininglayer-export-{}.npz'.format(exp.id)
+        exp.data.save(name, File(fl))
     exp.write('Finished exporting training data.')
