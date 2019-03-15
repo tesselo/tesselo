@@ -266,7 +266,7 @@ def train_sentinel_classifier(classifier_id):
         # Store collected pixels.
         with io.BytesIO() as fl:
             numpy.savez_compressed(fl, X=X, Y=Y, PID=PID)
-            name = 'classifier-collected-pixels-{}.pickle'.format(classifier.id)
+            name = 'classifier-collected-pixels-{}.npz'.format(classifier.id)
             classifier.collected_pixels.save(name, File(fl))
 
     classifier.write('{} {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(action, len(Y), X.shape))
