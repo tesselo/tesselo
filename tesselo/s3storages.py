@@ -22,3 +22,6 @@ class PrivateMediaS3Boto3Storage(S3Boto3Storage):
     default_acl = 'private'
     file_overwrite = True
     signature_version = 's3v4'
+
+    def _get_security_token(self):
+        return None
