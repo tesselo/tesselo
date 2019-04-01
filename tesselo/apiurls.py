@@ -11,6 +11,7 @@ from raster_api.views import (
     SentinelTileAggregationLayerViewSet, UserViewSet, ValueCountResultViewSet
 )
 from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
+from userinterface.views import BookmarkFolderViewSet, BookmarkViewSet
 from wmts.views import WMTSAPIView, WMTSLayerViewSet
 
 router = routers.DefaultRouter(trailing_slash=False)
@@ -102,6 +103,9 @@ router.register(r'predictedlayer', PredictedLayerViewSet, base_name='predictedla
 router.register(r'user', UserViewSet, base_name='user')
 router.register(r'group', GroupViewSet, base_name='group')
 router.register(r'readonlytoken', ReadOnlyTokenViewSet, base_name='readonlytoken')
+
+router.register(r'bookmark', BookmarkViewSet, base_name='bookmark')
+router.register(r'bookmarkfolder', BookmarkFolderViewSet, base_name='bookmarkfolder')
 
 apiurlpatterns = [
     url(r'^api/token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view())),

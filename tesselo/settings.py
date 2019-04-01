@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'naip',
     'wmts',
     'teaser',
+    'userinterface',
 ]
 
 MIDDLEWARE = [
