@@ -43,9 +43,13 @@ class ClassifierSerializer(ModelSerializer):
         model = Classifier
         fields = (
             'id', 'name', 'algorithm', 'traininglayer', 'legend', 'status',
-            'log', 'classifieraccuracy', 'splitfraction',
+            'log', 'classifieraccuracy', 'splitfraction', 'band_names',
+            'composites', 'sentineltile', 'keras_model_json', 'clf_args',
+            'needs_large_instance',
         )
-        read_only_fields = ('status', 'log', 'legend', 'classifieraccuracy', )
+        read_only_fields = (
+            'status', 'log', 'legend', 'classifieraccuracy', 'sentineltile',
+        )
 
 
 class PredictedLayerSerializer(ModelSerializer):
