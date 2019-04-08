@@ -2,6 +2,7 @@ import importlib
 import io
 import pickle
 import zipfile
+from tempfile import TemporaryFile
 
 import h5py
 import numpy
@@ -263,7 +264,7 @@ def train_sentinel_classifier(classifier_id):
             return
 
         # Store collected pixels.
-        with io.BytesIO() as fl:
+        with TemporaryFile() as fl:
             numpy.savez_compressed(fl, X=X, Y=Y, PID=PID)
             name = 'classifier-collected-pixels-{}.npz'.format(classifier.id)
             classifier.collected_pixels.save(name, File(fl))
