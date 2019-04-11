@@ -6,6 +6,7 @@ SCALE = tile_scale(ZOOM)
 
 VALUE_CONFIG_ERROR_MSG = 'Found different values for same category.'
 PREDICTION_CONFIG_ERROR_MSG = 'Predicted layer needs to have an aggregationlayer specified.'
+TRAINING_DATA_SPLIT_ERROR_MSG = 'Could not split dataset by pixel. Are the training samples overlapping?'
 
 CHUNK_SIZE = 100
 

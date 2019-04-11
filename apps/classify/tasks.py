@@ -19,7 +19,7 @@ from sklearn.preprocessing import RobustScaler
 from classify.const import (
     CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
     PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
-    VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
+    TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayerExport
 from classify.utils import RNNRobustScaler
@@ -199,7 +199,11 @@ def populate_training_matrix_time(classifier):
     # Sort by PID
     all_data = all_data[PIDs.argsort()]
     # Split into groups.
-    all_data = numpy.array(numpy.vsplit(all_data, numpy.unique(PIDs).shape[0]))
+    try:
+        all_data = numpy.array(numpy.vsplit(all_data, numpy.unique(PIDs).shape[0]))
+    except ValueError:
+        classifier.write(TRAINING_DATA_SPLIT_ERROR_MSG, classifier.FAILED)
+        raise
     # Extract individual arrays.
     PIDs = all_data[:, 0, 0]
     Ys = all_data[:, 0, 1]
