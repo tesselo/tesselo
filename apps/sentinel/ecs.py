@@ -132,9 +132,9 @@ def predict_sentinel_chunk(chunk_id):
     )[0]
     # Run ecs command with corresponding instance size.
     if needs_large_instance:
-        return run_ecs_command(['predict_sentinel_chunk', chunk_id], vcpus=1, memory=5000, queue='tesselo-{stage}-process-l2a')
+        return run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1, vcpus=1, memory=5000, queue='tesselo-{stage}-process-l2a')
     else:
-        return run_ecs_command(['predict_sentinel_chunk', chunk_id])
+        return run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1)
 
 
 def build_predicted_pyramid(predicted_layer_id):
