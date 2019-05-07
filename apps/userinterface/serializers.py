@@ -13,11 +13,10 @@ class BookmarkSerializer(PermissionsModelSerializer):
 
 class BookmarkFolderSerializer(PermissionsModelSerializer):
 
-    bookmarks = BookmarkSerializer(many=True, source='bookmark_set')
+    bookmarks = BookmarkSerializer(many=True, source='bookmark_set', read_only=True)
 
     class Meta:
         model = BookmarkFolder
         fields = (
             'id', 'name', 'description', 'bookmarks',
         )
-        read_only_fields = ('bookmarks', )
