@@ -32,6 +32,7 @@ urlpatterns = [
     url(r'^about$', TemplateView.as_view(template_name='about.html')),
     url(r'^spatial-insights-as-a-service$', TemplateView.as_view(template_name='spatial-insights-as-a-service.html')),
     url(r'^solutions-for-sustainability$', TemplateView.as_view(template_name='solutions-for-sustainability.html')),
+    url(r'^terms$', TemplateView.as_view(template_name='terms.html')),
     url(r'^$', TemplateView.as_view(template_name='index.html')),
 ]
 
