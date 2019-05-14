@@ -94,7 +94,7 @@ ROOT_URLCONF = 'tesselo.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['tesselo/templates', ],
+        'DIRS': ['frontend/home', 'tesselo/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -186,7 +186,7 @@ STATICFILES_FINDERS = (
 )
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend'),
+    os.path.join(BASE_DIR, 'frontend/home'),
 ]
 
 # Get S3 bucket name.
