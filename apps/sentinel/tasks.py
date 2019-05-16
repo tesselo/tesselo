@@ -918,7 +918,7 @@ def clear_sentineltile(sentineltile_id):
     if hasattr(tile, 'sentineltilesceneclass'):
         tile.write('Clearing SCL.')
         # Get all raster tile ids for this band.
-        rastertiles = tile.sentineltilesceneclass.rastertile_set.all().values_list('rast', flat=True)
+        rastertiles = tile.sentineltilesceneclass.layer.rastertile_set.all().values_list('rast', flat=True)
         # Loop through tiles in batches for deletion.
         for i in range(0, len(rastertiles), BATCH_SIZE):
             batch = rastertiles[i:i + BATCH_SIZE]
@@ -930,7 +930,7 @@ def clear_sentineltile(sentineltile_id):
                 },
             )
         # Unregister tiles from DB.
-        tile.sentineltilesceneclass.rastertile_set.all().delete()
+        tile.sentineltilesceneclass.layer.rastertile_set.all().delete()
 
     # Write success message, reset status.
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
