@@ -20,6 +20,7 @@ from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
 
+from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.files import File
@@ -881,3 +882,36 @@ def process_sentinel_sns_message(event, context):
             continue
 
         ingest_tile_from_prefix(tile_prefix)
+
+
+def clear_sentineltile(sentineltile_id):
+    """
+    Clear all tiles from this sentineltile and move it back to unprocessed.
+    """
+    # Get tile.
+    tile = SentinelTile.objects.get(id=sentineltile_id)
+    # Write process log and update status.
+    tile.write('Clearing this sentineltile.', SentinelTile.PROCESSING)
+    # Set delete batch size to boto3 delete_objects limit of 1000 objects.
+    BATCH_SIZE = 1000
+    # Create S3 client.
+    client = boto3.client('s3')
+    # Loop through bands.
+    for band in tile.sentineltileband_set.all():
+        tile.write('Clearing band {}.'.format(band.band))
+        # Count existing raster tiles.
+        tiles_count = band.layer.rastertile_set.count()
+        # Loop through tiles in batches for deletion.
+        for i in range(0, tiles_count, BATCH_SIZE):
+            batch = band.layer.rastertile_set.all().order_by('id')[i:i + BATCH_SIZE].values_list('rast', flat=True)
+            client.delete_objects(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
+                Delete={
+                    'Objects': [{'Key': rst} for rst in batch],
+                    'Quiet': False,
+                },
+            )
+        # Unregister tiles from DB.
+        band.layer.rastertile_set.all().delete()
+    # Write succes message, reset status.
+    tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)

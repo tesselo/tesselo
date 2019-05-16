@@ -4,7 +4,7 @@ from classify.tasks import (
 )
 from django.core.management.base import BaseCommand
 from sentinel.tasks import (
-    composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
+    clear_sentineltile, composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
     sync_sentinel_bucket_utm_zone
 )
 
@@ -18,6 +18,7 @@ class Command(BaseCommand):
         'sync_sentinel_bucket_utm_zone': sync_sentinel_bucket_utm_zone,
         'process_l2a': process_l2a,
         'process_compositetile': process_compositetile,
+        'clear_sentineltile': clear_sentineltile,
         'composite_build_callback': composite_build_callback,
         'train_sentinel_classifier': train_sentinel_classifier,
         'predict_sentinel_layer': predict_sentinel_layer,
