@@ -913,5 +913,24 @@ def clear_sentineltile(sentineltile_id):
             )
         # Unregister tiles from DB.
         band.layer.rastertile_set.all().delete()
-    # Write succes message, reset status.
+
+    # Remove SCL if present.
+    if hasattr(tile, 'sentineltilesceneclass'):
+        tile.write('Clearing SCL.')
+        # Get all raster tile ids for this band.
+        rastertiles = tile.sentineltilesceneclass.rastertile_set.all().values_list('rast', flat=True)
+        # Loop through tiles in batches for deletion.
+        for i in range(0, len(rastertiles), BATCH_SIZE):
+            batch = rastertiles[i:i + BATCH_SIZE]
+            client.delete_objects(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
+                Delete={
+                    'Objects': [{'Key': rst} for rst in batch],
+                    'Quiet': False,
+                },
+            )
+        # Unregister tiles from DB.
+        tile.sentineltilesceneclass.rastertile_set.all().delete()
+
+    # Write success message, reset status.
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
