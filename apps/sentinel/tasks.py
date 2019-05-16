@@ -899,11 +899,11 @@ def clear_sentineltile(sentineltile_id):
     # Loop through bands.
     for band in tile.sentineltileband_set.all():
         tile.write('Clearing band {}.'.format(band.band))
-        # Count existing raster tiles.
-        tiles_count = band.layer.rastertile_set.count()
+        # Get all raster tile ids for this band.
+        rastertiles = band.layer.rastertile_set.all().values_list('rast', flat=True)
         # Loop through tiles in batches for deletion.
-        for i in range(0, tiles_count, BATCH_SIZE):
-            batch = band.layer.rastertile_set.all().order_by('id')[i:i + BATCH_SIZE].values_list('rast', flat=True)
+        for i in range(0, len(rastertiles), BATCH_SIZE):
+            batch = rastertiles[i:i + BATCH_SIZE]
             client.delete_objects(
                 Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
                 Delete={
