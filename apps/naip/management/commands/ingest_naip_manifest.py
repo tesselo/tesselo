@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from naip.tasks import ingest_naip_index
+from naip.tasks import ingest_naip_manifest
 
 
 class Command(BaseCommand):
@@ -10,6 +10,6 @@ class Command(BaseCommand):
         # Write start message.
         self.stdout.write(self.style.SUCCESS('Ingesting NAIP manifest file.'))
         # Run function.
-        ingest_naip_index()
+        ingest_naip_manifest()
         # Write success message.
         self.stdout.write(self.style.SUCCESS('Finished ingesting NAIP manifest file successfully.'))

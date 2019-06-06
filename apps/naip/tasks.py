@@ -10,13 +10,11 @@ def ingest_naip_prefix(prefix):
     Compute attributes based on prefix.
     Prefix example:
     al/2013/1m/fgdc/30086/m_3008601_nw_16_1_20130928.mrf
-    fom naip.tasks import ingest_naip_index; from naip.models import NAIPQuadrangle; NAIPQuadrangle.objects.all().delete(); ingest_naip_index('/tmp/naip_manifest_s3.txt')
     """
     try:
         # Compute attributes based on prefix.
         # Prefix example:
         # al/2013/1m/fgdc/30086/m_3008601_nw_16_1_20130928.mrf
-        # from naip.tasks import ingest_naip_index; from naip.models import NAIPQuadrangle; NAIPQuadrangle.objects.all().delete(); ingest_naip_index('/tmp/naip_manifest_s3.txt')
         state, year, resolution, source, quad, filename = prefix.split('/')
         filename = filename.split('.mrf')[0]
         # Get lat lon integer values.
@@ -58,7 +56,7 @@ def ingest_naip_prefix(prefix):
         raise
 
 
-def ingest_naip_index():
+def ingest_naip_manifest():
     # Get current manifest file.
     print('Getting manifest file.')
     s3 = boto3.resource('s3')
