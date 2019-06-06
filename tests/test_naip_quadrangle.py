@@ -10,22 +10,21 @@ class NAIPQuadrangleTests(TestCase):
 
     def setUp(self):
         NAIPQuadrangle.objects.bulk_create([
-            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_nw_16_1_20130928.tif'),
-            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_ne_16_1_20130928.tif'),
-            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_sw_16_1_20130928.tif'),
-            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_se_16_1_20130928.tif'),
-            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008502_nw_16_1_20130928.tif'),
-
-            ingest_naip_prefix('al/2015/1m/rgb/30085/m_3008501_nw_16_1_20151014.tif'),
-            ingest_naip_prefix('al/2015/1m/rgb/30085/m_3008501_ne_16_1_20151014.tif'),
-            ingest_naip_prefix('fl/2015/1m/rgb/30085/m_3008501_sw_16_1_20150920.tif'),
-            ingest_naip_prefix('fl/2015/1m/rgb/30085/m_3008501_se_16_1_20150920.tif'),
-            ingest_naip_prefix('fl/2015/1m/rgb/30085/m_3008502_nw_16_1_20151008.tif'),
+            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_nw_16_1_20130928.mrf'),
+            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_ne_16_1_20130928.mrf'),
+            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_sw_16_1_20130928_v1.mrf'),
+            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008501_se_16_1_20130928.mrf'),
+            ingest_naip_prefix('al/2013/1m/rgb/30085/m_3008502_nw_16_1_20130928.mrf'),
+            ingest_naip_prefix('al/2015/1m/rgb/30085/m_3008501_nw_16_1_20151014.mrf'),
+            ingest_naip_prefix('al/2015/1m/rgb/30085/m_3008501_ne_16_1_20151014.mrf'),
+            ingest_naip_prefix('fl/2015/1m/rgb/30085/m_3008501_sw_16_1_20150920.mrf'),
+            ingest_naip_prefix('fl/2015/1m/rgb/30085/m_3008501_se_16_1_20150920.mrf'),
+            ingest_naip_prefix('fl/2015/1m/rgb/30085/m_3008502_nw_16_1_20151008.mrf'),
 
         ])
 
     def test_naip_ingestion(self):
-        naip = NAIPQuadrangle.objects.get(prefix='al/2013/1m/rgb/30085/m_3008501_nw_16_1_20130928.tif')
+        naip = NAIPQuadrangle.objects.get(prefix='al/2013/1m/rgb/30085/m_3008501_nw_16_1_20130928.mrf')
         self.assertEqual(naip.state, 'al')
         self.assertEqual(naip.date, datetime.date(2013, 9, 28))
         self.assertEqual(naip.resolution, '1m')
@@ -40,29 +39,29 @@ class NAIPQuadrangleTests(TestCase):
         naip = get_quadrangles_from_coords(-85.8402, 30.9653).first()
         self.assertEqual(
             naip.prefix,
-            'al/2013/1m/rgb/30085/m_3008502_nw_16_1_20130928.tif',
+            'al/2013/1m/rgb/30085/m_3008502_nw_16_1_20130928.mrf',
         )
         # 3008501_nw
         naip = get_quadrangles_from_coords(-85.97254, 30.96909).first()
         self.assertEqual(
             naip.prefix,
-            'al/2013/1m/rgb/30085/m_3008501_nw_16_1_20130928.tif',
+            'al/2013/1m/rgb/30085/m_3008501_nw_16_1_20130928.mrf',
         )
         # 3008501_ne
         naip = get_quadrangles_from_coords(-85.9005, 30.9630).first()
         self.assertEqual(
             naip.prefix,
-            'al/2013/1m/rgb/30085/m_3008501_ne_16_1_20130928.tif',
+            'al/2013/1m/rgb/30085/m_3008501_ne_16_1_20130928.mrf',
         )
         # 3008501_sw
         naip = get_quadrangles_from_coords(-85.97765, 30.87915).first()
         self.assertEqual(
             naip.prefix,
-            'al/2013/1m/rgb/30085/m_3008501_sw_16_1_20130928.tif',
+            'al/2013/1m/rgb/30085/m_3008501_sw_16_1_20130928_v1.mrf',
         )
         # 3008501_se
         naip = get_quadrangles_from_coords(-85.88403, 30.87762).first()
         self.assertEqual(
             naip.prefix,
-            'al/2013/1m/rgb/30085/m_3008501_se_16_1_20130928.tif',
+            'al/2013/1m/rgb/30085/m_3008501_se_16_1_20130928.mrf',
         )
