@@ -9,23 +9,25 @@ def ingest_naip_prefix(prefix):
     """
     Compute attributes based on prefix.
     Prefix example:
-    al/2013/1m/fgdc/30086/m_3008601_nw_16_1_20130928.tif
+    al/2013/1m/fgdc/30086/m_3008601_nw_16_1_20130928.mrf
     fom naip.tasks import ingest_naip_index; from naip.models import NAIPQuadrangle; NAIPQuadrangle.objects.all().delete(); ingest_naip_index('/tmp/naip_manifest_s3.txt')
     """
     try:
         # Compute attributes based on prefix.
         # Prefix example:
-        # al/2013/1m/fgdc/30086/m_3008601_nw_16_1_20130928.tif
+        # al/2013/1m/fgdc/30086/m_3008601_nw_16_1_20130928.mrf
         # from naip.tasks import ingest_naip_index; from naip.models import NAIPQuadrangle; NAIPQuadrangle.objects.all().delete(); ingest_naip_index('/tmp/naip_manifest_s3.txt')
         state, year, resolution, source, quad, filename = prefix.split('/')
-        filename = filename.split('.tif')[0]
+        filename = filename.split('.mrf')[0]
         # Get lat lon integer values.
         lat = int(quad[:2])
         lon = -int(quad[2:])
 
         filename_split = filename.split('_')
-
-        if len(filename_split) == 6:
+        if len(filename_split) == 7:
+            dat, subquad, corner, misc1, misc2, date, version = filename_split
+            date = '{}-{}-{}'.format(date[:4], date[4:6], date[6:])
+        elif len(filename_split) == 6:
             dat, subquad, corner, misc1, misc2, date = filename_split
             date = '{}-{}-{}'.format(date[:4], date[4:6], date[6:])
         elif len(filename_split) == 5:
@@ -58,8 +60,9 @@ def ingest_naip_prefix(prefix):
 
 def ingest_naip_index():
     # Get current manifest file.
+    print('Getting manifest file.')
     s3 = boto3.resource('s3')
-    s3.Object('aws-naip', 'manifest.txt').download_file('/tmp/manifest.txt', ExtraArgs={'RequestPayer': 'requester'})
+    s3.Object('naip-analytic', 'manifest.txt').download_file('/tmp/manifest.txt', ExtraArgs={'RequestPayer': 'requester'})
     # Delete all existing naip quadrangles.
     NAIPQuadrangle.objects.all().delete()
     # Ingest naip quadrangles line by line.
@@ -67,7 +70,7 @@ def ingest_naip_index():
         bulk = []
         counter = 0
         for line in fl:
-            if line.endswith('.tif\n'):
+            if line.endswith('.mrf\n'):
                 prefix = line.split('\n')[0]
                 naip = ingest_naip_prefix(prefix)
                 bulk.append(naip)

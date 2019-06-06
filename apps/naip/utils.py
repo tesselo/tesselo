@@ -66,12 +66,18 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
         while step_y <= bounds_wgs84[3]:
             # Get quadrangle for this step.
             if year:
-                quad = get_quadrangles_from_coords(step_x, step_y).filter(source=source, date__year=year).first()
+                quad = get_quadrangles_from_coords(step_x, step_y).filter(date__year=year).first()
             else:
-                quad = get_quadrangles_from_coords(step_x, step_y).filter(source=source).order_by('-date').first()
+                quad = get_quadrangles_from_coords(step_x, step_y).order_by('-date').first()
             # Add quadrangle to candidates list.
             if quad:
-                quad_prefixes.append(quad.prefix)
+                prefix = quad.prefix
+                # For the visualization layer, update the prefix to use tif
+                # format and the rgb path.
+                if source == 'rgb':
+                    prefix = ''.join(prefix.split('.mrf')) + '.tif'
+                    prefix = prefix.replace('/rgbir/', '/rgb/')
+                quad_prefixes.append(prefix)
             # Check if at last step.
             if step_y == bounds_wgs84[3]:
                 break
@@ -85,11 +91,14 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
         # Increase coodinates by one quadrangle width.
         step_x += 1 / NAIP_QUADRANGLE_SIZE
         # Ensure there is no overstepping of the max bounds.
-        step_x = min(abs(step_x), abs(bounds_wgs84[2]))
+        step_x = min(step_x, bounds_wgs84[2])
 
     # Return empty if not prefixes were found.
     if not len(quad_prefixes):
         return
+
+    # Select bucket depending on requirement.
+    bucket = 'naip-analytic' if source == 'rgbir' else 'naip-visualization'
 
     # Prepare image data arrays.
     red = numpy.zeros((256, 256), 'uint8')
@@ -102,7 +111,7 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
     # moment. Make them unique by using set.
     for prefix in set(quad_prefixes):
         # Compute tile bounds and scale.
-        dtype, tile_data = get_tile('aws-naip/{}'.format(prefix), bounds, scale)
+        dtype, tile_data = get_tile('{}/{}'.format(bucket, prefix), bounds, scale)
         red[red == 0] = tile_data[0]['data'][red == 0]
         green[green == 0] = tile_data[1]['data'][green == 0]
         blue[blue == 0] = tile_data[2]['data'][blue == 0]
