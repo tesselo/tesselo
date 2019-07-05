@@ -60,7 +60,7 @@ class Clouds(object):
             1,   # VEGETATION
             2,   # NOT_VEGETATED
             3,   # WATER
-            5,   # UNCLASSIFIED
+            6,   # UNCLASSIFIED
             6,   # CLOUD_MEDIUM_PROBABILITY
             7,   # CLOUD_HIGH_PROBABILITY
             6,   # THIN_CIRRUS
