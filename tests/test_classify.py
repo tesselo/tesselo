@@ -41,7 +41,7 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @patch('classify.tasks.get_raster_tile', patch_get_raster_tile)
 @patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@patch('sys.stdout.write', lambda x: None)
+#@patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 

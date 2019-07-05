@@ -275,6 +275,23 @@ def compositetile_stacks(ctile):
     # Loop through tiles at 60m that intersect with bounding box.
     for tilex60 in range(indexrange[0], indexrange[2] + 1):
         for tiley60 in range(indexrange[1], indexrange[3] + 1):
+            print(tilex60, tiley60)
+            skip = True
+            #################33
+            # Loop through children tiles at 20m.
+            for tilex20 in range(tilex60 * const.M26, (tilex60 + 1) * const.M26):
+                for tiley20 in range(tiley60 * const.M26, (tiley60 + 1) * const.M26):
+                    if tilex20 == 2287 and tiley20 == 3271:
+                        skip = False
+                        print(tilex20, tiley20)
+                    #tilez=13&tilex=2287&tiley=3271
+                    #from sentinel.tasks import process_compositetile; process_compositetile(18492)
+            if skip:
+                print('skipping')
+                continue
+            else:
+                print('continuing '* 10)
+            ####################
             # Limit sentineltiles to those overlapping with the 60m tile.
             bounds60 = tile_bounds(tilex60, tiley60, const.ZOOM_LEVEL_60M)
             # Get tile bounding box as ewkt.
@@ -291,6 +308,10 @@ def compositetile_stacks(ctile):
             # Loop through children tiles at 20m.
             for tilex20 in range(tilex60 * const.M26, (tilex60 + 1) * const.M26):
                 for tiley20 in range(tiley60 * const.M26, (tiley60 + 1) * const.M26):
+                    #####################################33
+                    if tilex20 != 2287 or tiley20 != 3271:
+                        continue
+                    #####################################33
 
                     tiles20 = get_range_tiles(sentineltiles60, tilex20, tiley20, const.ZOOM_LEVEL_20M)
                     if not len(tiles20):
@@ -346,14 +367,15 @@ def process_compositetile(compositetile_id):
 
     If reset is activated, the files are deleted and re-created from scratch.
     """
+    ##############https://tesselo.com/admin/sentinel/compositetile/18492/change/
     ctile = CompositeTile.objects.get(id=compositetile_id)
     ctile.start = timezone.now()
     ctile.end = None
-    ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
+    #ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
 
     # Get cloud algorithm.
     clouds = Clouds(ctile)
-    ctile.write('Using cloud removal algorithm {}'.format(ctile.get_version_string()))
+    #ctile.write('Using cloud removal algorithm {}'.format(ctile.get_version_string()))
 
     # Get the list of master layers for all 13 bands.
     rasterlayer_lookup = ctile.composite.rasterlayer_lookup
@@ -362,15 +384,48 @@ def process_compositetile(compositetile_id):
     # scenes in that tile.
     counter = 0
     for x, y, stacks in compositetile_stacks(ctile):
+        print('XY found', x, y)
         # Compute the cloud probabilities for each avaiable scene band stack.
-        cloud_probs = [clouds.clouds(stack) for stack in stacks]
+        cloud_probs = numpy.array([clouds.clouds(stack) for stack in stacks])
+
+        # Prepare distance bands for medoid calculations. Only use RGB and B8
+        # for the medoid distances.
+        distance_bands = [numpy.array([stack[band] for band in ['B02.jp2', 'B03.jp2', 'B04.jp2', 'B08.jp2']]).astype('float') for stack in stacks]
+        distances = []
+        # Compute pairwise distances and sum them up.
+        for xindex, X in enumerate(distance_bands):
+            xdistances = []
+            for yindex, Y in enumerate(distance_bands):
+                if xindex == yindex:
+                    continue
+                # Compute pixel wise euclidean distances.
+                dist = numpy.sqrt(numpy.sum(numpy.square(X - Y), axis=0))
+                # Set distance to zero for all pixels that are bad pixels in
+                # either stack. Like this, bad pixels do not contribute to
+                # medoid distance calculations.
+                dist[stacks[xindex][const.SCL] >= 5] = 0
+                # Add this distance list to distances for this X array.
+                xdistances.append(dist)
+            # Sum the euclidean distances for all available pairs of scenes,
+            # this is the value needed for selecting the medoid.
+            distances.append(numpy.sum(xdistances, axis=0))
+
+        # Ensure distances are in float format.
+        distances = numpy.array(distances).astype('float')
+
+        # Combine distance with sceneclass, the distance is zero for pixels that
+        # are cloudy in all scenes, for these use the sceneclass and ndvi data.
+        distances = distances + cloud_probs
+
+        # In each stack, set a very high distance for cloudy pixels.
+        distances[cloud_probs >= 5] += 1e6
 
         # Remove the SCL Layers from the stacks.
         for stack in stacks:
             stack.pop(const.SCL, None)
 
-        # Compute an array of scene indices with the lowest cloud probability.
-        selector_index = numpy.argmin(cloud_probs, axis=0)
+        # Compute an array of scene indices with the distance or cloud probability.
+        selector_index = numpy.argmin(distances, axis=0)
 
         # Compute mask for pixels where all stacks are over the exclude value.
         exclude = numpy.min(cloud_probs, axis=0) >= const.EXCLUDE_VALUE
@@ -411,6 +466,10 @@ def process_compositetile(compositetile_id):
             dest = GDALRaster(result_dict)
             dest = io.BytesIO(dest.vsi_buffer)
             dest = File(dest, name='tile.tif')
+            print('creating', key, name, x, y)
+            #################33
+            #from sentinel.tasks import process_compositetile; process_compositetile(18412)
+            ######################3
 
             # Register a new tile in database.
             tile_bands_batch.append(
@@ -431,7 +490,7 @@ def process_compositetile(compositetile_id):
         counter += 1
         if counter % 100 == 0:
             ctile.write('{count} Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=x, y=y))
-
+    return
     # Start pyramid building phase.
     ctile.write('Finished building composite tile at max zoom level, starting Pyramid.')
 
