@@ -206,12 +206,12 @@ def get_aggregation_area_scenes(aggregationarea_id):
         prefix__startswith='tiles/1/',
     ).exclude(
         prefix__startswith='tiles/60/',
-    )
+    ).values_list('id', flat=True)
 
-    for tile in tiles:
+    for tile_id in tiles:
         # Register tile for this aggregationarea.
         SentinelTileAggregationLayer.objects.get_or_create(
-            sentineltile=tile,
+            sentineltile_id=tile_id,
             aggregationlayer_id=area.aggregationlayer_id,
         )
 
