@@ -23,7 +23,7 @@ WMTS_BASE_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
         {layers}
         {mat}
         </Contents>
-        <ServiceMetadataURL xlink:href="https://tesselo.com/wmts"/>
+        <ServiceMetadataURL xlink:href="https://tesselo.com/api/wmts/"/>
 </Capabilities>
 '''
 
