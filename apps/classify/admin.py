@@ -31,7 +31,7 @@ class TrainingSampleForm(forms.ModelForm):
                     return
             else:
                 return
-            url = '/api/algebra/${z}/${x}/${y}.png?' + 'layers=r={red},g={green},b={blue}&scale=0,4e3&alpha&enhance_brightness=1.6&enhance_sharpness=1.2&enhance_color=1.2&enhance_contrast=1.1'.format(
+            url = '/api/algebra/${z}/${x}/${y}.png?' + 'layers=r={red},g={green},b={blue}&scale=0,1e4&alpha&enhance_brightness=3.0&enhance_sharpness=1.2&enhance_color=1.9&enhance_contrast=1.5'.format(
                 red=red, green=green, blue=blue
             )
             if 'geom' in self.fields:

@@ -65,7 +65,7 @@ class WMTSLayer(models.Model):
                 return
 
         # Generate RGB url.
-        return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=0,1e4&amp;alpha&amp;enhance_brightness=2.2&amp;enhance_sharpness=1.2&amp;enhance_color=1.2&amp;enhance_contrast=1.1".format(
+        return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers=r={red},g={green},b={blue}&amp;scale=0,1e4&amp;alpha&amp;enhance_brightness=3.0&amp;enhance_sharpness=1.2&amp;enhance_color=1.9&amp;enhance_contrast=1.5".format(
             red=red,
             green=green,
             blue=blue,
