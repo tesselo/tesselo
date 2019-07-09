@@ -618,7 +618,7 @@ class LambdaView(AlgebraView, RasterAPIView):
         # Handle naip case.
         if 'naip' in self.kwargs and 'state' not in self.kwargs:
             # Limit access to high zoom levels.
-            if tilez <= NAIP_MIN_ZOOM:
+            if tilez < NAIP_MIN_ZOOM:
                 return self.write_img_to_response(get_empty_tile(tilez, NAIP_MIN_ZOOM), {})
 
             if 'formula' in self.request.GET:
