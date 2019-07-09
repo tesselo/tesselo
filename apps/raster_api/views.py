@@ -15,7 +15,7 @@ from rest_framework import renderers
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.pagination import PageNumberPagination
@@ -33,6 +33,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
+from raster_api.const import EXPIRING_TOKEN_LIFESPAN, NAIP_MIN_ZOOM
 from raster_api.exceptions import MissingZoomLevel
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.models import ReadOnlyToken
@@ -47,7 +48,7 @@ from raster_api.serializers import (
     UserSerializer, ValueCountResultSerializer
 )
 from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
-from raster_api.utils import EXPIRING_TOKEN_LIFESPAN
+from raster_api.utils import get_empty_tile
 from sentinel.clouds.inspect_composite import inspect_composite
 from sentinel.models import Composite, SentinelTileAggregationLayer
 from sentinel.utils import get_raster_tile
@@ -617,8 +618,9 @@ class LambdaView(AlgebraView, RasterAPIView):
         # Handle naip case.
         if 'naip' in self.kwargs and 'state' not in self.kwargs:
             # Limit access to high zoom levels.
-            if tilez < 14:
-                raise NotFound('Zoom {} too low. NAIP endpoint is only accessible for zoom levels 14 and above.'.format(tilez))
+            if tilez <= NAIP_MIN_ZOOM:
+                return self.write_img_to_response(get_empty_tile(tilez, NAIP_MIN_ZOOM), {})
+
             if 'formula' in self.request.GET:
                 source = NAIPQuadrangle.RGBIR
             else:
@@ -626,7 +628,7 @@ class LambdaView(AlgebraView, RasterAPIView):
             year = self.kwargs.get('year', None)
             tile_results = get_naip_tile(tilez, tilex, tiley, source, year)
             if not tile_results:
-                return self.get_empty()
+                return self.write_img_to_response(get_empty_tile(), {})
         else:
             # VSIS3 path
             vsis3path = self.get_vsi_path()
