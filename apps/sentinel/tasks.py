@@ -937,6 +937,12 @@ def clear_sentineltile(sentineltile_id):
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
 
 
+def push_scheduled_composite_builds_dummy():
+    for schedule in CompositeBuildSchedule.objects.filter(active=True):
+        print(schedule.id, schedule.name)
+        schedule.write('Successfully executed dummy task.')
+
+
 def push_scheduled_composite_builds():
     """
     Loop through the existing composite build schedules and run them
@@ -947,12 +953,16 @@ def push_scheduled_composite_builds():
         # Skip if this is a weekly build schedule and it is not the right day
         # of the week.
         if schedule.interval == CompositeBuildSchedule.WEEKLY and datetime.datetime.now().weekday() != schedule.delay_build_days:
+            schedule.write('Not the right day to run this weekly schedule.')
             continue
 
         # Skip if this is a monthly build schedule and it is not the right day
         # of the month.
         if schedule.interval == CompositeBuildSchedule.MONTHLY and datetime.datetime.now().day != (1 + schedule.delay_build_days):
+            schedule.write('Not the right day to run this monthly schedule.')
             continue
+
+        schedule.write('Pushing composite builds.')
 
         # Loop through the composite builds for this schedule and run them if
         # the date range is appropriate.
@@ -969,6 +979,8 @@ def push_scheduled_composite_builds():
             # Skip if the composite build range is in the past minus the delay time.
             if (cbuild.composite.max_date + datetime.timedelta(days=schedule.delay_build_days)) < datetime.datetime.now().date():
                 continue
+
+            schedule.write('Pushing composite build {}'.format(cbuild.id))
 
             # Start composite build.
             cbuild.status = CompositeBuild.PENDING

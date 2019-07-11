@@ -46,12 +46,17 @@ class SentinelClassifierTest(TestCase):
     def test_composite_scheduling(self):
         push_scheduled_composite_builds()
         self.assertEqual(CompositeBuild.objects.filter(status=CompositeBuild.FINISHED).count(), 2)
+        self.schedule.refresh_from_db()
+        self.assertIn('Pushing composite builds.', self.schedule.log)
+        self.assertIn('Pushing composite build {}'.format(self.build.id), self.schedule.log)
 
     def test_composite_scheduling_not_the_right_day(self):
         self.schedule.delay_build_days += 1
         self.schedule.save()
         push_scheduled_composite_builds()
         self.assertEqual(CompositeBuild.objects.filter(status=CompositeBuild.FINISHED).count(), 0)
+        self.schedule.refresh_from_db()
+        self.assertIn('Not the right day to run this weekly schedule.', self.schedule.log)
 
     def test_composite_scheduling_past(self):
         self.composite.max_date = self.composite.min_date
@@ -87,3 +92,5 @@ class SentinelClassifierTest(TestCase):
         self.schedule.save()
         push_scheduled_composite_builds()
         self.assertEqual(CompositeBuild.objects.filter(status=CompositeBuild.FINISHED).count(), 0)
+        self.schedule.refresh_from_db()
+        self.assertIn('Not the right day to run this monthly schedule.', self.schedule.log)
