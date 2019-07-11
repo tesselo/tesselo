@@ -1,77 +1,77 @@
 {
-    "dev": {
-        "aws_region": "eu-west-1",
-        "django_settings": "tesselo.settings",
-        "project_name": "tesselo",
-        "runtime": "python3.6",
-        "s3_bucket": "tesselo-zappa-repo",
-        "environment_variables": {
-            "AWS_REQUEST_PAYER": "requester",
-            "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-develop",
-            "AWS_STORAGE_BUCKET_NAME_STATIC": "dev.static.tesselo.com",
-            "AWS_DEFAULT_REGION": "eu-west-1",
-            "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
-            "DB_USER": "tesselo",
-            "DB_NAME": "tesselo_dev"
-        },
-        "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
-        "domain": "dev.tesselo.com",
-        "slim_handler": true,
-        "memory_size": 1024,
-        "log_level": "ERROR",
+  "dev": {
+    "aws_region": "eu-west-1",
+    "django_settings": "tesselo.settings",
+    "project_name": "tesselo",
+    "runtime": "python3.6",
+    "s3_bucket": "tesselo-zappa-repo",
+    "environment_variables": {
+      "AWS_REQUEST_PAYER": "requester",
+      "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-develop",
+      "AWS_STORAGE_BUCKET_NAME_STATIC": "dev.static.tesselo.com",
+      "AWS_DEFAULT_REGION": "eu-west-1",
+      "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
+      "DB_USER": "tesselo",
+      "DB_NAME": "tesselo_dev"
     },
-    "staging": {
-      "extends": "dev",
-      "environment_variables": {
-          "AWS_REQUEST_PAYER": "requester",
-          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-staging",
-          "AWS_STORAGE_BUCKET_NAME_STATIC": "staging.static.tesselo.com",
-          "AWS_DEFAULT_REGION": "eu-west-1",
-          "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
-          "DB_USER": "tesselo",
-          "DB_NAME": "tesselo_staging"
-      },
-      "domain": "staging.tesselo.com"
+    "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
+    "domain": "dev.tesselo.com",
+    "slim_handler": true,
+    "memory_size": 1024,
+    "log_level": "ERROR"
+  },
+  "staging": {
+    "extends": "dev",
+    "environment_variables": {
+      "AWS_REQUEST_PAYER": "requester",
+      "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-staging",
+      "AWS_STORAGE_BUCKET_NAME_STATIC": "staging.static.tesselo.com",
+      "AWS_DEFAULT_REGION": "eu-west-1",
+      "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
+      "DB_USER": "tesselo",
+      "DB_NAME": "tesselo_staging"
     },
-    "production": {
-      "extends": "dev",
-      "environment_variables": {
-          "AWS_REQUEST_PAYER": "requester",
-          "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production-v2",
-          "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
-          "AWS_DEFAULT_REGION": "eu-west-1",
-          "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
-          "DB_USER": "tesselo",
-          "DB_NAME": "tesselo_production"
+    "domain": "staging.tesselo.com"
+  },
+  "production": {
+    "extends": "dev",
+    "environment_variables": {
+      "AWS_REQUEST_PAYER": "requester",
+      "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production-v2",
+      "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
+      "AWS_DEFAULT_REGION": "eu-west-1",
+      "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
+      "DB_USER": "tesselo",
+      "DB_NAME": "tesselo_production"
+    },
+    "domain": "tesselo.com",
+    "events": [
+      {
+        "function": "apps.sentinel.tasks.process_sentinel_sns_message",
+        "event_source": {
+          "arn": "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
+          "events": [
+            "sns:Publish"
+          ]
+        }
       },
-      "domain": "tesselo.com",
-      "events": [
-          {
-              "function": "apps.sentinel.tasks.process_sentinel_sns_message",
-              "event_source": {
-                  "arn":  "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
-                  "events": [
-                      "sns:Publish",
-                  ]
-              }
-          },
-          {
-              "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
-              "event_source": {
-                  "arn":  "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
-                  "events": [
-                      "sns:Publish",
-                  ]
-              }
-          },
-          {
-           "function": "apps.sentinel.tasks.push_scheduled_composite_builds_dummy",
-           "expression": "rate(5 minutes)"
-          },
-          {
-           "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
-           "expression": "0 4 * * MON"
-          }
-      ],
-    }
+      {
+        "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
+        "event_source": {
+          "arn": "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
+          "events": [
+            "sns:Publish"
+          ]
+        }
+      },
+      {
+        "function": "apps.sentinel.tasks.push_scheduled_composite_builds_dummy",
+        "expression": "rate(5 minutes)"
+      },
+      {
+        "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
+        "expression": "0 4 * * MON"
+      }
+    ]
+  }
 }
