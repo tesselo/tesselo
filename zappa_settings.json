@@ -64,7 +64,14 @@
                   ]
               }
           },
-
+          {
+           "function": "apps.sentinel.tasks.push_scheduled_composite_builds_dummy",
+           "expression": "rate(5 minutes)"
+          },
+          {
+           "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
+           "expression": "0 4 * * MON"
+          }
       ],
     }
 }
