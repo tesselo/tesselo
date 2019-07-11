@@ -3,8 +3,8 @@ from guardian.admin import GuardedModelAdmin
 from django.contrib.gis import admin
 from sentinel import ecs
 from sentinel.models import (
-    BucketParseLog, Composite, CompositeBand, CompositeBuild, CompositeTile, MGRSTile, SentinelTile,
-    SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
+    BucketParseLog, Composite, CompositeBand, CompositeBuild, CompositeBuildSchedule, CompositeTile, MGRSTile,
+    SentinelTile, SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
 )
 
 
@@ -116,6 +116,7 @@ admin.site.register(MGRSTile, MGRSTileAdmin)
 admin.site.register(CompositeBand, CompositeBandAdmin)
 admin.site.register(CompositeTile, CompositeTileAdmin)
 admin.site.register(CompositeBuild, CompositeBuildAdmin)
+admin.site.register(CompositeBuildSchedule)
 admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)
 admin.site.register(SentinelTileSceneClass, SentinelTileSceneClassAdmin)
