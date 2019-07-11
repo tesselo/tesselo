@@ -19,3 +19,11 @@ Zappa create superuser
 or alternatively
 
     zappa invoke dev "from django.contrib.auth.models import User; User.objects.create_superuser('daniel2', 'daniel2@tesselo.com', 'adminpass')" --raw
+
+
+Casperjs install on ubuntu
+--------------------------
+```
+sudo npm install -g phantomjs@2.1.1 --unsafe-perm
+sudo npm install casperjs
+```
