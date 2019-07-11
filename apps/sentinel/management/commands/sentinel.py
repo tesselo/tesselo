@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 from naip.tasks import ingest_naip_manifest
 from sentinel.tasks import (
     clear_sentineltile, composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
-    sync_sentinel_bucket_utm_zone
+    push_scheduled_composite_builds, sync_sentinel_bucket_utm_zone
 )
 
 
@@ -27,6 +27,7 @@ class Command(BaseCommand):
         'build_predicted_pyramid': build_predicted_pyramid,
         'export_training_data': export_training_data,
         'ingest_naip_manifest': ingest_naip_manifest,
+        'push_scheduled_composite_builds': push_scheduled_composite_builds,
     }
 
     def add_arguments(self, parser):

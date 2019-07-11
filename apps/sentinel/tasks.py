@@ -1,3 +1,4 @@
+import datetime
 import glob
 import io
 import json
@@ -31,8 +32,8 @@ from sentinel import const, ecs
 from sentinel.clouds.algorithms import Clouds
 from sentinel.clouds.utils import sun
 from sentinel.models import (
-    BucketParseLog, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileAggregationLayer,
-    SentinelTileBand, SentinelTileSceneClass
+    BucketParseLog, CompositeBuild, CompositeBuildSchedule, CompositeTile, MGRSTile, SentinelTile,
+    SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, write_raster_tile
 
@@ -934,3 +935,42 @@ def clear_sentineltile(sentineltile_id):
 
     # Write success message, reset status.
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
+
+
+def push_scheduled_composite_builds():
+    """
+    Loop through the existing composite build schedules and run them
+    asynchronously through ecs.
+    """
+    for schedule in CompositeBuildSchedule.objects.filter(active=True):
+
+        # Skip if this is a weekly build schedule and it is not the right day
+        # of the week.
+        if schedule.interval == CompositeBuildSchedule.WEEKLY and datetime.datetime.now().weekday() != schedule.delay_build_days:
+            continue
+
+        # Skip if this is a monthly build schedule and it is not the right day
+        # of the month.
+        if schedule.interval == CompositeBuildSchedule.MONTHLY and datetime.datetime.now().day != (1 + schedule.delay_build_days):
+            continue
+
+        # Loop through the composite builds for this schedule and run them if
+        # the date range is appropriate.
+        for cbuild in schedule.compositebuilds.all():
+
+            # Skip if the build is already in process.
+            if cbuild.status in (CompositeBuild.PENDING, CompositeBuild.INGESTING_SCENES, CompositeBuild.BUILDING_TILES):
+                continue
+
+            # Skip if the composite build is pointing to the future.
+            if cbuild.composite.min_date > datetime.datetime.now().date():
+                continue
+
+            # Skip if the composite build range is in the past minus the delay time.
+            if (cbuild.composite.max_date + datetime.timedelta(days=schedule.delay_build_days)) < datetime.datetime.now().date():
+                continue
+
+            # Start composite build.
+            cbuild.status = CompositeBuild.PENDING
+            cbuild.save()
+            ecs.composite_build_callback(cbuild.id, initiate=True, rebuild=True)

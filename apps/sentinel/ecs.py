@@ -151,3 +151,7 @@ def export_training_data(traininglayerexport_id):
 
 def ingest_naip_manifest():
     return run_ecs_command(['ingest_naip_manifest'], retry=1)
+
+
+def push_scheduled_composite_builds():
+    return run_ecs_command(['push_scheduled_composite_builds'], retry=1)

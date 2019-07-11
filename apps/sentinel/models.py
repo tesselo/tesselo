@@ -459,3 +459,34 @@ class CompositeBuild(models.Model):
                 tilez=tilez,
             )
             self.compositetiles.add(ctile)
+
+
+class CompositeBuildSchedule(models.Model):
+    """
+    Scheduler for composite builds.
+    """
+    DAILY = 'Daily'
+    WEEKLY = 'Weekly'
+    MONTHLY = 'Montly'
+
+    INTERVAL_CHOICES = (
+        (DAILY, DAILY),
+        (WEEKLY, WEEKLY),
+        (MONTHLY, MONTHLY),
+    )
+    name = models.CharField(max_length=150)
+    description = models.TextField(default='', blank=True)
+    active = models.BooleanField(default=True)
+    interval = models.CharField(max_length=50, choices=INTERVAL_CHOICES, default=MONTHLY, blank=True)
+    compositebuilds = models.ManyToManyField(CompositeBuild)
+    log = models.TextField(default='', blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    delay_build_days = models.IntegerField(default=0, help_text='Optinally delay the build of the interval by N days, to ensure internal registration of latest scenes.')
+
+    def __str__(self):
+        return '{} - {}'.format(self.name, self.active)
+
+    def write(self, data):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        self.save()
