@@ -18,7 +18,8 @@
     "domain": "dev.tesselo.com",
     "slim_handler": true,
     "memory_size": 1024,
-    "log_level": "ERROR"
+    "log_level": "ERROR",
+    "keep_warm": false
   },
   "staging": {
     "extends": "dev",
@@ -44,12 +45,6 @@
       "DB_USER": "tesselo",
       "DB_NAME": "tesselo_production"
     },
-    "domain": "tesselo.com",
-    "events": [
-      {
-        "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
-        "expression": "cron(0 12 ? * MON-SUN *)"
-      }
-    ]
+    "domain": "tesselo.com"
   }
 }
