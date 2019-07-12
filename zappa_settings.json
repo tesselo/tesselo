@@ -66,7 +66,7 @@
       },
       {
         "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
-        "expression": "0 4 * * MON"
+        "expression": "0 12 * * *"
       }
     ]
   }
