@@ -484,7 +484,7 @@ class CompositeBuildSchedule(models.Model):
     delay_build_days = models.IntegerField(default=0, help_text='Optinally delay the build of the interval by N days, to ensure internal registration of latest scenes.')
 
     def __str__(self):
-        return '{} - {}'.format(self.name, self.active)
+        return '{} - {} - {}'.format(self.name, self.interval, 'active' if self.active else 'deactivated')
 
     def write(self, data):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
