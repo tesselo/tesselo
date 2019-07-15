@@ -177,7 +177,7 @@ def ingest_tile_from_prefix(tile_prefix, client=None):
     alt, azim = sun(date, cen.y, cen.x)
 
     # Register tile, log error if creation failed.
-    SentinelTile.objects.create(
+    return SentinelTile.objects.create(
         prefix=tile_prefix,
         datastrip=tileinfo['datastrip']['id'],
         product_name=tileinfo['productName'],
@@ -882,7 +882,23 @@ def process_sentinel_sns_message(event, context):
         if SentinelTile.objects.filter(prefix=tile_prefix).exists():
             continue
 
-        ingest_tile_from_prefix(tile_prefix)
+        # Create tile.
+        stile = ingest_tile_from_prefix(tile_prefix)
+
+        # Find overlapping aggregation layers.
+        qs = AggregationArea.objects.filter(
+            geom__intersects=stile.tile_data_geom,
+        ).values_list(
+            'aggregationlayer_id',
+            flat=True,
+        ).distinct()
+
+        # Register tile with overlapping aggregationlayers.
+        for aggregationlayer_id in qs:
+            SentinelTileAggregationLayer.objects.get_or_create(
+                sentineltile_id=stile.id,
+                aggregationlayer_id=aggregationlayer_id,
+            )
 
 
 def clear_sentineltile(sentineltile_id):
