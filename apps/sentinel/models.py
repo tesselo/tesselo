@@ -482,6 +482,7 @@ class CompositeBuildSchedule(models.Model):
     log = models.TextField(default='', blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     delay_build_days = models.IntegerField(default=0, help_text='Optinally delay the build of the interval by N days, to ensure internal registration of latest scenes.')
+    continuous_scene_ingestion = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} - {} - {}'.format(self.name, self.interval, 'active' if self.active else 'deactivated')

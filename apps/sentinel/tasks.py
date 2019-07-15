@@ -898,12 +898,21 @@ def process_sentinel_sns_message(event, context):
             flat=True,
         ).distinct()
 
-        # Register tile with overlapping aggregationlayers.
         for aggregationlayer_id in qs:
+            # Register tile with overlapping aggregationlayers.
             SentinelTileAggregationLayer.objects.get_or_create(
                 sentineltile_id=stile.id,
                 aggregationlayer_id=aggregationlayer_id,
             )
+
+            # If requested, ingest scene now.
+            ingestion_requested = CompositeBuildSchedule.objects.filter(
+                active=True,
+                continuous_scene_ingestion=True,
+                compositebuilds__aggregationlayer_id=aggregationlayer_id,
+            ).exists()
+            if ingestion_requested:
+                ecs.process_l2a(stile.id)
 
 
 def clear_sentineltile(sentineltile_id):
