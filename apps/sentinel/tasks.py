@@ -885,6 +885,11 @@ def process_sentinel_sns_message(event, context):
         # Create tile.
         stile = ingest_tile_from_prefix(tile_prefix)
 
+        # Skip boundary geometries, they are spanning the world. TODO: fix geoms
+        # on igestion instead of skipping them.
+        if stile.prefix.startswith('tiles/1/') or stile.prefix.startswith('tiles/60/'):
+            continue
+
         # Find overlapping aggregation layers.
         qs = AggregationArea.objects.filter(
             geom__intersects=stile.tile_data_geom,
