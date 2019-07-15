@@ -958,12 +958,6 @@ def clear_sentineltile(sentineltile_id):
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
 
 
-def push_scheduled_composite_builds_dummy():
-    for schedule in CompositeBuildSchedule.objects.filter(active=True):
-        print(schedule.id, schedule.name)
-        schedule.write('Successfully executed dummy task.')
-
-
 def push_scheduled_composite_builds():
     """
     Loop through the existing composite build schedules and run them
