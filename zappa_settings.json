@@ -19,7 +19,23 @@
     "slim_handler": true,
     "memory_size": 1024,
     "log_level": "ERROR",
-    "keep_warm": false
+    "keep_warm": true,
+    "num_retained_versions": 10,
+    "events": [
+      {
+        "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
+        "expression": "cron(0 12 ? * MON-SUN *)"
+      },
+      {
+        "function": "apps.sentinel.tasks.process_sentinel_sns_message",
+        "event_source": {
+          "arn": "arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product",
+          "events": [
+            "sns:Publish"
+          ]
+        }
+      }
+    ]
   },
   "staging": {
     "extends": "dev",
