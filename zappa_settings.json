@@ -33,7 +33,20 @@
       "DB_USER": "tesselo",
       "DB_NAME": "tesselo_staging"
     },
-    "domain": "staging.tesselo.com",
+    "domain": "staging.tesselo.com"
+  },
+  "production": {
+    "extends": "dev",
+    "environment_variables": {
+      "AWS_REQUEST_PAYER": "requester",
+      "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production-v2",
+      "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
+      "AWS_DEFAULT_REGION": "eu-west-1",
+      "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
+      "DB_USER": "tesselo",
+      "DB_NAME": "tesselo_production"
+    },
+    "domain": "tesselo.com",
     "events": [
       {
         "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
@@ -49,18 +62,5 @@
         }
       }
     ]
-  },
-  "production": {
-    "extends": "dev",
-    "environment_variables": {
-      "AWS_REQUEST_PAYER": "requester",
-      "AWS_STORAGE_BUCKET_NAME_MEDIA": "tesselo-media-production-v2",
-      "AWS_STORAGE_BUCKET_NAME_STATIC": "static.tesselo.com",
-      "AWS_DEFAULT_REGION": "eu-west-1",
-      "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
-      "DB_USER": "tesselo",
-      "DB_NAME": "tesselo_production"
-    },
-    "domain": "tesselo.com"
   }
 }
