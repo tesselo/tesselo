@@ -890,9 +890,14 @@ def process_sentinel_sns_message(event, context):
         if stile.prefix.startswith('tiles/1/') or stile.prefix.startswith('tiles/60/'):
             continue
 
+        # Select filter geometry, either tile data geometry or tile geometry.
+        filter_geom = stile.tile_data_geom if stile.tile_data_geom else stile.tile_geom
+        if not filter_geom:
+            continue
+
         # Find overlapping aggregation layers.
         qs = AggregationArea.objects.filter(
-            geom__intersects=stile.tile_data_geom,
+            geom__intersects=filter_geom,
         ).values_list(
             'aggregationlayer_id',
             flat=True,
