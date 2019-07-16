@@ -21,7 +21,6 @@ django-guardian==1.5.0
 django-cors-headers==2.4.0
 celery==4.2.1
 rasterio==1.0.3.post1
-zappa==0.48.2
-https://github.com/tesselo/kappa/archive/allow_sns_not_owned.tar.gz
+https://github.com/tesselo/Zappa/archive/allow_sns_not_owned.tar.gz
 https://github.com/geodesign/django-raster/archive/raster_file_field_jp2.tar.gz
 https://github.com/geodesign/django-raster-aggregation/archive/master.tar.gz
