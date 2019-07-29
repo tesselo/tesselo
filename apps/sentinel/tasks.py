@@ -948,7 +948,8 @@ def clear_sentineltile(sentineltile_id):
                 },
             )
         # Unregister tiles from DB.
-        band.layer.rastertile_set.all().delete()
+        qs = band.layer.rastertile_set.all()
+        qs._raw_delete(qs.db)
 
     # Remove SCL if present.
     if hasattr(tile, 'sentineltilesceneclass'):
@@ -966,7 +967,8 @@ def clear_sentineltile(sentineltile_id):
                 },
             )
         # Unregister tiles from DB.
-        tile.sentineltilesceneclass.layer.rastertile_set.all().delete()
+        qs = tile.sentineltilesceneclass.layer.rastertile_set.all()
+        qs._raw_delete(qs.db)
 
     # Write success message, reset status.
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
