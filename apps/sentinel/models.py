@@ -82,7 +82,7 @@ class SentinelTile(models.Model):
     log = models.TextField(default='', blank=True)
 
     def __str__(self):
-        return '{} | {} | {}'.format(self.mgrstile.code, self.collected.date(), self.status)
+        return '{} | {} | {} | {}'.format(self.id, self.mgrstile.code, self.collected.date(), self.status)
 
     def write(self, data, status=None, level=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
