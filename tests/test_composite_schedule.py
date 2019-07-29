@@ -13,7 +13,7 @@ def mock_composite_build_callback(cbuild_id, initiate, rebuild):
 
 
 @patch('sentinel.tasks.ecs.composite_build_callback', mock_composite_build_callback)
-class SentinelClassifierTest(TestCase):
+class SentinelCompositeScheduleTest(TestCase):
 
     def setUp(self):
         self.agglayer = AggregationLayer.objects.create(name='Test Agg Layer')
