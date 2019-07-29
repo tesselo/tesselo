@@ -938,15 +938,16 @@ def clear_sentineltile(sentineltile_id):
         # Get all raster tile ids for this band.
         rastertiles = band.layer.rastertile_set.all().values_list('rast', flat=True)
         # Loop through tiles in batches for deletion.
-        for i in range(0, len(rastertiles), BATCH_SIZE):
-            batch = rastertiles[i:i + BATCH_SIZE]
-            client.delete_objects(
-                Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
-                Delete={
-                    'Objects': [{'Key': rst} for rst in batch],
-                    'Quiet': False,
-                },
-            )
+        if len(rastertiles):
+            for i in range(0, len(rastertiles), BATCH_SIZE):
+                batch = rastertiles[i:i + BATCH_SIZE]
+                client.delete_objects(
+                    Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
+                    Delete={
+                        'Objects': [{'Key': rst} for rst in batch],
+                        'Quiet': False,
+                    },
+                )
         # Unregister tiles from DB.
         qs = band.layer.rastertile_set.all()
         qs._raw_delete(qs.db)
@@ -957,15 +958,16 @@ def clear_sentineltile(sentineltile_id):
         # Get all raster tile ids for this band.
         rastertiles = tile.sentineltilesceneclass.layer.rastertile_set.all().values_list('rast', flat=True)
         # Loop through tiles in batches for deletion.
-        for i in range(0, len(rastertiles), BATCH_SIZE):
-            batch = rastertiles[i:i + BATCH_SIZE]
-            client.delete_objects(
-                Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
-                Delete={
-                    'Objects': [{'Key': rst} for rst in batch],
-                    'Quiet': False,
-                },
-            )
+        if len(rastertiles):
+            for i in range(0, len(rastertiles), BATCH_SIZE):
+                batch = rastertiles[i:i + BATCH_SIZE]
+                client.delete_objects(
+                    Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
+                    Delete={
+                        'Objects': [{'Key': rst} for rst in batch],
+                        'Quiet': False,
+                    },
+                )
         # Unregister tiles from DB.
         qs = tile.sentineltilesceneclass.layer.rastertile_set.all()
         qs._raw_delete(qs.db)
