@@ -106,7 +106,7 @@ def process_compositetile(compositetile_id):
 
 
 def clear_sentineltile(sentineltile_id):
-    return run_ecs_command(['clear_sentineltile', sentineltile_id])
+    return run_ecs_command(['clear_sentineltile', sentineltile_id], retry=1, vcpus=1, memory=512)
 
 
 def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
