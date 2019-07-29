@@ -41,7 +41,7 @@ def get_batch_job_base():
     }
 
 
-def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo-{stage}'):
+def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo-{stage}', depends_on=None):
     '''
     Execute a Batch command.
     '''
@@ -84,6 +84,12 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo
     # Set retry stragegy.
     command['retryStrategy']['attempts'] = retry
 
+    # Set job dependency.
+    if depends_on:
+        if not isinstance(depends_on, (list, tuple)):
+            raise ValueError('The depends_on argument is required to be a list or tuple.')
+        command['dependsOn'] = [{'jobId': job_id} for job_id in depends_on]
+
     # Instanciate batch client and submit job.
     client = boto3.client('batch', region_name='eu-west-1')
     return client.submit_job(**command)
@@ -105,8 +111,8 @@ def process_compositetile(compositetile_id):
     return run_ecs_command(['process_compositetile', compositetile_id])
 
 
-def clear_sentineltile(sentineltile_id):
-    return run_ecs_command(['clear_sentineltile', sentineltile_id], retry=1, vcpus=1, memory=512)
+def clear_sentineltile(sentineltile_id, depends_on=None):
+    return run_ecs_command(['clear_sentineltile', sentineltile_id], retry=1, vcpus=1, memory=512, depends_on=depends_on)
 
 
 def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
