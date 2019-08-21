@@ -130,6 +130,7 @@ class Classifier(models.Model):
     clf_args = models.TextField(default='{}', blank=True, help_text='Keyword arguments passed to the classifier. This will be ignored if clf_args is not a valid json string.')
     keras_model_json = models.TextField(default='', blank=True, null=True, help_text='A Keras model definition string created by model.to_json().')
     needs_large_instance = models.BooleanField(default=False)
+    training_all_touched = models.BooleanField(default=True, help_text='Sets the all_touched flag when rasterizing the training samples.')
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
 

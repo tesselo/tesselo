@@ -67,7 +67,7 @@ def get_rasterlayer_ids(band_names, rasterlayer_lookup):
     return rasterlayer_ids
 
 
-def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None, is_regressor=False):
+def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None, is_regressor=False, all_touched=True):
     # Determine sample value datatype.
     target_type = REGRESSION_DATATYPE if is_regressor else CLASSIFICATION_DATATYPE
     # Create numpy arrays holding training data.
@@ -120,7 +120,7 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
                     }
                 )
                 # Rasterize the sample area.
-                sample_rast = rasterize(sample.geom, rast, all_touched=True)
+                sample_rast = rasterize(sample.geom, rast, all_touched=all_touched)
                 # Create a selector boolean array from rasterized geometry.
                 sample_pixels = sample_rast.bands[0].data().ravel()
                 selector = sample_pixels == 1
@@ -181,6 +181,7 @@ def populate_training_matrix_time(classifier):
                 classifier.band_names.split(','),
                 rasterlayer_lookup,
                 classifier.is_regressor,
+                classifier.training_all_touched,
             )
         except ValueError:
             classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
@@ -257,6 +258,7 @@ def train_sentinel_classifier(classifier_id):
                     classifier.band_names.split(','),
                     rasterlayer_lookup,
                     classifier.is_regressor,
+                    classifier.training_all_touched,
                 )
             except ValueError:
                 classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
