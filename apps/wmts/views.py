@@ -1,8 +1,10 @@
 from guardian.shortcuts import get_objects_for_user
 from raster.tiles.utils import tile_bounds, tile_scale
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.views import APIView
 
 from django.http import HttpResponse
+from raster_api.authentication import ExpiringTokenAuthentication, QueryKeyAuthentication
 from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 from raster_api.views import PermissionsModelViewSet
 from wmts.models import WMTSLayer
@@ -78,6 +80,13 @@ class WMTSAPIView(APIView):
 
     Response template from http://maps.wien.gv.at/wmts/1.0.0/WMTSCapabilities.xml
     """
+    # Putting the basic authentication first, so that the server asks for auth
+    # when an unauthenticated request is made. This is required by ArcMap for
+    # the basic auth scheme to work.
+    authentication_classes = [
+        BasicAuthentication, QueryKeyAuthentication,
+        ExpiringTokenAuthentication, SessionAuthentication,
+    ]
 
     def get(self, request):
         # Get url base from request.
