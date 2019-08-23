@@ -17,9 +17,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 from classify.const import (
-    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
-    PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
-    TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
+    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG, PIPELINE_ESTIMATOR_NAME,
+    PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE,
+    SENTINEL_PIXELTYPE, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME,
+    ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayerExport
 from classify.utils import RNNRobustScaler
@@ -311,7 +312,11 @@ def train_sentinel_classifier(classifier_id):
     ])
 
     # Fit the model.
-    clf.fit(X[selector], Y[selector])
+    try:
+        clf.fit(X[selector], Y[selector])
+    except Exception as exc:
+        classifier.write(FITTING_ERROR_MSG + ': ' + str(exc), classifier.FAILED)
+        raise
 
     # Do Keras related logging.
     if classifier.is_keras:

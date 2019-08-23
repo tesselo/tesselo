@@ -18,7 +18,7 @@ from tests.mock_functions import (
     point_to_test_file
 )
 
-from classify.const import PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
+from classify.const import FITTING_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
 from classify.models import (
     Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport, TrainingSample
 )
@@ -379,6 +379,29 @@ class SentinelClassifierTest(TestCase):
         pred.refresh_from_db()
         # Tiles have been created.
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        # Test wrong configuration error.
+        model = Sequential()
+        model.add(GRU(32, return_sequences=True, return_state=False))  # returns a sequence of vectors of dimension 32
+        model.add(BatchNormalization())
+        model.add(GRU(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
+        model.add(BatchNormalization())
+        model.add(GRU(32))  # return a single vector of dimension 32
+        model.add(BatchNormalization())
+        model.add(Dense(2, activation='softmax'))  # Nr of nodes should be 3
+        self.clf.keras_model_json = model.to_json()
+        self.clf.save()
+        with self.assertRaises(Exception):
+            train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, self.clf.FAILED)
+        self.assertIn(FITTING_ERROR_MSG, self.clf.log)
+        # Expected full message: "Error when checking target: expected dense_2
+        # to have shape (2,) but got array with shape (3,)"
+        self.assertIn('Error when checking target', self.clf.log)
+        self.assertIn(
+            'to have shape (2,) but got array with shape (3,)',
+            self.clf.log,
+        )
 
     def test_training_inconsistent_configuration(self):
         self.clf.algorithm = Classifier.NNR
