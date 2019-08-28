@@ -1,4 +1,4 @@
-FROM tesselo-zappa-worker
+FROM tesselo-worker
 
 # Install the dev dependencies
 ADD requirements/develop.txt /code/requirements_develop.txt

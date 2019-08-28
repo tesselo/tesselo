@@ -10,7 +10,6 @@ resembles the AWS Lambda environment. The worker docker instance is more heavy
 and contains libraries that are not used for the web app (such as scipy,
 sen2cor, etc).
 
-
 Zappa create superuser
 ----------------------
 
@@ -20,14 +19,12 @@ or alternatively
 
     zappa invoke dev "from django.contrib.auth.models import User; User.objects.create_superuser('daniel2', 'daniel2@tesselo.com', 'adminpass')" --raw
 
-
 Casperjs install on ubuntu
 --------------------------
 ```
 sudo npm install -g phantomjs@2.1.1 --unsafe-perm
 sudo npm install casperjs
 ```
-
 
 Zappa envents disabled
 ----------------------
@@ -63,3 +60,7 @@ until the events are put back into the config file.
   }
 ]
 ```
+
+Docker setup
+------------
+Location of docker files: `/etc/docker/daemon.json`
