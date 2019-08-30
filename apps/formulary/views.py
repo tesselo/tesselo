@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from raster.const import IMG_ENHANCEMENTS
 from rest_framework.filters import SearchFilter
 
 from django.shortcuts import get_object_or_404
@@ -36,8 +37,16 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
             lookup = {
                 key.replace('.jp2', '').replace('0', ''): val for key, val in layer.rasterlayer_lookup.items()
             }
-            # Filter by formula content.
-            self._rasterlayer_lookup = {key: val for key, val in lookup.items() if key in self.formula.formula}
+            if self.formula.rgb:
+                # RGB mode expects a specific pattern for the band names.
+                self._rasterlayer_lookup = {
+                    'r': lookup['B4'],
+                    'g': lookup['B3'],
+                    'b': lookup['B2'],
+                }
+            else:
+                # Only keep bands that are present in formula.
+                self._rasterlayer_lookup = {key: val for key, val in lookup.items() if key in self.formula.formula}
 
         return self._rasterlayer_lookup
 
@@ -50,7 +59,26 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
         return self._formula
 
     def get_formula(self):
-        return self.formula.formula
+        # Trigger RGB mode by returning None, otherwise return formula string.
+        if not self.formula.rgb:
+            return self.formula.formula
 
     def get_colormap(self, layer=None):
         return self.formula.colormap
+
+    def enhance(self, img):
+        # Enhancing only in RGB mode.
+        if self.formula.rgb:
+            for key, enhancer in IMG_ENHANCEMENTS.items():
+                enhance_value = getattr(self.formula, 'rgb_' + key)
+                if enhance_value:
+                    img = enhancer(img).enhance(enhance_value)
+        return img
+
+    def get_alpha(self):
+        return self.formula.rgb and self.formula.rgb_alpha
+
+    def get_rgb_scale(self):
+        # Scaling only in RGB mode.
+        if self.formula.rgb:
+            return self.formula.rgb_scale_min, self.formula.rgb_scale_max

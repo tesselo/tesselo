@@ -35,6 +35,7 @@ class WMTSViewTests(TestCase):
             min_val=0,
             max_val=1e4,
         )
+        self.formula_rgb = Formula.objects.create(name='Banana RGB', rgb=True)
 
         self.stile = SentinelTile.objects.create(
             prefix='test',
@@ -64,6 +65,11 @@ class WMTSViewTests(TestCase):
         self.wmtslayer1 = WMTSLayer.objects.create(
             title='Sudden Valley RGB',
             sentineltile=self.stile,
+        )
+        self.wmtslayer12 = WMTSLayer.objects.create(
+            title='Sudden Valley Formula RGB',
+            sentineltile=self.stile,
+            formula=self.formula_rgb,
         )
         self.wmtslayer2 = WMTSLayer.objects.create(
             title='Sudden Valley Formula',
@@ -122,6 +128,17 @@ class WMTSViewTests(TestCase):
         self.assertIn('Sudden Valley RGB', response.content.decode())
         self.assertIn(
             'https://testserver/api/algebra/{TileMatrix}/{TileCol}/{TileRow}.png?layers=r=',
+            response.content.decode(),
+        )
+
+    def test_wmts_service_scene_rgb_formula(self):
+        assign_perm('view_wmtslayer', self.usr, self.wmtslayer12)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('Sudden Valley Formula RGB', response.content.decode())
+        self.assertIn(
+            'https://testserver/api/formula/{}/scene/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(self.formula_rgb.id, self.stile.id),
             response.content.decode(),
         )
 

@@ -20,19 +20,40 @@ class TileViewsTests(TestCase):
     def setUp(self):
         self.formula_continuous = Formula.objects.create(
             name='Banana Yellow',
-            formula='B5*B5',
+            formula='B4*B4',
             breaks=0,
             min_val=0,
             max_val=WEB_MERCATOR_TILESIZE ** 2,
         )
         self.formula_discrete = Formula.objects.create(
             name='Banana Yellow',
-            formula='B5*B5',
+            formula='B4*B4',
             breaks=10,
             min_val=0,
             max_val=3000,
         )
-
+        self.formula_rgb = Formula.objects.create(
+            name='Banana RGB',
+            rgb=True,
+            rgb_enhance_brightness=0,
+            rgb_enhance_sharpness=0,
+            rgb_enhance_color=0,
+            rgb_enhance_contrast=0,
+            rgb_scale_min=0,
+            rgb_scale_max=3000,
+            rgb_alpha=False,
+        )
+        self.formula_rgb_enhanced_alpha = Formula.objects.create(
+            name='Banana Formula RGB',
+            rgb=True,
+            rgb_enhance_brightness=1.0,
+            rgb_enhance_sharpness=1.0,
+            rgb_enhance_color=1.0,
+            rgb_enhance_contrast=1.0,
+            rgb_scale_min=10,
+            rgb_scale_max=2000,
+            rgb_alpha=True,
+        )
         self.composite = Composite.objects.create(
             name='Bananastand December 2015',
             official=True,
@@ -40,29 +61,32 @@ class TileViewsTests(TestCase):
             max_date='2015-12-31',
         )
 
-        self.layer = self.composite.compositeband_set.get(band='B05.jp2').rasterlayer
+        layers = [
+            self.composite.compositeband_set.get(band='B04.jp2').rasterlayer,
+            self.composite.compositeband_set.get(band='B03.jp2').rasterlayer,
+            self.composite.compositeband_set.get(band='B02.jp2').rasterlayer,
+        ]
 
-        tile_rst = GDALRaster({
-            'name': '/vsimem/testtile.tif',
-            'driver': 'tif',
-            'srid': WEB_MERCATOR_SRID,
-            'width': WEB_MERCATOR_TILESIZE,
-            'height': WEB_MERCATOR_TILESIZE,
-            'origin': (11833687.0, -469452.0),
-            'scale': (1, -1),
-            'datatype': 1,
-            'bands': [{'nodata_value': 0, 'data': range(WEB_MERCATOR_TILESIZE ** 2)}],
-        })
-
-        tile_rst = File(io.BytesIO(tile_rst.vsi_buffer), name='tile.tif')
-
-        self.tile = RasterTile.objects.create(
-            rasterlayer=self.layer,
-            rast=tile_rst,
-            tilex=1234,
-            tiley=1234,
-            tilez=11,
-        )
+        for i in range(3):
+            tile_rst = GDALRaster({
+                'name': '/vsimem/testtile{}.tif'.format(i),
+                'driver': 'tif',
+                'srid': WEB_MERCATOR_SRID,
+                'width': WEB_MERCATOR_TILESIZE,
+                'height': WEB_MERCATOR_TILESIZE,
+                'origin': (11833687.0, -469452.0),
+                'scale': (1, -1),
+                'datatype': 1,
+                'bands': [{'nodata_value': 0, 'data': range(WEB_MERCATOR_TILESIZE ** 2)}],
+            })
+            tile_rst = File(io.BytesIO(tile_rst.vsi_buffer), name='tile{}.tif'.format(i))
+            self.tile = RasterTile.objects.create(
+                rasterlayer=layers[i],
+                rast=tile_rst,
+                tilex=1234,
+                tiley=1234,
+                tilez=11,
+            )
 
         User.objects.create_superuser(
             username='michael',
@@ -97,3 +121,43 @@ class TileViewsTests(TestCase):
         img = numpy.asarray(Image.open(io.BytesIO(response.content)))
         self.assertEqual(img.shape, (256, 256, 4))
         self.assertEqual(img[1][253][1], 104)
+
+    def test_formula_tms_rgb(self):
+        url = reverse('formula_algebra-list', kwargs={
+            'formula_id': self.formula_rgb.id,
+            'layer_type': 'composite',
+            'layer_id': self.composite.id,
+            'z': 11, 'x': 1234, 'y': 1234, 'frmt': 'png'
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        img = numpy.asarray(Image.open(io.BytesIO(response.content)))
+        self.assertEqual(img.shape, (256, 256, 3))
+        self.assertEqual(img[1][253][1], 21)
+
+    def test_formula_tms_rgb_enhance_alpha(self):
+        url = reverse('formula_algebra-list', kwargs={
+            'formula_id': self.formula_rgb_enhanced_alpha.id,
+            'layer_type': 'composite',
+            'layer_id': self.composite.id,
+            'z': 11, 'x': 1234, 'y': 1234, 'frmt': 'png'
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        img = numpy.asarray(Image.open(io.BytesIO(response.content)))
+        self.assertEqual(img.shape, (256, 256, 4))
+        self.assertEqual(img[1][253][1], 30)
+
+    def test_formula_tms_rgb_enhance_alpha_tif(self):
+        url = reverse('formula_algebra-list', kwargs={
+            'formula_id': self.formula_rgb_enhanced_alpha.id,
+            'layer_type': 'composite',
+            'layer_id': self.composite.id,
+            'z': 11, 'x': 1234, 'y': 1234, 'frmt': 'tif'
+        })
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'image/tiff')
+        img = numpy.asarray(Image.open(io.BytesIO(response.content)))
+        self.assertEqual(img.shape, (256, 256, 3))
+        self.assertEqual(img[1][235][1], 235)

@@ -40,14 +40,26 @@ class Formula(models.Model):
         ('YlOrRd', 'YlOrRd'),
     )
 
+    DEFAULT_COLOR = 'RdYlGn'
+
     name = models.CharField(max_length=200)
     acronym = models.CharField(max_length=50, default='')
     description = models.TextField(default='')
-    formula = models.TextField()
-    min_val = models.FloatField()
-    max_val = models.FloatField()
-    breaks = models.IntegerField(default=5)
-    color_palette = models.CharField(max_length=50, choices=COLOR_CHOICES)
+    # Algebra settings.
+    formula = models.TextField(null=True, blank=True)
+    min_val = models.FloatField(null=True, blank=True)
+    max_val = models.FloatField(null=True, blank=True)
+    breaks = models.IntegerField(default=5, null=True, blank=True)
+    color_palette = models.CharField(max_length=50, choices=COLOR_CHOICES, null=True, blank=True)
+    # RGB settings.
+    rgb = models.BooleanField(default=False, help_text='Choose RGB vs Formula mode. If true the layer is rendered as RGB, otherwise as raster algebra.')
+    rgb_enhance_brightness = models.FloatField(default=3.0, null=True, blank=True)
+    rgb_enhance_sharpness = models.FloatField(default=1.2, null=True, blank=True)
+    rgb_enhance_color = models.FloatField(default=1.9, null=True, blank=True)
+    rgb_enhance_contrast = models.FloatField(default=1.5, null=True, blank=True)
+    rgb_scale_min = models.FloatField(default=0, null=True, blank=True)
+    rgb_scale_max = models.FloatField(default=1e4, null=True, blank=True)
+    rgb_alpha = models.BooleanField(default=False, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -55,8 +67,7 @@ class Formula(models.Model):
     @property
     def colormap(self):
         # Select color palette.
-        DEFAULT_COLOR = 'RdYlGn'
-        palette = self.color_palette if self.color_palette else DEFAULT_COLOR
+        palette = self.color_palette if self.color_palette else self.DEFAULT_COLOR
         # Create discrete or continuous colormap.
         if self.breaks > 0:
             # Compute nr of breaks (limit at 9 due to colorberwer).
