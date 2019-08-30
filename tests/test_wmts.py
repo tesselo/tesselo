@@ -29,14 +29,14 @@ class WMTSViewTests(TestCase):
 
         mgrstile = MGRSTile.objects.create(utm_zone='AA', latitude_band='2', grid_square='AA',)
 
-        formula = Formula.objects.create(
+        self.formula = Formula.objects.create(
             name='Band 4',
             formula='2 * B4',
             min_val=0,
             max_val=1e4,
         )
 
-        stile = SentinelTile.objects.create(
+        self.stile = SentinelTile.objects.create(
             prefix='test',
             datastrip='test',
             product_name='test',
@@ -46,29 +46,29 @@ class WMTSViewTests(TestCase):
             data_coverage_percentage=100,
         )
         SentinelTileBand.objects.create(
-            tile=stile,
+            tile=self.stile,
             band=BD2,
             layer=RasterLayer.objects.create(),
         )
         SentinelTileBand.objects.create(
-            tile=stile,
+            tile=self.stile,
             band=BD3,
             layer=RasterLayer.objects.create(),
         )
         SentinelTileBand.objects.create(
-            tile=stile,
+            tile=self.stile,
             band=BD4,
             layer=RasterLayer.objects.create(),
         )
 
         self.wmtslayer1 = WMTSLayer.objects.create(
             title='Sudden Valley RGB',
-            sentineltile=stile,
+            sentineltile=self.stile,
         )
         self.wmtslayer2 = WMTSLayer.objects.create(
             title='Sudden Valley Formula',
-            sentineltile=stile,
-            formula=formula,
+            sentineltile=self.stile,
+            formula=self.formula,
         )
 
         composite = Composite.objects.create(
@@ -84,7 +84,7 @@ class WMTSViewTests(TestCase):
         self.wmtslayer4 = WMTSLayer.objects.create(
             title='Shuturmurg Formula',
             composite=composite,
-            formula=formula,
+            formula=self.formula,
         )
 
         self.pred = PredictedLayer.objects.create(composite=composite)
@@ -132,7 +132,10 @@ class WMTSViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('Sudden Valley Formula', response.content.decode())
         self.assertIn(
-            'https://testserver/api/algebra/{TileMatrix}/{TileCol}/{TileRow}.png?layers=B4',
+            'https://testserver/api/formula/{}/scene/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+                self.formula.id,
+                self.stile.id,
+            ),
             response.content.decode(),
         )
 
@@ -171,6 +174,9 @@ class WMTSViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('Sudden Valley Formula', response.content.decode())
         self.assertIn(
-            'https://testserver/api/algebra/{TileMatrix}/{TileCol}/{TileRow}.png?layers=B4',
+            'https://testserver/api/formula/{}/scene/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+                self.formula.id,
+                self.stile.id,
+            ),
             response.content.decode(),
         )

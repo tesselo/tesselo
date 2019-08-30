@@ -1,6 +1,3 @@
-import json
-from urllib.parse import quote
-
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 from classify.models import PredictedLayer
@@ -8,7 +5,6 @@ from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from formulary.models import Formula
-from sentinel.const import BAND_CHOICES
 from sentinel.models import Composite, CompositeBand, SentinelTile, SentinelTileBand
 
 
@@ -69,45 +65,19 @@ class WMTSLayer(models.Model):
 
     @property
     def formula_url(self):
-        ids = []
+        # Get layer type and ID from layer spec.
         if self.sentineltile:
-            qs = self.sentineltile.sentineltileband_set.all()
-            layer_attr = 'layer_id'
-            doesnotexist = SentinelTileBand.DoesNotExist
+            layer_id = self.sentineltile.id
+            layer_type = 'scene'
         else:
-            qs = self.composite.compositeband_set.all()
-            layer_attr = 'rasterlayer_id'
-            doesnotexist = CompositeBand.DoesNotExist
+            layer_id = self.composite.id
+            layer_type = 'composite'
 
-        for tpl in BAND_CHOICES:
-            key = tpl[0]
-            form_key = ''.join(key.split('.')[0].split('0'))
-            if form_key in self.formula.formula:
-                try:
-                    ids.append('{}={}'.format(form_key, getattr(qs.get(band=key), layer_attr)))
-                except doesnotexist:
-                    continue
-
-        layer_ids = ','.join(ids)
-        layer_ids_quoted = quote(layer_ids)
-
-        # Ignore this layer if formula has no match (for instance, when scene
-        # was not ingested).
-        if not layer_ids:
-            return
-
-        # Construct colormap.
-        colormap = json.dumps(self.formula.colormap)
-        colormap_quoted = quote(colormap.replace(' ', ''))
-
-        # Urlencode formula string.
-        fromula_quoted = quote(self.formula.formula.replace(' ', ''))
-
-        # Generate raster algebra url.
-        return "algebra/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?layers={layers}&amp;formula={formula}&amp;colormap={colormap}".format(
-            layers=layer_ids_quoted,
-            formula=fromula_quoted,
-            colormap=colormap_quoted,
+        # Generate formula tile url.
+        return "formula/{formula_id}/{layer_type}/{layer_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png".format(
+            formula_id=self.formula.id,
+            layer_type=layer_type,
+            layer_id=layer_id,
         )
 
     @property
