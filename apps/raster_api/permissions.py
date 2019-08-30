@@ -31,8 +31,10 @@ class RasterTilePermission(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        # If no layers were requested, grant access.
-        if not view.request.GET.get('layers', None):
+        # If no layers were requested, grant access. Layer ids come either as
+        # query argument for regular django_raster api calls, or as layer_id
+        # from the formulary app view.
+        if not view.request.GET.get('layers', None) and not view.kwargs.get('layer_id', None):
             return True
 
         # Check user permissions only on non-public rasterlayers.

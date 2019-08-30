@@ -11,10 +11,6 @@ from formulary.models import Formula
 from sentinel.const import BAND_CHOICES
 from sentinel.models import Composite, CompositeBand, SentinelTile, SentinelTileBand
 
-from . import colorbrewer
-
-DEFAULT_COLOR = 'RdYlGn'
-
 
 class WMTSLayer(models.Model):
     title = models.CharField(max_length=200)
@@ -101,16 +97,7 @@ class WMTSLayer(models.Model):
             return
 
         # Construct colormap.
-        palette = self.formula.color_palette if self.formula.color_palette else DEFAULT_COLOR
-        brew = getattr(colorbrewer, palette)[9]
-        colormap = {
-            "continuous": True,
-            "range": [self.formula.min_val, self.formula.max_val],
-            "from": colorbrewer.convert(brew[0]),
-            "over": colorbrewer.convert(brew[4]),
-            "to": colorbrewer.convert(brew[8]),
-        }
-        colormap = json.dumps(colormap)
+        colormap = json.dumps(self.formula.colormap)
         colormap_quoted = quote(colormap.replace(' ', ''))
 
         # Urlencode formula string.

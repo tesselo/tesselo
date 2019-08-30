@@ -3,7 +3,7 @@ from rest_framework import routers
 from classify.views import ClassifierViewSet, PredictedLayerViewSet, TrainingLayerViewSet, TrainingSampleViewSet
 from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
-from formulary.views import FormulaViewSet
+from formulary.views import FormulaAlgebraAPIView, FormulaViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
     CompositeViewSet, ExportAPIView, GroupViewSet, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet,
@@ -34,7 +34,7 @@ router.register(
 router.register(
     r'^pixel/(?P<xcoord>-?\d+(?:\.\d+)?)/(?P<ycoord>-?\d+(?:\.\d+)?)$',
     AlgebraAPIView,
-    base_name='algebra'
+    base_name='algebra-pixel'
 )
 router.register(
     r'export',
@@ -93,6 +93,12 @@ router.register(r'sentineltileaggregationlayer', SentinelTileAggregationLayerVie
 router.register(r'sentineltile', SentinelTileViewSet, base_name='sentineltile')
 
 router.register(r'formula', FormulaViewSet, base_name='formula')
+router.register(
+    r'formula/(?P<formula_id>[0-9]+)/(?P<layer_type>scene|composite)/(?P<layer_id>[0-9]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>jpg|png|tif)',
+    FormulaAlgebraAPIView,
+    base_name='formula_algebra'
+)
+
 router.register(r'wmtslayer', WMTSLayerViewSet, base_name='wmtslayer')
 
 router.register(r'traininglayer', TrainingLayerViewSet, base_name='traininglayer')

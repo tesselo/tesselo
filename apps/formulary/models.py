@@ -3,6 +3,7 @@ from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from formulary import colorbrewer
 
 
 class Formula(models.Model):
@@ -50,6 +51,42 @@ class Formula(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def colormap(self):
+        # Select color palette.
+        DEFAULT_COLOR = 'RdYlGn'
+        palette = self.color_palette if self.color_palette else DEFAULT_COLOR
+        # Create discrete or continuous colormap.
+        if self.breaks > 0:
+            # Compute nr of breaks (limit at 9 due to colorberwer).
+            breaks = max(self.breaks, 9)
+            # Get color palette by name and number of breaks.
+            brew = getattr(colorbrewer, palette)[breaks]
+            # Compute value increment for discrete binning.
+            delta = (self.max_val - self.min_val) / breaks
+            # Construct colormap.
+            colormap = {}
+            for i in range(breaks):
+                # Compute formula expression.
+                expression = '{}<x<{}'.format(
+                    self.min_val + i * delta,
+                    self.min_val + (i + 1) * delta,
+                )
+                # Set color for this range.
+                # colormap[expression] = brew[i]
+                colormap[expression] = colorbrewer.convert(brew[i]) + [0]
+            return colormap
+        else:
+            # Get color palette by name.
+            brew = getattr(colorbrewer, palette)[9]
+            return {
+                "continuous": True,
+                "range": [self.min_val, self.max_val],
+                "from": colorbrewer.convert(brew[0]),
+                "over": colorbrewer.convert(brew[4]),
+                "to": colorbrewer.convert(brew[8]),
+            }
 
 
 class FormulaUserObjectPermission(UserObjectPermissionBase):
