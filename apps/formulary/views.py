@@ -23,19 +23,24 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
     permission_classes = PermissionsModelViewSet.permission_classes + (RenderFormulaPermission, )
 
     _rasterlayer_lookup = None
+    _layer = None
+
+    @property
+    def layer(self):
+        if not self._layer:
+            if self.kwargs['layer_type'] == 'scene':
+                self._layer = get_object_or_404(SentinelTile, id=self.kwargs['layer_id'])
+            else:
+                self._layer = get_object_or_404(Composite, id=self.kwargs['layer_id'])
+
+        return self._layer
 
     def get_ids(self):
         if not self._rasterlayer_lookup:
-            # Get DB object.
-            if self.kwargs['layer_type'] == 'scene':
-                layer = get_object_or_404(SentinelTile, id=self.kwargs['layer_id'])
-            else:
-                layer = get_object_or_404(Composite, id=self.kwargs['layer_id'])
-
             # Construct lookup and simplify keys to match formula syntax
             # (B1 vs B01.jp2).
             lookup = {
-                key.replace('.jp2', '').replace('0', ''): val for key, val in layer.rasterlayer_lookup.items()
+                key.replace('.jp2', '').replace('0', ''): val for key, val in self.layer.rasterlayer_lookup.items()
             }
             if self.formula.rgb:
                 # RGB mode expects a specific pattern for the band names.

@@ -10,11 +10,8 @@ class RenderFormulaPermission(permissions.BasePermission):
         # Reslove scene vs composite.
         layer_type = request.resolver_match.kwargs.get('layer_type')
         layer_perm = 'view_sentineltile' if layer_type == 'scene' else 'view_composite'
-        # Get formula and layer object ids.
-        formula_id = request.resolver_match.kwargs.get('formula_id')
-        layer_id = request.resolver_match.kwargs.get('layer_id')
         # Check permissions.
         return all((
-            request.user.has_perm(layer_perm, layer_id),
-            request.user.has_perm('view_formula', formula_id),
+            request.user.has_perm(layer_perm, view.layer),
+            request.user.has_perm('view_formula', view.formula),
         ))

@@ -1,6 +1,7 @@
 import io
 
 import numpy
+from guardian.shortcuts import assign_perm, remove_perm
 from PIL import Image
 from raster.models import RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
@@ -88,13 +89,18 @@ class TileViewsTests(TestCase):
                 tilez=11,
             )
 
-        User.objects.create_superuser(
+        self.michael = User.objects.create_user(
             username='michael',
             email='michael@bluth.com',
-            password='bananastand'
+            password='bananastand',
         )
 
         self.client.login(username='michael', password='bananastand')
+        assign_perm('view_formula', self.michael, self.formula_rgb)
+        assign_perm('view_formula', self.michael, self.formula_discrete)
+        assign_perm('view_formula', self.michael, self.formula_continuous)
+        assign_perm('view_formula', self.michael, self.formula_rgb_enhanced_alpha)
+        assign_perm('view_composite', self.michael, self.composite)
 
     def test_formula_tms_algebra_continuous(self):
         url = reverse('formula_algebra-list', kwargs={
@@ -161,3 +167,23 @@ class TileViewsTests(TestCase):
         img = numpy.asarray(Image.open(io.BytesIO(response.content)))
         self.assertEqual(img.shape, (256, 256, 3))
         self.assertEqual(img[1][235][1], 235)
+
+    def test_formula_tms_permissions(self):
+        url = reverse('formula_algebra-list', kwargs={
+            'formula_id': self.formula_rgb_enhanced_alpha.id,
+            'layer_type': 'composite',
+            'layer_id': self.composite.id,
+            'z': 11, 'x': 1234, 'y': 1234, 'frmt': 'tif'
+        })
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        remove_perm('view_formula', self.michael, self.formula_rgb_enhanced_alpha)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        assign_perm('view_formula', self.michael, self.formula_rgb_enhanced_alpha)
+        remove_perm('view_composite', self.michael, self.composite)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
