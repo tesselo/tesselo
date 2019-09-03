@@ -218,9 +218,20 @@ class PredictedLayer(models.Model):
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
 
     def __str__(self):
-        return 'Layer for {0} over {1}.'.format(
+        if self.classifier and self.classifier.is_keras:
+            using = ''
+        elif self.composite:
+            using = 'using {}'.format(self.composite.name)
+        elif self.sentineltile:
+            using = 'using {}'.format(self.sentineltile)
+        else:
+            using = ''
+
+        return '{0} over {1} {2} ({3}).'.format(
             self.classifier,
-            self.composite if self.composite else self.sentineltile
+            self.aggregationlayer,
+            using,
+            self.status,
         )
 
     def save(self, *args, **kwargs):
