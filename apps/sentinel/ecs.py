@@ -2,7 +2,7 @@ import os
 
 import boto3
 
-from classify.models import Classifier, PredictedLayerChunk
+from classify.models import Classifier
 from django.conf import settings
 from django.core.management import call_command
 
@@ -133,18 +133,7 @@ def predict_sentinel_layer(predicted_layer_id):
 
 
 def predict_sentinel_chunk(chunk_id):
-    # Get large instance flag for this chunk.
-    needs_large_instance = PredictedLayerChunk.objects.filter(
-        id=chunk_id
-    ).values_list(
-        'predictedlayer__classifier__needs_large_instance',
-        flat=True,
-    )[0]
-    # Run ecs command with corresponding instance size.
-    if needs_large_instance:
-        return run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1, vcpus=1, memory=5000, queue='tesselo-{stage}-process-l2a')
-    else:
-        return run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1)
+    return run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1)
 
 
 def build_predicted_pyramid(predicted_layer_id):
