@@ -86,7 +86,7 @@ class Formula(models.Model):
                 )
                 # Set color for this range.
                 # colormap[expression] = brew[i]
-                colormap[expression] = colorbrewer.convert(brew[i]) + [0]
+                colormap[expression] = colorbrewer.convert(brew[i]) + [255]
             return colormap
         else:
             # Get color palette by name.
