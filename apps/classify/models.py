@@ -5,7 +5,7 @@ import pickle
 import zipfile
 
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
-from raster.models import RasterLayer
+from raster.models import Legend, RasterLayer
 from raster_aggregation.models import AggregationLayer
 
 from classify.const import PIPELINE_ESTIMATOR_NAME, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME
@@ -216,6 +216,7 @@ class PredictedLayer(models.Model):
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         if self.classifier and self.classifier.is_keras:
@@ -235,8 +236,8 @@ class PredictedLayer(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        # Create rasterlayer if it does not exist.
         if not hasattr(self, 'rasterlayer'):
+            # Create rasterlayer if it does not exist.
             self.rasterlayer = RasterLayer.objects.create(
                 name='Predicted layer CLF {0} {1} {2}'.format(
                     self.classifier_id,
@@ -245,8 +246,15 @@ class PredictedLayer(models.Model):
                 ),
                 datatype=RasterLayer.CATEGORICAL,
                 max_zoom=ZOOM_LEVEL_10M,
+                legend_id=self.legend_id if hasattr(self, 'legend') else None,
             )
             populate_raster_metadata(self.rasterlayer)
+        elif hasattr(self, 'legend'):
+            # Update legend if necessary.
+            if self.rasterlayer.legend_id != self.legend_id:
+                self.rasterlayer.legend_id = self.legend_id
+                self.rasterlayer.save()
+
         super().save(*args, **kwargs)  # Call the "real" save() method.
 
     def write(self, data, status=None):
