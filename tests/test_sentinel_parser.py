@@ -25,7 +25,6 @@ from sentinel.tasks import composite_build_callback, generate_bands_and_scenecla
 @patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@patch('sys.stdout.write', lambda x: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelBucketParserTest(TestCase):
 

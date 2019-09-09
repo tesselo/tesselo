@@ -150,3 +150,7 @@ def ingest_naip_manifest():
 
 def push_scheduled_composite_builds():
     return run_ecs_command(['push_scheduled_composite_builds'], retry=1)
+
+
+def push_reports(model, pk):
+    return run_ecs_command(['push_reports', model, pk])

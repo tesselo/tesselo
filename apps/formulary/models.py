@@ -1,9 +1,10 @@
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 from django.contrib.gis.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from formulary import colorbrewer
+from sentinel import ecs
 
 
 class Formula(models.Model):
@@ -123,6 +124,18 @@ class PublicFormula(models.Model):
         return '{0} | {1}'.format(self.formula, 'public' if self.public else 'private')
 
 
+@receiver(pre_save, sender=Formula, weak=False, dispatch_uid="check_formula_change_for_reporting")
+def check_change_on_formula(sender, instance, **kwargs):
+    if instance.id is None:
+        instance._formula_expression_changed = True
+    else:
+        previous = Formula.objects.get(id=instance.id)
+        if previous.formula.replace(' ', '') != instance.formula.replace(' ', ''):
+            instance._formula_expression_changed = True
+        else:
+            instance._formula_expression_changed = False
+
+
 @receiver(post_save, sender=Formula, weak=False, dispatch_uid="create_formula_public_object")
 def create_formula_public_object(sender, instance, created, **kwargs):
     """
@@ -130,3 +143,6 @@ def create_formula_public_object(sender, instance, created, **kwargs):
     """
     if created:
         PublicFormula.objects.create(formula=instance)
+
+    if instance._formula_expression_changed:
+        ecs.push_reports('formula', instance.id)

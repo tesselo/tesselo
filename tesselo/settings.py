@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'wmts',
     'teaser',
     'userinterface',
+    'report',
 ]
 
 MIDDLEWARE = [

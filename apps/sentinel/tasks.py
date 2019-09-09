@@ -861,6 +861,8 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         # Composite build is complete, set status to "finished".
         compositebuild.status = CompositeBuild.FINISHED
         compositebuild.save()
+        # Push report job.
+        ecs.push_reports('composite', compositebuild.composite_id)
 
 
 def process_sentinel_sns_message(event, context):

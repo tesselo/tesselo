@@ -2,8 +2,10 @@ from classify.tasks import (
     build_predicted_pyramid, export_training_data, predict_sentinel_chunk, predict_sentinel_layer,
     train_sentinel_classifier
 )
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from naip.tasks import ingest_naip_manifest
+from report.tasks import push_reports
 from sentinel.tasks import (
     clear_sentineltile, composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
     push_scheduled_composite_builds, sync_sentinel_bucket_utm_zone
@@ -28,6 +30,7 @@ class Command(BaseCommand):
         'export_training_data': export_training_data,
         'ingest_naip_manifest': ingest_naip_manifest,
         'push_scheduled_composite_builds': push_scheduled_composite_builds,
+        'push_reports': push_reports,
     }
 
     def add_arguments(self, parser):
@@ -36,10 +39,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Write start message.
-        self.stdout.write(self.style.SUCCESS('Running task {} with args {}'.format(options['command'][0], options['command_args'])))
+        if not settings.LOCAL:
+            self.stdout.write(self.style.SUCCESS('Running task {} with args {}'.format(options['command'][0], options['command_args'])))
         # Select task function to run.
         funk = self.funks[options['command'][0]]
         # Run function.
         funk(*options['command_args'])
         # Write success message.
-        self.stdout.write(self.style.SUCCESS('Finished task successfully.'))
+        if not settings.LOCAL:
+            self.stdout.write(self.style.SUCCESS('Finished task successfully.'))
