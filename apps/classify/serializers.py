@@ -13,7 +13,7 @@ class TrainingLayerSerializer(ModelSerializer):
 
     class Meta:
         model = TrainingLayer
-        fields = ('id', 'name', 'trainingsamples', 'legend', )
+        fields = ('id', 'name', 'trainingsamples', 'legend', 'continuous', )
 
 
 class TrainingSampleSerializer(ModelSerializer):
