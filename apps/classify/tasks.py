@@ -355,7 +355,7 @@ def train_sentinel_classifier(classifier_id):
     if classifier.is_regressor:
         # Compute rsquared.
         if classifier.is_keras:
-            acc.rsquared = r2_score(control_pixels, clf.predict(validation_pixels))
+            acc.rsquared = accuracy_score(control_pixels, clf.predict(validation_pixels))
         else:
             acc.rsquared = clf.score(validation_pixels, control_pixels)
     else:

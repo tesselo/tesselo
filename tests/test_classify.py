@@ -390,6 +390,8 @@ class SentinelClassifierTest(TestCase):
         self.assertIn("Keras history:", self.clf.log)
         self.assertIn("Keras parameters:", self.clf.log)
         self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
+        self.assertTrue(self.clf.classifieraccuracy.rsquared > 0)
+
         # Test prediction.
         pred = PredictedLayer.objects.create(
             composite=self.composite,
