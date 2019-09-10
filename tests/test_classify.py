@@ -354,7 +354,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.clf_args = '''{
             "optimizer": "adagrad",
             "loss": "mse",
-            "metrics": ["accuracy"],
+            "metrics": ["mean_absolute_error"],
             "epochs": 10,
             "batch_size": 5
         }'''

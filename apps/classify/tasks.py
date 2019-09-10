@@ -12,7 +12,7 @@ from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
-from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
+from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
@@ -332,7 +332,7 @@ def train_sentinel_classifier(classifier_id):
             classifier.write('Keras summary:\n{}'.format(fl.getvalue()))
         # Write Keras training history to classifier log.
         for i in range(epochs):
-            hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist['acc'][i])
+            hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist[clf_args['metrics'][0]][i])
         classifier.write('Keras history:\n{}'.format(hist_str))
 
     # Compute validation arrays. If full arrays were used for training, the
@@ -350,7 +350,10 @@ def train_sentinel_classifier(classifier_id):
 
     if classifier.is_regressor:
         # Compute rsquared.
-        acc.rsquared = clf.score(validation_pixels, control_pixels)
+        if classifier.is_keras:
+            acc.rsquared = r2_score(control_pixels, clf.predict(validation_pixels))
+        else:
+            acc.rsquared = clf.score(validation_pixels, control_pixels)
     else:
         # Predict validation pixels.
         validation_pixels = clf.predict(validation_pixels)
