@@ -336,6 +336,50 @@ class SentinelClassifierTest(TestCase):
         # Tiles have been created.
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
 
+    def test_keras_regressor(self):
+        self._get_data()
+        # For regressor use cases, set the traininglayer to continuous.
+        self.clf.traininglayer.continuous = True
+        self.clf.traininglayer.save()
+        # Regressor setup.
+        self.clf.algorithm = Classifier.KERAS_REGRESSOR
+        self.clf.status = self.clf.UNPROCESSED
+        model = Sequential()
+        model.add(Dense(20, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(20, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(1, activation='linear'))
+        self.clf.keras_model_json = model.to_json()
+        self.clf.clf_args = '''{
+            "optimizer": "adagrad",
+            "loss": "mse",
+            "metrics": ["accuracy"],
+            "epochs": 10,
+            "batch_size": 5
+        }'''
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf = Classifier.objects.get(id=self.clf.id)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        self.assertIn('Finished training algorithm', self.clf.log)
+        self.assertIn("Keras history:", self.clf.log)
+        self.assertIn("Keras parameters:", self.clf.log)
+        self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
+        # Test prediction.
+        pred = PredictedLayer.objects.create(
+            composite=self.composite,
+            classifier=self.clf,
+            aggregationlayer=self.agglayer,
+        )
+        predict_sentinel_layer(pred.id)
+        pred.refresh_from_db()
+        # Tiles have been created.
+        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+
     def test_keras_classifier_time(self):
         self._get_data()
         composite_build_callback(self.build2.id, initiate=True, rebuild=True)

@@ -79,6 +79,7 @@ class Classifier(models.Model):
     NN = 'nn'
     NNR = 'nnr'
     KERAS = 'keras'
+    KERAS_REGRESSOR = 'kerasr'
 
     ALGORITHM_CHOICES = (
         (SVM, 'Support Vector Machines'),
@@ -90,6 +91,7 @@ class Classifier(models.Model):
         (RFR, 'Random Forest Regressor'),
         (NNR, 'Neural Network Regressor'),
         (KERAS, 'Keras Model'),
+        (KERAS_REGRESSOR, 'Keras Model Regressor'),
     )
 
     ALGORITHM_MODULES = {
@@ -103,7 +105,7 @@ class Classifier(models.Model):
         NNR: ('neural_network', 'MLPRegressor'),
     }
 
-    REGRESSORS = (SVR, LSVR, RFR, NNR)
+    REGRESSORS = (SVR, LSVR, RFR, NNR, KERAS_REGRESSOR, )
 
     UNPROCESSED = 'Unprocessed'
     PENDING = 'Pending'
@@ -142,7 +144,7 @@ class Classifier(models.Model):
     @property
     def clf(self):
         if self._clf is None:
-            if self.algorithm == self.KERAS:
+            if self.is_keras:
                 from keras.models import load_model
                 import h5py
                 with zipfile.ZipFile(io.BytesIO(self.trained.read()), 'r') as zf:
@@ -166,7 +168,7 @@ class Classifier(models.Model):
 
     @property
     def is_keras(self):
-        return self.algorithm == self.KERAS
+        return self.algorithm in (self.KERAS, self.KERAS_REGRESSOR)
 
     @property
     def clf_args_dict(self):
