@@ -15,5 +15,12 @@ class ReportScheduleAdmin(admin.ModelAdmin):
             self.message_user(request, 'Started report building for {}'.format(obj))
 
 
+class ReportAggregationAdmin(admin.ModelAdmin):
+    readonly_fields = (
+        'formula', 'aggregationlayer', 'aggregationarea', 'composite',
+        'predictedlayer', 'valuecountresult',
+    )
+
+
 admin.site.register(ReportSchedule, ReportScheduleAdmin)
-admin.site.register(ReportAggregation)
+admin.site.register(ReportAggregation, ReportAggregationAdmin)
