@@ -44,82 +44,106 @@ from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zo
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+
+        super().setUpClass()
+
+        mocks = [
+            patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search),
+            patch('sentinel.tasks.boto3.session.Session.client', client_get_object),
+            patch('raster.tiles.parser.urlretrieve', point_to_test_file),
+            patch('sentinel.tasks.get_raster_tile', patch_get_raster_tile),
+            patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile),
+            patch('classify.tasks.get_raster_tile', patch_get_raster_tile),
+            patch('classify.tasks.write_raster_tile', patch_write_raster_tile),
+            patch('sentinel.ecs.process_l2a', patch_process_l2a),
+        ]
+        for mock in mocks:
+            mock.start()
+
         settings.MEDIA_ROOT = tempfile.mkdtemp()
 
         bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
         bbox = OGRGeometry.from_bbox(bbox)
         bbox.srid = 3857
-        self.agglayer = AggregationLayer.objects.create(name='Test Agg Layer')
-        self.zone = AggregationArea.objects.create(
+        cls.agglayer = AggregationLayer.objects.create(name='Test Agg Layer')
+        cls.zone = AggregationArea.objects.create(
             name='Test Agg Area',
-            aggregationlayer=self.agglayer,
+            aggregationlayer=cls.agglayer,
             geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11833787.0 -469452.0, 11833787.0 -469352.0, 11833687.0 -469352.0, 11833687.0 -469452.0)))'
         )
-        self.composite = Composite.objects.create(
+        cls.composite = Composite.objects.create(
             name='The World',
             official=True,
             min_date='2015-12-01',
             max_date='2015-12-31',
         )
-        self.composite2 = Composite.objects.create(
+        cls.composite2 = Composite.objects.create(
             name='The World 2',
             official=True,
             min_date='2016-01-01',
             max_date='2016-01-31',
         )
-        self.build = CompositeBuild.objects.create(
-            composite=self.composite,
-            aggregationlayer=self.agglayer,
+        cls.build = CompositeBuild.objects.create(
+            composite=cls.composite,
+            aggregationlayer=cls.agglayer,
         )
-        self.build2 = CompositeBuild.objects.create(
-            composite=self.composite2,
-            aggregationlayer=self.agglayer,
+        cls.build2 = CompositeBuild.objects.create(
+            composite=cls.composite2,
+            aggregationlayer=cls.agglayer,
         )
 
-        self.traininglayer = TrainingLayer.objects.create(name='Test Training Layer')
+        cls.traininglayer = TrainingLayer.objects.create(name='Test Training Layer')
 
-        self.cloud = TrainingSample.objects.create(
+        cls.cloud = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844687 -459865, 11844697 -459865, 11844697 -459805, 11844687 -459805, 11844687 -459865))',
             category='Cloud',
             value=2,
-            traininglayer=self.traininglayer,
-            composite=self.composite,
+            traininglayer=cls.traininglayer,
+            composite=cls.composite,
         )
-        self.shadow = TrainingSample.objects.create(
+        cls.shadow = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844787 -459865, 11844797 -459865, 11844797 -459805, 11844787 -459805, 11844787 -459865))',
             category='Shadow',
             value=1,
-            traininglayer=self.traininglayer,
-            composite=self.composite,
+            traininglayer=cls.traininglayer,
+            composite=cls.composite,
         )
-        self.cloudfree = TrainingSample.objects.create(
+        cls.cloudfree = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844887 -459865, 11844897 -459865, 11844897 -459805, 11844887 -459805, 11844887 -459865))',
             category='Cloud free',
             value=0,
-            traininglayer=self.traininglayer,
-            composite=self.composite,
+            traininglayer=cls.traininglayer,
+            composite=cls.composite,
         )
 
-        self.clf = Classifier.objects.create(
+        cls.clf = Classifier.objects.create(
             name='Clouds',
             algorithm=Classifier.RF,
-            traininglayer=self.traininglayer,
+            traininglayer=cls.traininglayer,
             splitfraction=0.4,
         )
 
-        self.clf.traininglayer.trainingsample_set.add(self.cloud)
-        self.clf.traininglayer.trainingsample_set.add(self.shadow)
-        self.clf.traininglayer.trainingsample_set.add(self.cloudfree)
+        cls.clf.traininglayer.trainingsample_set.add(cls.cloud)
+        cls.clf.traininglayer.trainingsample_set.add(cls.shadow)
+        cls.clf.traininglayer.trainingsample_set.add(cls.cloudfree)
 
-        self.cloud.composite = self.composite
-        self.cloud.save()
-        self.shadow.composite = self.composite
-        self.shadow.save()
-        self.cloudfree.composite = self.composite
-        self.cloudfree.save()
+        cls.cloud.composite = cls.composite
+        cls.cloud.save()
+        cls.shadow.composite = cls.composite
+        cls.shadow.save()
+        cls.cloudfree.composite = cls.composite
+        cls.cloudfree.save()
 
-    def tearDown(self):
+        # Build data.
+        sync_sentinel_bucket_utm_zone(1)
+        composite_build_callback(cls.build.id, initiate=True, rebuild=True)
+        composite_build_callback(cls.build.id, initiate=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
         try:
             shutil.rmtree(settings.MEDIA_ROOT)
         except:
@@ -131,7 +155,6 @@ class SentinelClassifierTest(TestCase):
         composite_build_callback(self.build.id, initiate=False)
 
     def test_classifier_training(self):
-        self._get_data()
         # SVM
         self.clf.algorithm = Classifier.SVM
         self.clf.status = self.clf.UNPROCESSED
@@ -252,7 +275,6 @@ class SentinelClassifierTest(TestCase):
 
     @skip('This test setup does not populate the sentineltiles yet.')
     def test_classifier_prediction_sentineltile(self):
-        self._get_data()
         pred = PredictedLayer.objects.create(
             sentineltile=SentinelTile.objects.first(),
             classifier=self.clf,
@@ -264,7 +286,6 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
 
     def test_classifier_prediction_composite_aggregationlayer(self):
-        self._get_data()
         train_sentinel_classifier(self.clf.id)
         # Test error if no aggregationlayer was specified.
         pred = PredictedLayer.objects.create(
@@ -297,7 +318,6 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(pred.status, pred.FINISHED)
 
     def test_keras_classifier(self):
-        self._get_data()
         self.clf.algorithm = Classifier.KERAS
         self.clf.status = self.clf.UNPROCESSED
         model = Sequential()
@@ -338,7 +358,6 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
 
     def test_keras_regressor(self):
-        self._get_data()
         # For regressor use cases, set the traininglayer to continuous.
         self.clf.traininglayer.continuous = True
         self.clf.traininglayer.save()
@@ -383,7 +402,6 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
 
     def test_keras_classifier_time(self):
-        self._get_data()
         composite_build_callback(self.build2.id, initiate=True, rebuild=True)
         composite_build_callback(self.build2.id, initiate=False)
         self.clf.algorithm = Classifier.KERAS
@@ -468,7 +486,6 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Classifiers require discrete input datasets.', self.clf.log)
 
     def test_training_export(self):
-        self._get_data()
         # Get rasterlayer id.
         band_names = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B8A', 'RL{}'.format(self.composite.compositeband_set.first().rasterlayer_id)]
         band_names = ','.join(band_names)
@@ -493,7 +510,6 @@ class SentinelClassifierTest(TestCase):
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):
-        self._get_data()
         scene = SentinelTile.objects.filter(sentineltileband__isnull=False).first()
         band = scene.sentineltileband_set.get(band='B02.jp2')
         tile = band.layer.rastertile_set.first()
@@ -505,7 +521,6 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_classifier_report_and_list_views(self):
-        self._get_data()
         # Train SVM classifier.
         self.clf.algorithm = Classifier.SVM
         self.clf.status = self.clf.UNPROCESSED
@@ -535,7 +550,6 @@ class SentinelClassifierTest(TestCase):
         self.assertGreater(data['results'][0]['classifieraccuracy']['accuracy_score'], 0)
 
     def test_classifier_training_from_preloaded_pixels(self):
-        self._get_data()
         # SVM
         self.clf.algorithm = Classifier.SVM
         self.clf.status = self.clf.UNPROCESSED
