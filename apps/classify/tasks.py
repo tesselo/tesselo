@@ -332,7 +332,11 @@ def train_sentinel_classifier(classifier_id):
             classifier.write('Keras summary:\n{}'.format(fl.getvalue()))
         # Write Keras training history to classifier log.
         for i in range(epochs):
-            hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist[clf_args['metrics'][0]][i])
+            metric = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.metrics[0]
+            # Accuracy in histogram is shortened to "acc".
+            if metric == 'accuracy':
+                metric = 'acc'
+            hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist[metric][i])
         classifier.write('Keras history:\n{}'.format(hist_str))
 
     # Compute validation arrays. If full arrays were used for training, the
