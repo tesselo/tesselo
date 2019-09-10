@@ -312,7 +312,8 @@ class SentinelClassifierTest(TestCase):
             "loss": "categorical_crossentropy",
             "metrics": ["accuracy"],
             "epochs": 10,
-            "batch_size": 5
+            "batch_size": 5,
+            "verbose": 0
         }'''
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
@@ -356,7 +357,8 @@ class SentinelClassifierTest(TestCase):
             "loss": "mse",
             "metrics": ["mean_absolute_error"],
             "epochs": 10,
-            "batch_size": 5
+            "batch_size": 5,
+            "verbose": 0
         }'''
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
@@ -401,7 +403,8 @@ class SentinelClassifierTest(TestCase):
             "loss": "categorical_crossentropy",
             "metrics": ["accuracy"],
             "epochs": 10,
-            "batch_size": 5
+            "batch_size": 5,
+            "verbose": 0
         }'''
         self.clf.save()
         self.clf.composites.add(self.composite)
