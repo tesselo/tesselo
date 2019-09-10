@@ -79,12 +79,12 @@ class ReportAggregation(models.Model):
 
         if self.valuecountresult_id:
             # Update current valuecountresult.
-            self.valuecountresult.layer_names=layer_names
-            self.valuecountresult.formula=formula
-            self.valuecountresult.zoom=self.ZOOM
-            self.valuecountresult.aggregationarea=self.aggregationarea
-            self.valuecountresult.units='acres'
-            self.valuecountresult.grouping='discrete' if self.predictedlayer_id else 'continuous'
+            self.valuecountresult.layer_names = layer_names
+            self.valuecountresult.formula = formula
+            self.valuecountresult.zoom = self.ZOOM
+            self.valuecountresult.aggregationarea = self.aggregationarea
+            self.valuecountresult.units = 'acres'
+            self.valuecountresult.grouping = 'discrete' if self.predictedlayer_id else 'continuous'
             self.valuecountresult.status = ValueCountResult.SCHEDULED
             self.valuecountresult.save()
         else:
