@@ -10,6 +10,7 @@ from raster_api.views import (
     LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet, ReadOnlyTokenViewSet, RemoveAuthToken,
     SentinelTileAggregationLayerViewSet, UserViewSet, ValueCountResultViewSet
 )
+from report.views import ReportAggregationViewSet, ReportScheduleViewSet
 from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
 from userinterface.views import BookmarkFolderViewSet, BookmarkViewSet
 from wmts.views import WMTSAPIView, WMTSLayerViewSet
@@ -112,6 +113,9 @@ router.register(r'readonlytoken', ReadOnlyTokenViewSet, base_name='readonlytoken
 
 router.register(r'bookmark', BookmarkViewSet, base_name='bookmark')
 router.register(r'bookmarkfolder', BookmarkFolderViewSet, base_name='bookmarkfolder')
+
+router.register(r'reportschedule', ReportScheduleViewSet, base_name='reportschedule')
+router.register(r'reportaggregation', ReportAggregationViewSet, base_name='reportaggregation')
 
 apiurlpatterns = [
     url(r'^api/token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view())),
