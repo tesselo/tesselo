@@ -374,7 +374,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.clf_args = '''{
             "optimizer": "adagrad",
             "loss": "mse",
-            "metrics": ["mean_absolute_error"],
+            "metrics": ["mean_squared_error"],
             "epochs": 10,
             "batch_size": 5,
             "verbose": 0
@@ -390,7 +390,7 @@ class SentinelClassifierTest(TestCase):
         self.assertIn("Keras history:", self.clf.log)
         self.assertIn("Keras parameters:", self.clf.log)
         self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
-        self.assertTrue(self.clf.classifieraccuracy.rsquared > 0)
+        self.assertNotEqual(self.clf.classifieraccuracy.rsquared, 0)
 
         # Test prediction.
         pred = PredictedLayer.objects.create(
