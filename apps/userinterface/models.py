@@ -48,7 +48,7 @@ def create_bookmarkfolder_public_object(sender, instance, created, **kwargs):
 class Bookmark(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(default='', blank=True)
-    url = models.URLField()
+    url = models.URLField(max_length=2000)
     created = models.DateTimeField(auto_now=True)
     bookmarkfolder = models.ForeignKey(BookmarkFolder, on_delete=models.CASCADE)
 
