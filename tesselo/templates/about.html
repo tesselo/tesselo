@@ -42,8 +42,10 @@
            }
          })});
       </script>
-      <script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101157326);</script>
-      <script async src="//static.getclicky.com/js"></script>
+      {% if request.get_host == "tesselo.com" %}
+        <script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101157326);</script>
+        <script async src="//static.getclicky.com/js"></script>
+      {% endif %}
    </head>
    <body id="about-page" class="pre-animation">
       <div class="animsition">
