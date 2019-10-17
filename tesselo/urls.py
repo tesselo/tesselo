@@ -28,7 +28,6 @@ urlpatterns = [
     url(r'^sentinel/', include('sentinel.urls')),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^app/', TemplateView.as_view(template_name='app.html')),
-    url(r'^', include('teaser.urls')),
     url(r'^about$', TemplateView.as_view(template_name='about.html')),
     url(r'^spatial-insights-as-a-service$', TemplateView.as_view(template_name='spatial-insights-as-a-service.html')),
     url(r'^solutions-for-sustainability$', TemplateView.as_view(template_name='solutions-for-sustainability.html')),

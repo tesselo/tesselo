@@ -74,7 +74,6 @@ INSTALLED_APPS = [
     'formulary',
     'naip',
     'wmts',
-    'teaser',
     'userinterface',
     'report',
 ]
