@@ -1,3 +1,5 @@
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -26,7 +28,11 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
     pagination_class = ReportAggregationPagination
     queryset = ReportAggregation.objects.all().order_by('id')
     serializer_class = ReportAggregationSerializer
+    filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
     filter_fields = (
         'formula', 'aggregationlayer', 'aggregationarea', 'predictedlayer',
         'composite',
     )
+    search_fields = ['aggregationarea__name', ]
+    ordering_fields = ['valuecountresult__stats_avg', 'aggregationarea__name']
+    ordering = ['aggregationarea__name']

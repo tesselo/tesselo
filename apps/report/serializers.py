@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.serializers import CharField, FloatField, SerializerMethodField
 
 from raster_api.serializers import PermissionsModelSerializer
@@ -16,6 +18,8 @@ class ReportScheduleSerializer(PermissionsModelSerializer):
 class ReportAggregationSerializer(PermissionsModelSerializer):
 
     value = SerializerMethodField()
+    name = CharField(source='aggregationarea.name')
+    geom = SerializerMethodField()
     status = CharField(source='valuecountresult.status')
     min = FloatField(source='valuecountresult.stats_min')
     max = FloatField(source='valuecountresult.stats_max')
@@ -29,7 +33,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
         model = ReportAggregation
         fields = (
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
-            'predictedlayer', 'valuecountresult',
+            'predictedlayer', 'valuecountresult', 'name', 'geom',
             'value', 'status', 'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
 
         )
@@ -39,3 +43,9 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
         Convert keys to strings and hstore values to floats.
         """
         return {str(k): float(v) for k, v in obj.valuecountresult.value.items()}
+
+    def get_geom(self, obj):
+        """
+        Name of aggregation area.
+        """
+        return json.loads(obj.aggregationarea.geom.transform(4326, clone=True).geojson)
