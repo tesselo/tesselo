@@ -16,9 +16,10 @@ casper.test.begin('Tesselo login form works (currently mainly disabled)', 1, fun
       //
       // casper.click('.login-button');
       //
-      // casper.wait(10000);
-      test.assertExists('.login-button');
-
+      casper.wait(500);
+      casper.then(function() {
+        test.assertExists('.login-button');
+      });
     });
 
     // casper.then(function() {
