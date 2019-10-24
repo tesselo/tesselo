@@ -6,6 +6,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from raster_api.permissions import IsReadOnly
 from raster_api.views import PermissionsModelViewSet
+from report.filters import ReportAggregationFilter
 from report.models import ReportAggregation, ReportSchedule
 from report.permissions import ReportAggregationPermission
 from report.serializers import ReportAggregationSerializer, ReportScheduleSerializer
@@ -29,10 +30,7 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
     queryset = ReportAggregation.objects.all().order_by('id')
     serializer_class = ReportAggregationSerializer
     filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
-    filter_fields = (
-        'formula', 'aggregationlayer', 'aggregationarea', 'predictedlayer',
-        'composite',
-    )
+    filter_class = ReportAggregationFilter
     search_fields = ['aggregationarea__name', ]
     ordering_fields = ['valuecountresult__stats_avg', 'aggregationarea__name']
     ordering = ['aggregationarea__name']
