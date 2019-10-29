@@ -1,6 +1,6 @@
 import json
 
-from rest_framework.serializers import CharField, FloatField, SerializerMethodField
+from rest_framework.serializers import CharField, DateField, FloatField, SerializerMethodField
 
 from raster_api.serializers import PermissionsModelSerializer
 from report.models import ReportAggregation, ReportSchedule
@@ -28,14 +28,15 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
     pcount = FloatField(source='valuecountresult.stats_cumsum_t0')
     psum = FloatField(source='valuecountresult.stats_cumsum_t1')
     psumsq = FloatField(source='valuecountresult.stats_cumsum_t2')
+    min_date = DateField(source='composite.min_date')
+    max_date = DateField(source='composite.max_date')
 
     class Meta:
         model = ReportAggregation
         fields = (
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
-            'predictedlayer', 'valuecountresult', 'name', 'geom',
+            'predictedlayer', 'valuecountresult', 'name', 'geom', 'min_date', 'max_date',
             'value', 'status', 'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
-
         )
 
     def get_value(self, obj):

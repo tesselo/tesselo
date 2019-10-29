@@ -32,5 +32,9 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
     filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
     filter_class = ReportAggregationFilter
     search_fields = ['aggregationarea__name', ]
-    ordering_fields = ['valuecountresult__stats_avg', 'aggregationarea__name']
-    ordering = ['aggregationarea__name']
+    ordering_fields = [
+        'valuecountresult__stats_avg',
+        'aggregationarea__name',
+        'composite__min_date',
+    ]
+    ordering = ['aggregationarea__name', 'composite__min_date']
