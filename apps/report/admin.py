@@ -1,6 +1,6 @@
 from django.contrib.gis import admin
 from report.models import ReportAggregation, ReportSchedule
-from sentinel import ecs
+from report.tasks import push_reports
 
 
 class ReportScheduleAdmin(admin.ModelAdmin):
@@ -11,7 +11,7 @@ class ReportScheduleAdmin(admin.ModelAdmin):
         Run this schedule manually. Will happen on signal basis as well.
         """
         for obj in queryset:
-            ecs.push_reports('reportschedule', obj.id)
+            push_reports('reportschedule', obj.id)
             self.message_user(request, 'Started report building for {}'.format(obj))
 
 

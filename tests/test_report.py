@@ -10,7 +10,7 @@ from django.core.files import File
 from django.test import TestCase, override_settings
 from formulary.models import Formula
 from report.models import ReportAggregation, ReportSchedule
-from sentinel import ecs
+from report.tasks import push_reports
 from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
 
 
@@ -103,7 +103,7 @@ class AggregationViewTests(TestCase):
         )
 
     def test_report_schedule(self):
-        ReportSchedule.objects.create(
+        sc = ReportSchedule.objects.create(
             formula=self.formula,
             composite=self.composite,
             aggregationlayer=self.agglayer,
@@ -112,6 +112,9 @@ class AggregationViewTests(TestCase):
         self.formula.formula = 'B3/B2'
         self.formula.save()
         self.assertEqual(ReportAggregation.objects.count(), 2)
+        sc.refresh_from_db()
+        self.assertEqual(sc.status, ReportSchedule.FINISHED)
+        self.assertIn('Finished aggregation.', sc.log)
 
     def test_report_schedule_push(self):
         sc = ReportSchedule.objects.create(
@@ -119,8 +122,12 @@ class AggregationViewTests(TestCase):
             composite=self.composite,
             aggregationlayer=self.agglayer,
         )
-        ecs.push_reports('reportschedule', sc.id)
+        self.assertEqual(sc.status, ReportSchedule.UNPROCESSED)
+        push_reports('reportschedule', sc.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
+        sc.refresh_from_db()
+        self.assertEqual(sc.status, ReportSchedule.FINISHED)
+        self.assertIn('Finished aggregation.', sc.log)
 
     def test_report_schedule_populate(self):
         sc = ReportSchedule.objects.create(
@@ -128,7 +135,7 @@ class AggregationViewTests(TestCase):
             composite=self.composite,
             aggregationlayer=self.agglayer,
         )
-        ecs.push_reports('reportschedule', sc.id)
+        push_reports('reportschedule', sc.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
 
     def test_report_schedule_populate_agglayer(self):
@@ -137,7 +144,7 @@ class AggregationViewTests(TestCase):
             composite=self.composite,
             aggregationlayer=self.agglayer,
         )
-        ecs.push_reports('aggregationlayer', sc.aggregationlayer.id)
+        push_reports('aggregationlayer', sc.aggregationlayer.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
 
     def test_report_schedule_populate_composite(self):
@@ -146,5 +153,5 @@ class AggregationViewTests(TestCase):
             composite=self.composite,
             aggregationlayer=self.agglayer,
         )
-        ecs.push_reports('composite', sc.composite.id)
+        push_reports('composite', sc.composite.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)

@@ -4,7 +4,7 @@ from django.contrib.gis.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from formulary import colorbrewer
-from sentinel import ecs
+from report.tasks import push_reports
 
 
 class Formula(models.Model):
@@ -145,4 +145,4 @@ def create_formula_public_object(sender, instance, created, **kwargs):
         PublicFormula.objects.create(formula=instance)
 
     if instance._formula_expression_changed:
-        ecs.push_reports('formula', instance.id)
+        push_reports('formula', instance.id)

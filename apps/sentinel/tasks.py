@@ -28,6 +28,7 @@ from django.core.files import File
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from report.tasks import push_reports
 from sentinel import const, ecs
 from sentinel.clouds.algorithms import Clouds
 from sentinel.clouds.utils import sun
@@ -862,7 +863,7 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         compositebuild.status = CompositeBuild.FINISHED
         compositebuild.save()
         # Push report job.
-        ecs.push_reports('composite', compositebuild.composite_id)
+        push_reports('composite', compositebuild.composite_id)
 
 
 def process_sentinel_sns_message(event, context):

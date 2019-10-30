@@ -28,6 +28,7 @@ from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
 from django.core.files import File
+from report.tasks import push_reports
 from sentinel import ecs
 from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
 
@@ -591,7 +592,7 @@ def build_predicted_pyramid(predicted_layer_id):
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
 
     # Push report job.
-    ecs.push_reports('predictedlayer', pred.id)
+    push_reports('predictedlayer', pred.id)
 
 
 def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B10,B11,B12'):
