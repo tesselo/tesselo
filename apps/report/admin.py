@@ -1,5 +1,5 @@
 from django.contrib.gis import admin
-from report.models import ReportAggregation, ReportSchedule
+from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports
 
 
@@ -22,5 +22,10 @@ class ReportAggregationAdmin(admin.ModelAdmin):
     )
 
 
+class ReportScheduleTaskAdmin(admin.ModelAdmin):
+    list_filter = ('status', )
+
+
 admin.site.register(ReportSchedule, ReportScheduleAdmin)
+admin.site.register(ReportScheduleTask, ReportScheduleTaskAdmin)
 admin.site.register(ReportAggregation, ReportAggregationAdmin)

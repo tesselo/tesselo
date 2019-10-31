@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.core.files import File
 from django.test import TestCase, override_settings
 from formulary.models import Formula
-from report.models import ReportAggregation, ReportSchedule
+from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports
 from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
 
@@ -72,6 +72,13 @@ class AggregationViewTests(TestCase):
         SentinelTileBand.objects.create(tile=self.stile, band='B02.jp2', layer=RasterLayer.objects.create(name='b02')),
         SentinelTileBand.objects.create(tile=self.stile, band='B03.jp2', layer=RasterLayer.objects.create(name='b03')),
 
+    def _create_report_schedule(self):
+        sc = ReportSchedule.objects.create()
+        sc.formulas.add(self.formula)
+        sc.composites.add(self.composite)
+        sc.aggregationlayers.add(self.agglayer)
+        return sc
+
     def test_create_aggregator_composite(self):
         agg = ReportAggregation.objects.create(
             formula=self.formula,
@@ -103,55 +110,52 @@ class AggregationViewTests(TestCase):
         )
 
     def test_report_schedule(self):
-        sc = ReportSchedule.objects.create(
-            formula=self.formula,
-            composite=self.composite,
-            aggregationlayer=self.agglayer,
-        )
+        self._create_report_schedule()
         self.assertEqual(ReportAggregation.objects.count(), 0)
         self.formula.formula = 'B3/B2'
         self.formula.save()
         self.assertEqual(ReportAggregation.objects.count(), 2)
-        sc.refresh_from_db()
-        self.assertEqual(sc.status, ReportSchedule.FINISHED)
-        self.assertIn('Finished aggregation.', sc.log)
+
+    def test_report_schedule_task(self):
+        self._create_report_schedule()
+        push_reports('composite', self.composite.id)
+        # Ensure task was created and has status finished.
+        task = ReportScheduleTask.objects.get(
+            composite=self.composite,
+            formula=self.formula,
+            aggregationlayer=self.agglayer,
+        )
+        self.assertEqual(task.status, ReportScheduleTask.FINISHED)
 
     def test_report_schedule_push(self):
-        sc = ReportSchedule.objects.create(
-            formula=self.formula,
-            composite=self.composite,
-            aggregationlayer=self.agglayer,
-        )
-        self.assertEqual(sc.status, ReportSchedule.UNPROCESSED)
-        push_reports('reportschedule', sc.id)
+        self._create_report_schedule()
+        push_reports('composite', self.composite.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
-        sc.refresh_from_db()
-        self.assertEqual(sc.status, ReportSchedule.FINISHED)
-        self.assertIn('Finished aggregation.', sc.log)
 
     def test_report_schedule_populate(self):
-        sc = ReportSchedule.objects.create(
-            formula=self.formula,
-            composite=self.composite,
-            aggregationlayer=self.agglayer,
-        )
-        push_reports('reportschedule', sc.id)
-        self.assertEqual(ReportAggregation.objects.count(), 2)
+        sc = self._create_report_schedule()
+        with self.assertRaisesMessage(ValueError, 'Failed finding reports to push.'):
+            push_reports('reportschedule', sc.id)
 
     def test_report_schedule_populate_agglayer(self):
-        sc = ReportSchedule.objects.create(
-            formula=self.formula,
-            composite=self.composite,
-            aggregationlayer=self.agglayer,
-        )
-        push_reports('aggregationlayer', sc.aggregationlayer.id)
+        self._create_report_schedule()
+        push_reports('aggregationlayer', self.agglayer.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
 
     def test_report_schedule_populate_composite(self):
-        sc = ReportSchedule.objects.create(
-            formula=self.formula,
-            composite=self.composite,
-            aggregationlayer=self.agglayer,
-        )
-        push_reports('composite', sc.composite.id)
+        self._create_report_schedule()
+        push_reports('composite', self.composite.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
+
+    def test_report_schedule_push_processing(self):
+        self._create_report_schedule()
+        # Create report task tracker with status processing.
+        ReportScheduleTask.objects.create(
+            composite=self.composite,
+            formula=self.formula,
+            aggregationlayer=self.agglayer,
+            status=ReportScheduleTask.PROCESSING,
+        )
+        push_reports('composite', self.composite.id)
+        # The report was not pushed.
+        self.assertEqual(ReportAggregation.objects.count(), 0)

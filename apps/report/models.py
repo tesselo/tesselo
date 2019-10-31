@@ -10,15 +10,27 @@ from sentinel.models import Composite
 
 class ReportSchedule(models.Model):
     """
-    Schedule automatic aggregation over an aggregationlayer using a formula and
-    a composite, or classes from a predictedlayer.
+    Schedule automatic aggregation over an aggregationlayer using every
+    combination of the formulas, composites, and predicted layers specified.
+    """
+    aggregationlayers = models.ManyToManyField(AggregationLayer)
+    formulas = models.ManyToManyField('formulary.Formula')
+    composites = models.ManyToManyField(Composite)
+    predictedlayers = models.ManyToManyField(PredictedLayer)
+
+    def __str__(self):
+        return '{} | '.format(self.id) + get_report_obj_str(self)
+
+
+class ReportScheduleTask(models.Model):
+    """
+    Track one long running async task to compute aggregation values.
     """
     UNPROCESSED = 'Unprocessed'
     PENDING = 'Pending'
     PROCESSING = 'Processing'
     FINISHED = 'Finished'
     FAILED = 'Failed'
-    BROKEN = 'Broken'
     ST_STATUS_CHOICES = (
         (UNPROCESSED, UNPROCESSED),
         (PENDING, PENDING),
@@ -27,15 +39,13 @@ class ReportSchedule(models.Model):
         (FAILED, FAILED),
     )
 
-    aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
+    aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE, editable=False)
+    formula = models.ForeignKey('formulary.Formula', on_delete=models.CASCADE, blank=True, null=True, editable=False)
+    composite = models.ForeignKey(Composite, on_delete=models.CASCADE, blank=True, null=True, editable=False)
+    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE, blank=True, null=True, editable=False)
 
-    formula = models.ForeignKey('formulary.Formula', on_delete=models.CASCADE, blank=True, null=True, help_text='Leave empty for predicted layers.')
-    composite = models.ForeignKey(Composite, on_delete=models.CASCADE, blank=True, null=True)
-
-    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE, blank=True, null=True)
-
-    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
-    log = models.TextField(default='', blank=True)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED, editable=False)
+    log = models.TextField(default='', blank=True, editable=False)
 
     def __str__(self):
         return '{} | '.format(self.id) + get_report_obj_str(self)
@@ -47,31 +57,6 @@ class ReportSchedule(models.Model):
             self.status = status
         self.save()
 
-    def populate(self):
-        """
-        Loop through aggregation areas for this schedule and run the
-        corresponding aggregations.
-        """
-        self.write(
-            'Started aggregation for {} aggregation areas.'.format(self.aggregationlayer.aggregationarea_set.all().count()),
-            self.PROCESSING,
-        )
-
-        for agg in self.aggregationlayer.aggregationarea_set.all():
-            # Retrieve current aggregation or create a new one.
-            rep, created = ReportAggregation.objects.get_or_create(
-                aggregationlayer_id=agg.aggregationlayer_id,
-                aggregationarea=agg,
-                formula_id=self.formula_id,
-                composite_id=self.composite_id,
-                predictedlayer_id=self.predictedlayer_id,
-            )
-            if not created:
-                rep.reset()
-            # Update the aggregation values.
-            rep.valuecountresult.populate()
-
-        self.write('Finished aggregation.', self.FINISHED)
 
 
 class ReportAggregation(models.Model):

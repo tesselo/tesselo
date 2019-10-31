@@ -152,5 +152,5 @@ def push_scheduled_composite_builds():
     return run_ecs_command(['push_scheduled_composite_builds'], retry=1)
 
 
-def populate_report(pk):
-    return run_ecs_command(['populate_report', pk])
+def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlayer_id):
+    return run_ecs_command(['populate_report', aggregationlayer_id, composite_id, formula_id, predictedlayer_id])
