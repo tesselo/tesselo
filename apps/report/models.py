@@ -48,7 +48,13 @@ class ReportScheduleTask(models.Model):
     log = models.TextField(default='', blank=True, editable=False)
 
     def __str__(self):
-        return '{} | '.format(self.id) + get_report_obj_str(self)
+        return '{} | Aggs {}, Comps {}, Forms {}, Preds {}'.format(
+            self.id,
+            self.aggregationlayers.count(),
+            self.composites.count(),
+            self.formulas.count(),
+            self.predictedlayers.count(),
+        )
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
@@ -56,7 +62,6 @@ class ReportScheduleTask(models.Model):
         if status:
             self.status = status
         self.save()
-
 
 
 class ReportAggregation(models.Model):
@@ -76,7 +81,13 @@ class ReportAggregation(models.Model):
     valuecountresult = models.OneToOneField(ValueCountResult, on_delete=models.CASCADE, blank=True)
 
     def __str__(self):
-        return 'RA {} | '.format(self.id) + get_report_obj_str(self)
+        return '{} | Agg {}, Comp {}, Form {}, Pred {}'.format(
+            self.id,
+            self.aggregationlayer,
+            self.composite,
+            self.formula,
+            self.predictedlayer,
+        )
 
     def reset(self):
         # Get data for valuecount result update.
