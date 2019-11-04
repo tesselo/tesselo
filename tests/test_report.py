@@ -132,10 +132,15 @@ class AggregationViewTests(TestCase):
         push_reports('composite', self.composite.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
 
-    def test_report_schedule_populate(self):
+    def test_report_schedule_populate_reportschedule(self):
+        sc = self._create_report_schedule()
+        push_reports('reportschedule', sc.id)
+        self.assertEqual(ReportAggregation.objects.count(), 2)
+
+    def test_report_schedule_populate_error(self):
         sc = self._create_report_schedule()
         with self.assertRaisesMessage(ValueError, 'Failed finding reports to push.'):
-            push_reports('reportschedule', sc.id)
+            push_reports('unknown', sc.id)
 
     def test_report_schedule_populate_agglayer(self):
         self._create_report_schedule()

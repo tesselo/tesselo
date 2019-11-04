@@ -110,7 +110,7 @@ def get_raster_tile(layer_id, tilez, tilex, tiley):
             int(tiley / multiplier),
         )
 
-        if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA'):
+        if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
             obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
             try:
                 tile = obj.get()
