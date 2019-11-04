@@ -21,6 +21,8 @@ def push_reports(model, pk):
         schedules = ReportSchedule.objects.filter(aggregationlayers__id=pk)
     elif model == 'formula':
         schedules = ReportSchedule.objects.filter(formulas__id=pk)
+    elif model == 'reportschedule':
+        schedules = ReportSchedule.objects.filter(id=pk)
     else:
         raise ValueError('Failed finding reports to push.')
 
