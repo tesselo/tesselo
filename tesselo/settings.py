@@ -190,14 +190,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend/home'),
 ]
 
-# Get S3 bucket name.
-AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
 # Set static root.
 STATIC_ROOT = '/tmp/staticfiles'
+# Get S3 bucket name.
+AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
 # Set static url.
-if DEBUG or not AWS_STORAGE_BUCKET_NAME_STATIC:
-    STATIC_URL = '/static/'
-else:
+if AWS_STORAGE_BUCKET_NAME_STATIC:
     # Storage class for static files.
     STATICFILES_STORAGE = 'tesselo.s3storages.StaticRootS3Boto3Storage'
     # Set the url to the bucket for serving files.
@@ -210,19 +208,21 @@ else:
     elif AWS_STORAGE_BUCKET_NAME_STATIC == 'static.tesselo.com':
         STATIC_URL = 'https://static.tesselo.com/'
         AWS_S3_CUSTOM_DOMAIN_STATIC = 'static.tesselo.com'
-
-# Storage settings
-if DEBUG:
-    MEDIA_ROOT = '/tesselo_media'
 else:
+    STATIC_URL = '/static/'
+
+# Storage settings.
+AWS_STORAGE_BUCKET_NAME_MEDIA = os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')
+if AWS_STORAGE_BUCKET_NAME_MEDIA:
     # Storage class for media files
     DEFAULT_FILE_STORAGE = 'tesselo.s3storages.PrivateMediaS3Boto3Storage'
     # Get S3 bucket name
-    AWS_STORAGE_BUCKET_NAME_MEDIA = os.environ.get('AWS_STORAGE_BUCKET_NAME_MEDIA')
     # Set the url to the bucket for serving files
     MEDIA_URL = 'https://{bucket}.s3.amazonaws.com/'.format(
         bucket=AWS_STORAGE_BUCKET_NAME_MEDIA,
     )
+else:
+    MEDIA_ROOT = '/tesselo_media'
 
 # Rest framework settings.
 REST_FRAMEWORK = {
