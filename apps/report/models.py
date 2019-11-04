@@ -4,7 +4,6 @@ from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCo
 
 from classify.models import PredictedLayer
 from django.db import models
-from report.utils import get_report_obj_str
 from sentinel.models import Composite
 
 
@@ -19,7 +18,13 @@ class ReportSchedule(models.Model):
     predictedlayers = models.ManyToManyField(PredictedLayer)
 
     def __str__(self):
-        return '{} | '.format(self.id) + get_report_obj_str(self)
+        return '{} | Aggs {}, Comps {}, Forms {}, Preds {}'.format(
+            self.id,
+            self.aggregationlayers.count(),
+            self.composites.count(),
+            self.formulas.count(),
+            self.predictedlayers.count(),
+        )
 
 
 class ReportScheduleTask(models.Model):
@@ -39,21 +44,21 @@ class ReportScheduleTask(models.Model):
         (FAILED, FAILED),
     )
 
-    aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE, editable=False)
-    formula = models.ForeignKey('formulary.Formula', on_delete=models.CASCADE, blank=True, null=True, editable=False)
-    composite = models.ForeignKey(Composite, on_delete=models.CASCADE, blank=True, null=True, editable=False)
-    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE, blank=True, null=True, editable=False)
+    aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
+    formula = models.ForeignKey('formulary.Formula', on_delete=models.CASCADE, blank=True, null=True)
+    composite = models.ForeignKey(Composite, on_delete=models.CASCADE, blank=True, null=True)
+    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE, blank=True, null=True)
 
-    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED, editable=False)
-    log = models.TextField(default='', blank=True, editable=False)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    log = models.TextField(default='', blank=True)
 
     def __str__(self):
-        return '{} | Aggs {}, Comps {}, Forms {}, Preds {}'.format(
+        return '{} | Agg {}, Comp {}, Form {}, Pred {}'.format(
             self.id,
-            self.aggregationlayers.count(),
-            self.composites.count(),
-            self.formulas.count(),
-            self.predictedlayers.count(),
+            self.aggregationlayer,
+            self.composite,
+            self.formula,
+            self.predictedlayer,
         )
 
     def write(self, data, status=None):

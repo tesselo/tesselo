@@ -14,18 +14,21 @@ class AggregationLayerInline(admin.TabularInline):
     extra = 0
 
 
-class PredictedLayerInline(admin.TabularInline):
-    model = PredictedLayer.reportschedule_set.through
-    extra = 0
-
-
 class FormulaInline(admin.TabularInline):
     model = Formula.reportschedule_set.through
+    raw_id_fields = ('formula', )
     extra = 0
 
 
 class CompositeInline(admin.TabularInline):
     model = Composite.reportschedule_set.through
+    raw_id_fields = ('composite', )
+    extra = 0
+
+
+class PredictedLayerInline(admin.TabularInline):
+    model = PredictedLayer.reportschedule_set.through
+    raw_id_fields = ('predictedlayer', )
     extra = 0
 
 
@@ -52,6 +55,7 @@ class ReportAggregationAdmin(admin.ModelAdmin):
 
 class ReportScheduleTaskAdmin(admin.ModelAdmin):
     list_filter = ('status', )
+    readonly_fields = ('aggregationlayer', 'formula', 'composite', 'predictedlayer', 'status', 'log', )
 
 
 admin.site.register(ReportSchedule, ReportScheduleAdmin)
