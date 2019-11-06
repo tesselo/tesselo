@@ -268,6 +268,7 @@ class CompositeSerializer(PermissionsModelSerializer):
 
 class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
 
+    sentineltile_id = IntegerField(source='sentineltile.id')
     rasterlayer_lookup = SerializerMethodField()
     name = CharField(source='sentineltile.prefix')
     date = SerializerMethodField()
@@ -283,7 +284,7 @@ class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
         model = SentinelTileAggregationLayer
         fields = (
             'id', 'name', 'rasterlayer_lookup', 'active', 'date', 'mgrs',
-            'cloudy_pixel_percentage', 'data_coverage_percentage',
+            'sentineltile_id', 'cloudy_pixel_percentage', 'data_coverage_percentage',
             'angle_azimuth', 'angle_altitude', 'level', 'status',
         )
 
