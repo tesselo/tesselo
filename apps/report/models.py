@@ -118,6 +118,8 @@ class ReportAggregation(models.Model):
             # Update current valuecountresult.
             self.valuecountresult.layer_names = layer_names
             self.valuecountresult.formula = formula
+            self.range_min = range_min
+            self.range_max = range_max
             self.valuecountresult.zoom = self.ZOOM
             self.valuecountresult.aggregationarea = self.aggregationarea
             self.valuecountresult.units = 'acres'
