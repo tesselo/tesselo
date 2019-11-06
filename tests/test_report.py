@@ -114,10 +114,18 @@ class AggregationViewTests(TestCase):
             }
         )
 
-    def test_report_schedule(self):
+    def test_report_schedule_formula_change(self):
         self._create_report_schedule()
         self.assertEqual(ReportAggregation.objects.count(), 0)
         self.formula.formula = 'B3/B2'
+        self.formula.save()
+        self.assertEqual(ReportAggregation.objects.count(), 2)
+
+    def test_report_schedule_formula_range_change(self):
+        self._create_report_schedule()
+        self.assertEqual(ReportAggregation.objects.count(), 0)
+        self.formula.min_val = -100
+        self.formula.max_val = 1000
         self.formula.save()
         self.assertEqual(ReportAggregation.objects.count(), 2)
 

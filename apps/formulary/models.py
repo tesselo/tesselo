@@ -127,13 +127,20 @@ class PublicFormula(models.Model):
 @receiver(pre_save, sender=Formula, weak=False, dispatch_uid="check_formula_change_for_reporting")
 def check_change_on_formula(sender, instance, **kwargs):
     if instance.id is None:
-        instance._formula_expression_changed = True
+        instance._push_reports = True
     else:
         previous = Formula.objects.get(id=instance.id)
-        if previous.formula.replace(' ', '') != instance.formula.replace(' ', ''):
-            instance._formula_expression_changed = True
+
+        previous_formula = previous.formula.replace(' ', '').replace('\n', '')
+        instance_formula = instance.formula.replace(' ', '').replace('\n', '')
+
+        previous_range = (previous.min_val, previous.max_val)
+        instance_range = (instance.min_val, instance.max_val)
+
+        if previous_formula != instance_formula or previous_range != instance_range:
+            instance._push_reports = True
         else:
-            instance._formula_expression_changed = False
+            instance._push_reports = False
 
 
 @receiver(post_save, sender=Formula, weak=False, dispatch_uid="create_formula_public_object")
@@ -144,5 +151,5 @@ def create_formula_public_object(sender, instance, created, **kwargs):
     if created:
         PublicFormula.objects.create(formula=instance)
 
-    if instance._formula_expression_changed:
+    if instance._push_reports:
         push_reports('formula', instance.id)
