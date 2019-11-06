@@ -45,7 +45,12 @@ class AggregationViewTests(TestCase):
             geom='SRID=3857;MULTIPOLYGON (((-8877202 -296836, -8877302 -296836, -8877302 -296936, -8877202 -296836)))',
         )
 
-        self.formula = Formula.objects.create(name='Formula', formula='B2/B3')
+        self.formula = Formula.objects.create(
+            name='Formula',
+            formula='B2/B3',
+            min_val=-100,
+            max_val=100,
+        )
 
         self.composite = Composite.objects.create(
             name='Bananastand December 2015',

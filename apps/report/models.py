@@ -98,6 +98,8 @@ class ReportAggregation(models.Model):
         # Get data for valuecount result update.
         if self.composite:
             formula = self.formula.formula
+            range_min = self.formula.min_val
+            range_max = self.formula.max_val
             layer_names = {
                 key.replace('.jp2', '').replace('0', ''): val for key, val in self.composite.rasterlayer_lookup.items()
             }
@@ -107,6 +109,8 @@ class ReportAggregation(models.Model):
             # Simple formula for predictedlayers.
             formula = 'x'
             layer_names = {'x': self.predictedlayer.rasterlayer_id}
+            range_min = None
+            range_max = None
         else:
             raise ValueError('Specify Composite or PredictedLayer.')
 
@@ -125,6 +129,8 @@ class ReportAggregation(models.Model):
             self.valuecountresult, created = ValueCountResult.objects.get_or_create(
                 layer_names=layer_names,
                 formula=formula,
+                range_min=range_min,
+                range_max=range_max,
                 zoom=self.ZOOM,
                 aggregationarea=self.aggregationarea,
                 units='acres',
