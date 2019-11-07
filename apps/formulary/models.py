@@ -70,7 +70,7 @@ class Formula(models.Model):
         # Select color palette.
         palette = self.color_palette if self.color_palette else self.DEFAULT_COLOR
         # Create discrete or continuous colormap.
-        if self.breaks > 0:
+        if self.breaks is not None and self.breaks > 0:
             # Compute nr of breaks (limit at 9 due to colorberwer).
             breaks = max(self.breaks, 9)
             # Get color palette by name and number of breaks.
@@ -81,12 +81,11 @@ class Formula(models.Model):
             colormap = {}
             for i in range(breaks):
                 # Compute formula expression.
-                expression = '{}<x<{}'.format(
+                expression = '({}<=x)&(x<{})'.format(
                     self.min_val + i * delta,
                     self.min_val + (i + 1) * delta,
                 )
                 # Set color for this range.
-                # colormap[expression] = brew[i]
                 colormap[expression] = colorbrewer.convert(brew[i]) + [255]
             return colormap
         else:
