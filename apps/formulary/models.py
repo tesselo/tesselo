@@ -72,7 +72,7 @@ class Formula(models.Model):
         # Create discrete or continuous colormap.
         if self.breaks is not None and self.breaks > 0:
             # Compute nr of breaks (limit at 9 due to colorberwer).
-            breaks = max(self.breaks, 9)
+            breaks = min(self.breaks, 9)
             # Get color palette by name and number of breaks.
             brew = getattr(colorbrewer, palette)[breaks]
             # Compute value increment for discrete binning.

@@ -126,7 +126,7 @@ class TileViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         img = numpy.asarray(Image.open(io.BytesIO(response.content)))
         self.assertEqual(img.shape, (256, 256, 4))
-        self.assertEqual(tuple(img[0][1]), (165, 0, 38, 255))
+        self.assertEqual(tuple(img[0][1]), (215, 48, 39, 255))
 
     def test_formula_tms_rgb(self):
         url = reverse('formula_algebra-list', kwargs={
