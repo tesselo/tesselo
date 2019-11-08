@@ -440,7 +440,8 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
 
         return Response({
             'token': token.key,
-            'expires': token.created + EXPIRING_TOKEN_LIFESPAN
+            'expires': token.created + EXPIRING_TOKEN_LIFESPAN,
+            'is_staff': user.is_staff,
         })
 
 
