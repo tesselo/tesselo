@@ -71,8 +71,8 @@ class Formula(models.Model):
         palette = self.color_palette if self.color_palette else self.DEFAULT_COLOR
         # Create discrete or continuous colormap.
         if self.breaks is not None and self.breaks > 0:
-            # Compute nr of breaks (limit at 9 due to colorberwer).
-            breaks = min(self.breaks, 9)
+            # Compute nr of breaks (limit between 2 and 9 due to colorberwer).
+            breaks = max(min(self.breaks, 9), 2)
             # Get color palette by name and number of breaks.
             brew = getattr(colorbrewer, palette)[breaks]
             # Compute value increment for discrete binning.
