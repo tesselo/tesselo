@@ -130,8 +130,8 @@ def check_change_on_formula(sender, instance, **kwargs):
     else:
         previous = Formula.objects.get(id=instance.id)
 
-        previous_formula = previous.formula.replace(' ', '').replace('\n', '')
-        instance_formula = instance.formula.replace(' ', '').replace('\n', '')
+        previous_formula = previous.formula.replace(' ', '').replace('\n', '').replace('\r', '')
+        instance_formula = instance.formula.replace(' ', '').replace('\n', '').replace('\r', '')
 
         previous_range = (previous.min_val, previous.max_val)
         instance_range = (instance.min_val, instance.max_val)
