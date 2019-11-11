@@ -1,5 +1,6 @@
 import io
 
+import boto3
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer
@@ -25,6 +26,7 @@ from rest_framework.serializers import Serializer
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
@@ -47,8 +49,11 @@ from raster_api.serializers import (
     LegendSerializer, RasterLayerSerializer, ReadOnlyTokenSerializer, SentinelTileAggregationLayerSerializer,
     UserSerializer, ValueCountResultSerializer
 )
-from raster_api.tasks import compute_single_value_count_result, compute_single_value_count_result_async
+from raster_api.tasks import (
+    aggregation_layer_parser_async, compute_single_value_count_result, compute_single_value_count_result_async
+)
 from raster_api.utils import get_empty_tile
+from sentinel import ecs
 from sentinel.clouds.inspect_composite import inspect_composite
 from sentinel.models import Composite, SentinelTileAggregationLayer
 from sentinel.utils import get_raster_tile
@@ -277,6 +282,54 @@ class AggregationLayerViewSet(PermissionsModelViewSet):
     search_fields = ('name', 'description', )
 
     _model = 'aggregationlayer'
+
+    @action(detail=True, methods=['post'])
+    def upload(self, request, pk=None):
+        """
+        Returns signed upload link to replace current shape file.
+        """
+        if 'filename' not in request.data:
+            raise ValueError('Provide the "filename" as post data.')
+
+        # Generate S3 file key from filename and object id.
+        filename = str(request.data.get('filename'))
+        key = '{}/{}/{}'.format(AggregationLayer.shapefile.field.upload_to, pk, filename)
+
+        # Generate presigned S3 upload url.
+        s3 = boto3.client('s3')
+        EXPIRES_IN_SECONDS = 300
+        presigned_post = s3.generate_presigned_post(
+            Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
+            Key=key,
+            Fields={"Content-Type": 'multipart/form-data'},
+            Conditions=[{"Content-Type": 'multipart/form-data'}],
+            ExpiresIn=EXPIRES_IN_SECONDS,
+        )
+
+        return Response(presigned_post)
+
+    @action(detail=True, methods=['post'])
+    def parse(self, request, pk=None):
+        """
+        Parse an Aggregation Layer asynchronously.
+        """
+        # Ket S3 key from layer.
+        key = AggregationLayer.objects.get(id=pk).shapefile.name
+        s3 = boto3.client('s3')
+        key_head = s3.head_object(
+            Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
+            Key=key,
+        )
+        key_size = key_head['ContentLength']
+        # Set lambda file size limit to 1MB.
+        LAMBDA_SIZE_LIMIT_BYTES = 1e6
+        # Parse large files on batch, the others in lambda.
+        if key_size > LAMBDA_SIZE_LIMIT_BYTES:
+            ecs.parse_aggregationlayer(pk)
+        else:
+            aggregation_layer_parser_async(pk)
+
+        return Response('Triggered parsing for aggregation layer {}'.format(pk))
 
 
 class AggregationLayerVectorTilesViewSet(AggregationLayerVectorTilesViewSetOrig, PermissionsModelViewSet):

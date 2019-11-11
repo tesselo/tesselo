@@ -49,14 +49,17 @@ class AggregationViewTests(TestCase):
                 'previous': None,
                 'results': [
                     {
-                        'aggregationareas': [2],
+                        'id': self.agglayer.id,
+                        'aggregationareas': [self.aggarea.id],
                         'description': 'An arrested testfile.',
                         'extent': [4.999999999999991, 4.9999999999999805, 44.999999999999986, 40.00000000000001],
-                        'id': 2,
                         'max_zoom_level': 18,
                         'min_zoom_level': 0,
                         'name': 'Near bananastand.',
                         'nr_of_areas': 1,
+                        'shapefile': '',
+                        'name_column': 'test',
+                        'parse_log': '',
                     }
                 ]
             },

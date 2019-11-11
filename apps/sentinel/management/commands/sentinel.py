@@ -1,3 +1,5 @@
+from raster_aggregation.tasks import aggregation_layer_parser
+
 from classify.tasks import (
     build_predicted_pyramid, export_training_data, predict_sentinel_chunk, predict_sentinel_layer,
     train_sentinel_classifier
@@ -31,6 +33,7 @@ class Command(BaseCommand):
         'ingest_naip_manifest': ingest_naip_manifest,
         'push_scheduled_composite_builds': push_scheduled_composite_builds,
         'populate_report': populate_report,
+        'parse_aggregationlayer': aggregation_layer_parser,
     }
 
     def add_arguments(self, parser):

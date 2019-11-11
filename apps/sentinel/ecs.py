@@ -154,3 +154,7 @@ def push_scheduled_composite_builds():
 
 def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlayer_id):
     return run_ecs_command(['populate_report', aggregationlayer_id, composite_id, formula_id, predictedlayer_id])
+
+
+def parse_aggregationlayer(pk):
+    return run_ecs_command(['parse_aggregationlayer', pk])

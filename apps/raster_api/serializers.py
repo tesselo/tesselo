@@ -10,7 +10,7 @@ from raster_aggregation.models import AggregationLayer
 from raster_aggregation.serializers import AggregationLayerSerializer as AggregationLayerSerializerOriginal
 from raster_aggregation.serializers import ValueCountResultSerializer as ValueCountResultSerializerOriginal
 from rest_framework.serializers import (
-    CharField, FileField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
+    CharField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
 )
 
 from django.contrib.auth.models import Group, User
@@ -298,8 +298,8 @@ class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
 class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
 
     extent = SerializerMethodField()
-    shapefile = FileField(write_only=True, required=False)
-    name_column = CharField(write_only=True, required=False)
+    shapefile = CharField(write_only=False, required=False)
+    name_column = CharField(write_only=False, required=False)
     simplification_tolerance = FloatField(write_only=True, required=False)
 
     class Meta:
@@ -308,6 +308,7 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
             'id', 'name', 'description', 'min_zoom_level', 'max_zoom_level',
             'nr_of_areas', 'simplification_tolerance', 'aggregationareas',
             'extent', 'shapefile', 'name_column', 'simplification_tolerance',
+            'parse_log',
         )
         read_only_fields = ('nr_of_areas', )
 
