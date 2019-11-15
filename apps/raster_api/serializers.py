@@ -298,9 +298,9 @@ class SentinelTileAggregationLayerSerializer(PermissionsModelSerializer):
 class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
 
     extent = SerializerMethodField()
-    shapefile = CharField(write_only=False, required=False)
-    name_column = CharField(write_only=False, required=False)
-    simplification_tolerance = FloatField(write_only=True, required=False)
+    shapefile = CharField(write_only=False, required=False, allow_blank=True)
+    name_column = CharField(write_only=False, required=False, allow_blank=True)
+    simplification_tolerance = FloatField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = AggregationLayer
