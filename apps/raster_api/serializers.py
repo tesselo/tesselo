@@ -308,9 +308,9 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
             'id', 'name', 'description', 'min_zoom_level', 'max_zoom_level',
             'nr_of_areas', 'simplification_tolerance', 'aggregationareas',
             'extent', 'shapefile', 'name_column', 'simplification_tolerance',
-            'parse_log',
+            'parse_log', 'status',
         )
-        read_only_fields = ('nr_of_areas', )
+        read_only_fields = ('nr_of_areas', 'status', 'parse_log', 'extent', )
 
     def get_extent(self, obj):
         extent = obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']

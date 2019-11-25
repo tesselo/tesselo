@@ -60,6 +60,7 @@ class AggregationViewTests(TestCase):
                         'shapefile': '',
                         'name_column': 'test',
                         'parse_log': '',
+                        'status': 'Unprocessed',
                     }
                 ]
             },
