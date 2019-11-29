@@ -27,7 +27,7 @@ WMTS_BASE_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
         </Contents>
         <ServiceMetadataURL xlink:href="https://tesselo.com/api/wmts/"/>
 </Capabilities>
-'''
+'''.strip()
 
 TILE_MATRIX_SET_TEMPLATE = '''
 <TileMatrixSet>
@@ -40,7 +40,7 @@ TILE_MATRIX_SET_TEMPLATE = '''
 <WellKnownScaleSet>urn:ogc:def:wkss:OGC:1.0:GoogleMapsCompatible</WellKnownScaleSet>
 {content}
 </TileMatrixSet>
-'''
+'''.strip()
 
 TILE_MATRIX_TEMPLATE = '''
 <TileMatrix>
@@ -52,7 +52,7 @@ TILE_MATRIX_TEMPLATE = '''
     <MatrixWidth>{nrtiles}</MatrixWidth>
     <MatrixHeight>{nrtiles}</MatrixHeight>
 </TileMatrix>
-'''
+'''.strip()
 
 TILE_LAYER_TEMPLATE = '''
 <Layer>
@@ -71,7 +71,7 @@ TILE_LAYER_TEMPLATE = '''
     </TileMatrixSetLink>
     <ResourceURL format="image/png" template="{url}" resourceType="tile"/>
 </Layer>
-'''
+'''.strip()
 
 
 class WMTSAPIView(APIView):
@@ -89,34 +89,55 @@ class WMTSAPIView(APIView):
     ]
 
     def get(self, request):
+        # Add auth key if provided in the original WMTS reuest.
+        key = request.GET.get(GET_QUERY_PARAMETER_AUTH_KEY, None)
+
         # Get url base from request.
         host = request.get_host()
         protocol = 'http' if host == 'localhost' else 'https'
         urlbase = '{}://{}/api/'.format(protocol, host)
 
         # Get wmts layers for the request user.
-        wmts_layers = get_objects_for_user(request.user, 'wmts.view_wmtslayer')
+        formulas = get_objects_for_user(request.user, 'formulary.view_formula', with_superuser=False)
+        composites = get_objects_for_user(request.user, 'sentinel.view_composite', with_superuser=False)
+        predictedlayers = get_objects_for_user(request.user, 'classify.view_predictedlayer', with_superuser=False)
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
-        for layer in wmts_layers:
-            url = layer.url
-            if not url:
-                continue
-            # Add auth key if provided in the original WMTS reuest.
-            key = request.GET.get(GET_QUERY_PARAMETER_AUTH_KEY, None)
-            if key:
-                # Determine query string template.
-                query = '&amp;{}={}' if '?' in url else '?{}={}'
-                # Add token query string to url.
-                url += query.format(GET_QUERY_PARAMETER_AUTH_KEY, key)
+        for composite in composites:
+            for formula in formulas:
+                # Generate formula tile url.
+                url = '{urlbase}formula/{formula_id}/{layer_type}/{layer_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}'.format(
+                    urlbase=urlbase,
+                    formula_id=formula.id,
+                    layer_type='composite',
+                    layer_id=composite.id,
+                    keyname=GET_QUERY_PARAMETER_AUTH_KEY,
+                    keyval=key,
+                )
+                layer_list += TILE_LAYER_TEMPLATE.format(
+                    title='{} | {} - {}'.format(composite.name, formula.acronym, formula.name),
+                    identifier='tesselo_{}_{}'.format(composite.id, formula.id),
+                    url=url,
+                )
+
+        for pred in predictedlayers:
+            url = "{urlbase}tile/{predictedlayer}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}".format(
+                urlbase=urlbase,
+                predictedlayer=pred.rasterlayer_id,
+                keyname=GET_QUERY_PARAMETER_AUTH_KEY,
+                keyval=key,
+            )
             layer_list += TILE_LAYER_TEMPLATE.format(
-                title=layer.title,
-                identifier='wmtslayer{}'.format(layer.id),
-                url=urlbase + url,
+                title=str(pred),
+                identifier='tesselo_{}'.format(pred.id),
+                url=url,
             )
 
-        return HttpResponse(WMTS_BASE_TEMPLATE.format(layers=layer_list, mat=self.tile_matrix_set_3857), content_type="text/xml")
+        xml = WMTS_BASE_TEMPLATE.format(layers=layer_list, mat=self.tile_matrix_set_3857)
+        xml = xml.replace('\n', '').replace('\r', '')
+
+        return HttpResponse(xml, content_type="text/xml")
 
     @property
     def tile_matrix_set_3857(self):

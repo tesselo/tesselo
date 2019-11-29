@@ -230,9 +230,11 @@ class PredictedLayer(models.Model):
         else:
             using = ''
 
-        return '{0} over {1} {2} ({3}).'.format(
+        agglayer = self.aggregationlayer.name if self.aggregationlayer else ''
+
+        return '{} over {} {} ({}).'.format(
             self.classifier,
-            self.aggregationlayer,
+            agglayer,
             using,
             self.status,
         )
