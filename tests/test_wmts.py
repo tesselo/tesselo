@@ -36,6 +36,12 @@ class WMTSViewTests(TestCase):
             min_date='2001-01-01',
             max_date='2001-01-31',
         )
+        self.composite_future = Composite.objects.create(
+            name='Shuturmurg Future',
+            min_date='3001-01-01',
+            max_date='3001-01-31',
+        )
+
         self.pred = PredictedLayer.objects.create(composite=self.composite)
 
         self.url = reverse('wmts-service')
@@ -106,6 +112,23 @@ class WMTSViewTests(TestCase):
             'https://testserver/api/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
                 self.formula.id,
                 self.composite.id,
+            ),
+            response.content.decode(),
+        )
+
+    def test_wmts_service_composite_future(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        assign_perm('view_formula', self.usr, self.formula)
+        assign_perm('view_composite', self.usr, self.composite_future)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn(
+            'https://testserver/api/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+                self.formula.id,
+                self.composite_future.id,
             ),
             response.content.decode(),
         )

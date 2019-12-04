@@ -1,3 +1,5 @@
+import datetime
+
 from guardian.shortcuts import get_objects_for_user
 from raster.tiles.utils import tile_bounds, tile_scale
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
@@ -97,10 +99,13 @@ class WMTSAPIView(APIView):
         protocol = 'http' if host == 'localhost' else 'https'
         urlbase = '{}://{}/api/'.format(protocol, host)
 
-        # Get wmts layers for the request user.
+        # Get relevant objects for this user.
         formulas = get_objects_for_user(request.user, 'formulary.view_formula', with_superuser=False)
         composites = get_objects_for_user(request.user, 'sentinel.view_composite', with_superuser=False)
         predictedlayers = get_objects_for_user(request.user, 'classify.view_predictedlayer', with_superuser=False)
+
+        # Filter future composites from list.
+        composites = composites.filter(min_date__lte=datetime.datetime.now().date())
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
