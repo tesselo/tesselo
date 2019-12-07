@@ -66,8 +66,8 @@ class CompositeAdmin(GuardedModelAdmin):
     list_filter = ('active', )
     model = Composite
     raw_id_fields = ('sentineltiles', )
-    list_display = ('name', 'min_date', 'max_date')
-
+    list_display = ('name', 'min_date', 'max_date', 'active', 'official')
+    ordering = ['name', 'min_date', 'max_date']
 
 class SentinelTileAggregationLayerAdmin(admin.ModelAdmin):
     raw_id_fields = ('sentineltile', )
