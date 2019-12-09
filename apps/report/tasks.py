@@ -26,6 +26,9 @@ def push_reports(model, pk):
     else:
         raise ValueError('Failed finding reports to push.')
 
+    # Reduce to active report schedules.
+    schedules = schedules.filter(active=True)
+
     # Retrieve the related models that are affected.
     if model == 'aggregationlayer':
         aggs = [pk]

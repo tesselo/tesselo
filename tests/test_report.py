@@ -78,7 +78,7 @@ class AggregationViewTests(TestCase):
         SentinelTileBand.objects.create(tile=self.stile, band='B03.jp2', layer=RasterLayer.objects.create(name='b03')),
 
     def _create_report_schedule(self):
-        sc = ReportSchedule.objects.create()
+        sc = ReportSchedule.objects.create(active=True)
         sc.formulas.add(self.formula)
         sc.composites.add(self.composite)
         sc.aggregationlayers.add(self.agglayer)

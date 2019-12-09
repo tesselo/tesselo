@@ -16,6 +16,7 @@ class ReportSchedule(models.Model):
     formulas = models.ManyToManyField('formulary.Formula')
     composites = models.ManyToManyField(Composite)
     predictedlayers = models.ManyToManyField(PredictedLayer)
+    active = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} | Aggs {}, Comps {}, Forms {}, Preds {}'.format(
