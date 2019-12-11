@@ -85,12 +85,16 @@ class AggregationViewTests(TestCase):
         return sc
 
     def test_create_aggregator_composite(self):
-        agg = ReportAggregation.objects.create(
+        agg = ReportAggregation(
             formula=self.formula,
             composite=self.composite,
             aggregationlayer=self.agglayer,
             aggregationarea=self.aggarea,
         )
+        vc = agg.get_valuecount()
+        vc.save()
+        agg.valuecountresult = vc
+        agg.save()
         self.assertEqual(agg.valuecountresult.formula, 'B2/B3')
         self.assertEqual(
             agg.valuecountresult.layer_names,
@@ -101,12 +105,17 @@ class AggregationViewTests(TestCase):
         )
 
     def test_create_aggregator_predicted(self):
-        agg = ReportAggregation.objects.create(
+        agg = ReportAggregation(
             formula=self.formula,
             predictedlayer=self.predictedlayer,
             aggregationlayer=self.agglayer,
             aggregationarea=self.aggarea,
+
         )
+        vc = agg.get_valuecount()
+        vc.save()
+        agg.valuecountresult = vc
+        agg.save()
         self.assertEqual(
             agg.valuecountresult.layer_names,
             {

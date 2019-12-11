@@ -4,6 +4,8 @@ from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCo
 
 from classify.models import PredictedLayer
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from sentinel.models import Composite
 
 
@@ -95,7 +97,7 @@ class ReportAggregation(models.Model):
             self.predictedlayer,
         )
 
-    def reset(self):
+    def get_valuecount(self):
         # Get data for valuecount result update.
         if self.composite:
             formula = self.formula.formula
@@ -115,32 +117,24 @@ class ReportAggregation(models.Model):
         else:
             raise ValueError('Specify Composite or PredictedLayer.')
 
-        if self.valuecountresult_id:
-            # Update current valuecountresult.
-            self.valuecountresult.layer_names = layer_names
-            self.valuecountresult.formula = formula
-            self.range_min = range_min
-            self.range_max = range_max
-            self.valuecountresult.zoom = self.ZOOM
-            self.valuecountresult.aggregationarea = self.aggregationarea
-            self.valuecountresult.units = 'acres'
-            self.valuecountresult.grouping = 'discrete' if self.predictedlayer_id else 'continuous'
-            self.valuecountresult.status = ValueCountResult.SCHEDULED
-            self.valuecountresult.save()
-        else:
-            # Create new valuecountresult.
-            self.valuecountresult, created = ValueCountResult.objects.get_or_create(
-                layer_names=layer_names,
-                formula=formula,
-                range_min=range_min,
-                range_max=range_max,
-                zoom=self.ZOOM,
-                aggregationarea=self.aggregationarea,
-                units='acres',
-                grouping='discrete' if self.predictedlayer_id else 'continuous',
-            )
+        # Remove existing valuecounts.
+        if hasattr(self, 'valuecountresult'):
+            self.valuecountresult.delete()
 
-    def save(self, *args, **kwargs):
-        if not self.valuecountresult_id:
-            self.reset()
-        super(ReportAggregation, self).save(*args, **kwargs)
+        # Setup new valuecount without storing it yet.
+        return ValueCountResult(
+            layer_names=layer_names,
+            formula=formula,
+            range_min=range_min,
+            range_max=range_max,
+            zoom=self.ZOOM,
+            aggregationarea=self.aggregationarea,
+            units='acres',
+            grouping='discrete' if self.predictedlayer_id else 'continuous',
+        )
+
+
+@receiver(post_delete, sender=ReportAggregation, weak=False, dispatch_uid="remove_valuecount_before_delete")
+def check_change_on_formula(sender, instance, **kwargs):
+    if hasattr(instance, 'valuecountresult'):
+        instance.valuecountresult.delete()

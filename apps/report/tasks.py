@@ -1,6 +1,7 @@
 from raster_aggregation.models import AggregationLayer
 
 from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
+from report.utils import populate_vc
 from sentinel import ecs
 
 
@@ -99,7 +100,7 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
     try:
         lookup['predictedlayer_id'] = int(predictedlayer_id)
-    except ValueError:
+    except (ValueError, TypeError):
         pass
 
     # Get report schedule task tracker.
@@ -109,21 +110,32 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
     if task.status == ReportScheduleTask.PROCESSING:
         return
 
-    task.write('Started aggregation task.', ReportScheduleTask.PROCESSING)
-
     # Get aggregation layer.
     aggregationlayer = AggregationLayer.objects.get(id=aggregationlayer_id)
 
+    # Initiate progress log.
+    total_jobs = aggregationlayer.aggregationarea_set.all().count()
+    task.write('Started aggregation task for {} areas.'.format(total_jobs), ReportScheduleTask.PROCESSING)
+
     # Loop through all aggregation areas for this layer.
+    counter = 0
     for agg in aggregationlayer.aggregationarea_set.all():
+        counter += 1
         # Retrieve current aggregation or create a new one.
-        rep, created = ReportAggregation.objects.get_or_create(
-            aggregationarea=agg,
-            **lookup
-        )
-        if not created:
-            rep.reset()
-        # Update the aggregation values.
-        rep.valuecountresult.populate()
+        try:
+            rep = ReportAggregation.objects.get(aggregationarea=agg, **lookup)
+        except ReportAggregation.DoesNotExist:
+            rep = ReportAggregation(aggregationarea=agg, **lookup)
+
+        # Reset valuecount result object.
+        vc = rep.get_valuecount()
+        # Update the aggregation values, with minimal DB interactions.
+        vc = populate_vc(vc)
+        # Store valuecount link.
+        rep.valuecountresult = vc
+        rep.save()
+        # Log progress.
+        if counter % 250 == 0:
+            task.write('Completed {}/{} aggregations.'.format(counter, total_jobs))
 
     task.write('Finished aggregation task.', ReportScheduleTask.FINISHED)
