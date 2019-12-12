@@ -14,6 +14,7 @@ class ReportSchedule(models.Model):
     Schedule automatic aggregation over an aggregationlayer using every
     combination of the formulas, composites, and predicted layers specified.
     """
+    name = models.CharField(max_length=200, default='')
     aggregationlayers = models.ManyToManyField(AggregationLayer)
     formulas = models.ManyToManyField('formulary.Formula')
     composites = models.ManyToManyField(Composite)
@@ -21,13 +22,7 @@ class ReportSchedule(models.Model):
     active = models.BooleanField(default=False)
 
     def __str__(self):
-        return '{} | Aggs {}, Comps {}, Forms {}, Preds {}'.format(
-            self.id,
-            self.aggregationlayers.count(),
-            self.composites.count(),
-            self.formulas.count(),
-            self.predictedlayers.count(),
-        )
+        return '{} | {}'.format(self.id, self.name)
 
 
 class ReportScheduleTask(models.Model):
@@ -89,13 +84,16 @@ class ReportAggregation(models.Model):
     valuecountresult = models.OneToOneField(ValueCountResult, on_delete=models.CASCADE, blank=True)
 
     def __str__(self):
-        return '{} | Agg {}, Comp {}, Form {}, Pred {}'.format(
-            self.id,
-            self.aggregationlayer,
-            self.composite,
-            self.formula,
-            self.predictedlayer,
-        )
+        dat = '{}'.format(self.id)
+        if hasattr(self, 'aggregationlayer'):
+            dat += ' | {}'.format(self.aggregationlayer.name)
+        if hasattr(self, 'composite'):
+            dat += ' | {}'.format(self.composite.name)
+        if hasattr(self, 'formula'):
+            dat += ' | {}'.format(self.formula.name)
+        if hasattr(self, 'composite'):
+            dat += ' | Pred {}'.format(self.predictedlayer.id)
+        return dat
 
     def get_valuecount(self):
         # Get data for valuecount result update.

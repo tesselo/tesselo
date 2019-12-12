@@ -83,6 +83,7 @@ class CompositeBuildAdmin(admin.ModelAdmin):
     readonly_fields = ('sentineltiles', 'compositetiles', )
     actions = ('run_composite_build', )
     list_filter = ('status', )
+    raw_id_fields = ('composite', 'aggregationlayer', )
 
     def run_composite_build(self, request, queryset):
         for build in queryset:
