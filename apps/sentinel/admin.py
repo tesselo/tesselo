@@ -63,10 +63,11 @@ class MGRSTileAdmin(admin.OSMGeoAdmin):
 
 
 class CompositeAdmin(GuardedModelAdmin):
-    list_filter = ('active', )
     model = Composite
     raw_id_fields = ('sentineltiles', )
     list_display = ('name', 'min_date', 'max_date')
+    search_fields = ('name', )
+    list_filter = ('active', 'min_date', 'max_date', 'interval', )
 
 
 class SentinelTileAggregationLayerAdmin(admin.ModelAdmin):
