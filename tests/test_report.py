@@ -1,14 +1,17 @@
+import io
 import tempfile
 
 import dateutil
-from raster.models import RasterLayer
+from raster.models import RasterLayer, RasterTile
+from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster_aggregation.models import AggregationArea, AggregationLayer
 
 from classify.models import PredictedLayer
 from django.contrib.auth.models import User
+from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from django.test import TestCase, override_settings
-from formulary.models import Formula
+from formulary.models import Formula, PredictedLayerFormula
 from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports
 from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
@@ -121,6 +124,57 @@ class AggregationViewTests(TestCase):
             {
                 'x': self.predictedlayer.rasterlayer_id,
             }
+        )
+
+    def test_create_aggregator_predicted_formula(self):
+        # Create and populated predictedlayer.
+        tile_rst = GDALRaster({
+            'name': '/vsimem/testtile_pred.tif',
+            'driver': 'tif',
+            'srid': WEB_MERCATOR_SRID,
+            'width': WEB_MERCATOR_TILESIZE,
+            'height': WEB_MERCATOR_TILESIZE,
+            'origin': (11833687.0, -469452.0),
+            'scale': (1, -1),
+            'datatype': 1,
+            'bands': [{'nodata_value': 0, 'data': range(WEB_MERCATOR_TILESIZE ** 2)}],
+        })
+        tile_rst = File(io.BytesIO(tile_rst.vsi_buffer), name='tile_pred.tif')
+        RasterTile.objects.create(
+            rasterlayer=self.predictedlayer.rasterlayer,
+            rast=tile_rst,
+            tilex=1234,
+            tiley=1234,
+            tilez=11,
+        )
+        PredictedLayerFormula.objects.create(
+            formula=self.formula,
+            predictedlayer=self.predictedlayer,
+            key='Bananastand',
+        )
+        self.formula.formula = 'B3/B2+Bananastand'
+        self.formula.save()
+        agg = ReportAggregation(
+            formula=self.formula,
+            composite=self.composite,
+            aggregationlayer=self.agglayer,
+            aggregationarea=self.aggarea,
+        )
+        vc = agg.get_valuecount()
+        vc.save()
+        agg.valuecountresult = vc
+        agg.save()
+        self.assertEqual(
+            agg.valuecountresult.layer_names,
+            {
+                'B2': self.composite.compositeband_set.get(band='B02.jp2').rasterlayer_id,
+                'B3': self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id,
+                'Bananastand': self.predictedlayer.rasterlayer_id,
+            }
+        )
+        self.assertEqual(
+            agg.valuecountresult.formula,
+            self.formula.formula,
         )
 
     def test_report_schedule_formula_change(self):

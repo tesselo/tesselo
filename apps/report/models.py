@@ -106,6 +106,9 @@ class ReportAggregation(models.Model):
             }
             # Only keep bands that are present in formula.
             layer_names = {key: val for key, val in layer_names.items() if key in formula}
+            # Add predictelayer keys to lookup.
+            for pred in self.formula.predictedlayerformula_set.all():
+                layer_names[pred.key] = pred.predictedlayer.rasterlayer_id
         elif self.predictedlayer_id:
             # Simple formula for predictedlayers.
             formula = 'x'

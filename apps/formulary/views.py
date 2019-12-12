@@ -52,6 +52,9 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
             else:
                 # Only keep bands that are present in formula.
                 self._rasterlayer_lookup = {key: val for key, val in lookup.items() if key in self.formula.formula}
+            # Add predictelayer keys to lookup.
+            for pred in self.formula.predictedlayerformula_set.all():
+                self._rasterlayer_lookup[pred.key] = pred.predictedlayer.rasterlayer_id
 
         return self._rasterlayer_lookup
 

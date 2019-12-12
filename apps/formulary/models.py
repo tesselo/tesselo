@@ -1,5 +1,6 @@
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
+from classify.models import PredictedLayer
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -98,6 +99,20 @@ class Formula(models.Model):
                 "over": colorbrewer.convert(brew[4]),
                 "to": colorbrewer.convert(brew[8]),
             }
+
+
+class PredictedLayerFormula(models.Model):
+    formula = models.ForeignKey(Formula, on_delete=models.CASCADE)
+    predictedlayer = models.ForeignKey(PredictedLayer, on_delete=models.CASCADE)
+    key = models.CharField(max_length=20, help_text='Key used for this layer in formula expression. Should only contain alphanumeric characters and no whitespace.')
+
+    def __str__(self):
+        return '{} | {}'.format(self.formula, self.predictedlayer)
+
+    def save(self, *args, **kwargs):
+        # Remove any non-alphanumeric characters from the key.
+        self.key = ''.join(dat for dat in self.key if dat.isalnum())
+        super(PredictedLayerFormula, self).save(*args, **kwargs)
 
 
 class FormulaUserObjectPermission(UserObjectPermissionBase):
