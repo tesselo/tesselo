@@ -2,6 +2,7 @@ import shutil
 import tempfile
 from unittest import skip
 from unittest.mock import patch
+import os
 
 import numpy
 from keras.layers import GRU, BatchNormalization, Dense, Dropout
@@ -153,6 +154,12 @@ class SentinelClassifierTest(TestCase):
         sync_sentinel_bucket_utm_zone(1)
         composite_build_callback(self.build.id, initiate=True, rebuild=True)
         composite_build_callback(self.build.id, initiate=False)
+
+    def _get_files(self, path):
+        files = []
+        for root, subdirs, files in os.walk(os.path.join(settings.MEDIA_ROOT, path)):
+            files += files
+        return files
 
     def test_classifier_training(self):
         # SVM
@@ -306,7 +313,8 @@ class SentinelClassifierTest(TestCase):
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
+        self.assertTrue(len(files), 1)
         # Pyramid has been built.
         self.assertTrue(pred.predictedlayerchunk_set.count() > 0)
         self.assertEqual(
@@ -355,7 +363,8 @@ class SentinelClassifierTest(TestCase):
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
+        self.assertTrue(len(files), 1)
 
     def test_keras_regressor(self):
         # For regressor use cases, set the traininglayer to continuous.
@@ -401,7 +410,8 @@ class SentinelClassifierTest(TestCase):
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
+        self.assertTrue(len(files), 1)
 
     def test_keras_classifier_time(self):
         composite_build_callback(self.build2.id, initiate=True, rebuild=True)
@@ -444,7 +454,8 @@ class SentinelClassifierTest(TestCase):
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
+        files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
+        self.assertTrue(len(files), 1)
         # Test wrong configuration error.
         model = Sequential()
         model.add(GRU(32, return_sequences=True, return_state=False))  # returns a sequence of vectors of dimension 32

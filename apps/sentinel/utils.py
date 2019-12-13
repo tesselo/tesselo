@@ -3,7 +3,7 @@ import uuid
 
 import boto3
 import numpy
-from raster.models import RasterLayerParseStatus, RasterTile
+from raster.models import RasterLayerParseStatus
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
@@ -13,8 +13,7 @@ from django.core.files.storage import DefaultStorage
 from sentinel import const
 
 storage = DefaultStorage()
-s3 = boto3.resource('s3')
-s3_client = boto3.client('s3')
+s3 = boto3.client('s3')
 
 
 def aggregate_tile(tile, target_dtype=None, discrete=False):
@@ -111,10 +110,9 @@ def get_raster_tile(layer_id, tilez, tilex, tiley):
         )
 
         if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
-            obj = s3.Object(settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
             try:
-                tile = obj.get()
-            except s3.meta.client.exceptions.NoSuchKey:
+                tile = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA, Key=filename)
+            except s3.exceptions.NoSuchKey:
                 continue
             tile = tile['Body']
         else:
@@ -149,6 +147,9 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     """
     Commit a rastertile into the DB and storage.
     """
+    # Don't create nodata tiles.
+    if numpy.all(result == nodata_value):
+        return
     # Compute bounds and scale for the target tile.
     bounds = tile_bounds(tilex, tiley, tilez)
     scale = tile_scale(tilez)
@@ -175,9 +176,6 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     tile = get_raster_tile(layer_id, tilez, tilex, tiley)
 
     if tile:
-        # No new tile needs registering. This assumes that if tile file exists,
-        # it is already registered in DB.
-        tile_to_register = None
         # Get current pixel array for this tile.
         current = tile.bands[0].data()
         # Flatten the data if the input was flat.
@@ -189,15 +187,6 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         # pyramid levels, i.e. it unifies zone level pyramids.
         result_nodata = result == nodata_value
         result[result_nodata] = current[result_nodata]
-    else:
-        # Create a non-saved new tile instance for bulk creation.
-        tile_to_register = RasterTile(
-            rasterlayer_id=layer_id,
-            tilez=tilez,
-            tilex=tilex,
-            tiley=tiley,
-            rast=filename,
-        )
 
     # Add result to target dictionary.
     result_dict['bands'][0]['data'] = result
@@ -206,9 +195,10 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     # Convert GDALRaster to file-like object.
     dest = io.BytesIO(dest.vsi_buffer)
     # Upload merged tile to s3.
-    s3_client.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
-    # Return tile for bulk registration in DB without actual file uploads.
-    return tile_to_register
+    if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
+        s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+    else:
+        tile = storage.save(filename)
 
 
 def populate_raster_metadata(raster):

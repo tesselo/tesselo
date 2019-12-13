@@ -1,5 +1,7 @@
+import os
 import shutil
 import tempfile
+from unittest import skip
 from unittest.mock import patch
 
 from raster_aggregation.models import AggregationArea, AggregationLayer
@@ -12,7 +14,9 @@ from classify.models import Classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.files import File
+from django.core.files.storage import DefaultStorage
 from django.test import TestCase, override_settings
+from sentinel import const
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
 )
@@ -36,7 +40,7 @@ class SentinelBucketParserTest(TestCase):
         self.zone = AggregationArea.objects.create(
             name='Test Agg Area',
             aggregationlayer=self.agglayer,
-            geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11859687.0 -469452.0, 11859687.0 -441452.0, 11833687.0 -441452.0, 11833687.0 -469452.0)))'
+            geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11833797.0 -469352.0, 11833797.0 -469352.0, 11833797.0 -469352.0, 11833687.0 -469452.0)))',
         )
 
         self.composite = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
@@ -55,7 +59,20 @@ class SentinelBucketParserTest(TestCase):
     def test_sentinelbuild_set_compositetiles(self):
         sync_sentinel_bucket_utm_zone(1)
         self.build.set_compositetiles()
-        self.assertEqual(self.build.compositetiles.count(), 2)
+        self.assertEqual(self.build.compositetiles.count(), 1)
+
+    @skip('This test interacts with the others and the files are not found. Runs ok individually.')
+    def test_scene_ingesion(self):
+        sync_sentinel_bucket_utm_zone(1)
+        composite_build_callback(self.build.id, initiate=True, rebuild=True)
+        band = SentinelTileBand.objects.filter(band=const.BD2).first()
+        path = 'tiles/{}/14'.format(band.layer.id)
+        storage = DefaultStorage()
+        subpath = os.path.join(path, storage.listdir(path)[0][0])
+        # Files have been created (RasterTiles are not tracked on the DB level
+        # anymore).
+        storage = DefaultStorage()
+        self.assertEqual(storage.listdir(subpath)[1], ['8372.tif'])
 
     def test_process_compositetile(self):
         sync_sentinel_bucket_utm_zone(1)
@@ -82,9 +99,31 @@ class SentinelBucketParserTest(TestCase):
         # The status has been set to finished.
         self.assertEqual(ctile.status, CompositeTile.FINISHED)
         # Check that the tiles have been created.
+        band = self.composite.compositeband_set.get(band=const.BD2)
+        path = 'tiles/{}/14'.format(band.rasterlayer.id)
+        # Composite raster tile files have been created (RasterTiles are not
+        # tracked on the DB level anymore).
+        storage = DefaultStorage()
         self.assertEqual(
-            [band.rasterlayer.rastertile_set.count() for band in self.composite.compositeband_set.all()],
-            [564, ] * 13,
+            sorted(storage.listdir(os.path.join(path, storage.listdir(path)[0][0]))[1]),
+            [
+                '8368.tif',
+                '8369.tif',
+                '8370.tif',
+                '8371.tif',
+                '8372.tif',
+                '8373.tif',
+                '8374.tif',
+                '8375.tif',
+                '8376.tif',
+                '8377.tif',
+                '8378.tif',
+                '8379.tif',
+                '8380.tif',
+                '8381.tif',
+                '8382.tif',
+                '8383.tif',
+            ]
         )
         # Run the classifier based version.
         with open('tests/data/classifier-1.pickle', 'rb') as fl:

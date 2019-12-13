@@ -8,7 +8,6 @@ import h5py
 import numpy
 from keras.models import model_from_json
 from keras.wrappers.scikit_learn import KerasClassifier
-from raster.models import RasterTile
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
@@ -478,7 +477,6 @@ def predict_sentinel_chunk(chunk_id):
     else:
         rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
     # Predict tiles over this chunk's range.
-    batch = []
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
 
         if is_rnn:
@@ -509,18 +507,7 @@ def predict_sentinel_chunk(chunk_id):
         # Predict classes.
         predicted = chunk.predictedlayer.classifier.clf.predict(data).astype(dtype)
         # Write predicted pixels into a tile.
-        tile_to_register = write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=dtype_gdal)
-        # Append tile to batch.
-        if tile_to_register:
-            batch.append(tile_to_register)
-        # Commit batch if size is reached.
-        if len(batch) >= CHUNK_SIZE:
-            RasterTile.objects.bulk_create(batch)
-            batch = []
-
-    # Commit remaining tiles if present.
-    if len(batch) > 0:
-        RasterTile.objects.bulk_create(batch)
+        write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=dtype_gdal)
 
     # Log progress, update chunks done count.
     chunk.status = PredictedLayerChunk.FINISHED
@@ -541,7 +528,6 @@ def build_predicted_pyramid(predicted_layer_id):
     pred.write('Started building pyramid')
 
     # Loop through the tiles in each zoom level, bottom up.
-    batch = []
     for tilez in range(ZOOM - 1, -1, -1):
         pred.write('Building pyramid at zoom level {}'.format(tilez))
 
@@ -568,7 +554,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 numpy.concatenate(tile_data[2:], axis=1),
             ])
             # Write tile.
-            tile_to_register = write_raster_tile(
+            write_raster_tile(
                 layer_id=pred.rasterlayer_id,
                 result=tile_data,
                 tilez=tilez,
@@ -577,17 +563,6 @@ def build_predicted_pyramid(predicted_layer_id):
                 nodata_value=0,
                 datatype=1,
             )
-            # Append tile to batch.
-            if tile_to_register:
-                batch.append(tile_to_register)
-            # Commit batch if size is reached.
-            if len(batch) >= CHUNK_SIZE:
-                RasterTile.objects.bulk_create(batch)
-                batch = []
-
-    # Commit remaining tiles if present.
-    if len(batch) > 0:
-        RasterTile.objects.bulk_create(batch)
 
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)
 

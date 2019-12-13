@@ -1,6 +1,5 @@
 import datetime
 import glob
-import io
 import json
 import logging
 import os
@@ -8,14 +7,13 @@ import pathlib
 import shutil
 import subprocess
 import traceback
-import uuid
 
 import boto3
 import numpy
 from celery import task
 from celery.utils.log import get_task_logger
 from dateutil import parser
-from raster.models import RasterLayer, RasterTile
+from raster.models import RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
@@ -24,7 +22,6 @@ from raster_aggregation.models import AggregationArea
 from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
-from django.core.files import File
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -384,16 +381,7 @@ def process_compositetile(compositetile_id):
         bounds = tile_bounds(x, y, const.ZOOM_LEVEL_10M)
         result_dict['origin'] = bounds[0], bounds[3]
 
-        # Delete existing tiles for this composite.
-        RasterTile.objects.filter(
-            rasterlayer_id__in=list(rasterlayer_lookup.values()),
-            tilex=x,
-            tiley=y,
-            tilez=const.ZOOM_LEVEL_10M,
-        ).delete()
-
         # Loop over all bands.
-        tile_bands_batch = []
         for key, name in const.BAND_CHOICES:
             # Merge scene tiles for this band into a composite tile using the selector index.
             bnds = numpy.array([stack[key] for stack in stacks])
@@ -406,28 +394,13 @@ def process_compositetile(compositetile_id):
 
             # Update results dict with data, using a random name for the in
             # memory raster.
-            result_dict['bands'][0]['data'] = composite_data
-            result_dict['name'] = '/vsimem/{}'.format(uuid.uuid4())
-
-            # Convert gdalraster to file like object.
-            dest = GDALRaster(result_dict)
-            dest = io.BytesIO(dest.vsi_buffer)
-            dest = File(dest, name='tile.tif')
-
-            # Register a new tile in database.
-            tile_bands_batch.append(
-                RasterTile(
-                    rasterlayer_id=rasterlayer_lookup[key],
-                    tilex=x,
-                    tiley=y,
-                    tilez=const.ZOOM_LEVEL_10M,
-                    rast=dest,
-                )
+            write_raster_tile(
+                rasterlayer_lookup[key],
+                composite_data,
+                const.ZOOM_LEVEL_10M,
+                x,
+                y,
             )
-
-        # Bulk create the tiles for all bands of this tile.
-        RasterTile.objects.bulk_create(tile_bands_batch)
-        tile_bands_batch = []
 
         # Log progress.
         counter += 1
@@ -469,9 +442,7 @@ def process_compositetile(compositetile_id):
         counter = 0
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
-
                 # Aggregate tiles for each composite band.
-                batch = []
                 for rasterlayer_id in rasterlayer_lookup.values():
                     result = []
                     none_found = True
@@ -495,17 +466,8 @@ def process_compositetile(compositetile_id):
                     lower = numpy.append(result[2], result[3], axis=1)
                     result = numpy.append(upper, lower, axis=0)
 
-                    # Write predicted pixels into a tile.
-                    tile_to_register = write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
-
-                    # Append tile to batch.
-                    if tile_to_register:
-                        batch.append(tile_to_register)
-
-                # Commit batch.
-                if len(batch):
-                    RasterTile.objects.bulk_create(batch)
-                    batch = []
+                    # Write pixels into a tile.
+                    write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
 
     ctile.end = timezone.now()
     ctile.write('Finished building composite tile.', CompositeTile.FINISHED)
