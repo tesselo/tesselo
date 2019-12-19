@@ -12,6 +12,7 @@ from sentinel.tasks import (
     clear_sentineltile, composite_build_callback, drive_sentinel_bucket_parser, process_compositetile, process_l2a,
     push_scheduled_composite_builds, sync_sentinel_bucket_utm_zone
 )
+from sentinel_1.tasks import parse_s3_sentinel_1_inventory, snap_terrain_correction
 
 
 class Command(BaseCommand):
@@ -34,6 +35,8 @@ class Command(BaseCommand):
         'push_scheduled_composite_builds': push_scheduled_composite_builds,
         'populate_report': populate_report,
         'parse_aggregationlayer': aggregation_layer_parser,
+        'parse_s3_sentinel_1_inventory': parse_s3_sentinel_1_inventory,
+        'snap_terrain_correction': snap_terrain_correction,
     }
 
     def add_arguments(self, parser):

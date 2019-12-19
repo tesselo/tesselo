@@ -1,10 +1,13 @@
 import io
+import shutil
+import traceback
 import uuid
 
 import boto3
 import numpy
 from raster.models import RasterLayerParseStatus
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
+from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from django.conf import settings
@@ -225,3 +228,39 @@ def populate_raster_metadata(raster):
     # Update parse status to parsed.
     raster.parsestatus.status = RasterLayerParseStatus.FINISHED
     raster.parsestatus.save()
+
+
+def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=True):
+    """
+    Instead of uploading the reprojected tif, we could parse the rasters right
+    here. This would allow to never store the full tif files, but is more
+    suceptible to random killing of spot instances.
+    """
+    # Open parser for the band, set tempdir and remove previous log.
+    parser = RasterLayerParser(rasterlayer_id)
+    parser.tmpdir = tmpdir
+    parser.rasterlayer.parsestatus.log = ''
+    parser.rasterlayer.parsestatus.save()
+
+    # Open rasterlayer as GDALRaster, assign to parser attribute.
+    parser.dataset = GDALRaster(src_rst)
+    parser.extract_metadata()
+
+    # Reproject the rasterfile to web mercator.
+    if parser.dataset.srid != WEB_MERCATOR_SRID:
+        parser.reproject_rasterfile()
+
+    # Clear current tiles.
+    parser.drop_all_tiles()
+
+    # Create tile pyramid.
+    try:
+        parser.create_tiles(list(range(zoom + 1)))
+        parser.send_success_signal()
+    except:
+        parser.log(
+            traceback.format_exc(),
+            status=parser.rasterlayer.parsestatus.FAILED
+        )
+    finally:
+        shutil.rmtree(parser.tmpdir)

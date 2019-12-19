@@ -15,7 +15,6 @@ from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationArea
 
@@ -33,7 +32,7 @@ from sentinel.models import (
     BucketParseLog, CompositeBuild, CompositeBuildSchedule, CompositeTile, MGRSTile, SentinelTile,
     SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
 )
-from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, write_raster_tile
+from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, locally_parse_raster, write_raster_tile
 
 logger = get_task_logger(__name__)
 
@@ -716,41 +715,6 @@ def run_sen2cor(tile):
         shutil.rmtree(path)
 
     tile.write('Finished applying Sen2Cor algorithm.')
-
-
-def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom):
-    """
-    Instead of uploading the reprojected tif, we could parse the rasters right
-    here. This would allow to never store the full tif files, but is more
-    suceptible to random killing of spot instances.
-    """
-    # Open parser for the band, set tempdir and remove previous log.
-    parser = RasterLayerParser(rasterlayer_id)
-    parser.tmpdir = tmpdir
-    parser.rasterlayer.parsestatus.log = ''
-    parser.rasterlayer.parsestatus.save()
-
-    # Open rasterlayer as GDALRaster, assign to parser attribute.
-    parser.dataset = GDALRaster(src_rst)
-    parser.extract_metadata()
-
-    # Reproject the rasterfile to web mercator.
-    parser.reproject_rasterfile()
-
-    # Clear current tiles.
-    parser.drop_all_tiles()
-
-    # Create tile pyramid.
-    try:
-        parser.create_tiles(list(range(zoom + 1)))
-        parser.send_success_signal()
-    except:
-        parser.log(
-            traceback.format_exc(),
-            status=parser.rasterlayer.parsestatus.FAILED
-        )
-    finally:
-        shutil.rmtree(parser.tmpdir)
 
 
 def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):

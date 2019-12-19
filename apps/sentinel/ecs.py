@@ -20,7 +20,7 @@ def get_batch_job_base():
     return {
         'jobName': None,
         'jobQueue': None,
-        'jobDefinition': 'tesselo-{stage}',
+        'jobDefinition': None,
         'containerOverrides': {
             'command': [],
             'environment': [
@@ -41,7 +41,7 @@ def get_batch_job_base():
     }
 
 
-def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo-{stage}', depends_on=None):
+def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo-{stage}', job='tesselo-{stage}', depends_on=None):
     '''
     Execute a Batch command.
     '''
@@ -79,7 +79,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo
         stage = 'production'
 
     command['jobQueue'] = queue.format(stage=stage)
-    command['jobDefinition'] = command['jobDefinition'].format(stage=stage)
+    command['jobDefinition'] = job.format(stage=stage)
 
     # Set retry stragegy.
     command['retryStrategy']['attempts'] = retry
@@ -158,3 +158,18 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
 def parse_aggregationlayer(pk):
     return run_ecs_command(['parse_aggregationlayer', pk])
+
+
+def parse_s3_sentinel_1_inventory():
+    return run_ecs_command(['parse_s3_sentinel_1_inventory'], retry=1)
+
+
+def snap_terrain_correction(sentinel1tile_id):
+    return run_ecs_command(
+        ['snap_terrain_correction', sentinel1tile_id],
+        vcpus=2,
+        memory=8192,
+        retry=1,
+        queue='tesselo-{stage}-snap',
+        job='tesselo-{stage}-snap',
+    )
