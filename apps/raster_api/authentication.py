@@ -1,7 +1,7 @@
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
+from raster_api.const import COOKIE_AUTH_KEY, GET_QUERY_PARAMETER_AUTH_KEY
 from raster_api.models import ReadOnlyToken
 from raster_api.utils import expired
 
@@ -29,6 +29,17 @@ class QueryKeyAuthentication(ExpiringTokenAuthentication):
     def authenticate(self, request):
         # Retrieve token from query url.
         token = request.GET.get(GET_QUERY_PARAMETER_AUTH_KEY, None)
+        if token is None:
+            return
+        return self.authenticate_credentials(token)
+
+
+class CookieTokenAuthentication(ExpiringTokenAuthentication):
+    """
+    Cookie token authentication.
+    """
+    def authenticate(self, request):
+        token = request.COOKIES.get(COOKIE_AUTH_KEY)
         if token is None:
             return
         return self.authenticate_credentials(token)

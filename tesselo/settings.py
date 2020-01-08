@@ -113,7 +113,14 @@ if DEBUG:
 
 WSGI_APPLICATION = 'tesselo.wsgi.application'
 
-CORS_ORIGIN_ALLOW_ALL = True
+# CORS Settings
+CORS_ORIGIN_WHITELIST = [
+    "https://tesselo.com",
+    "https://staging.tesselo.com",
+    "https://dev.tesselo.com",
+    "http://localhost:8080",
+]
+CORS_ALLOW_CREDENTIALS = True
 
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
@@ -231,6 +238,7 @@ REST_FRAMEWORK = {
         'raster_api.permissions.IsReadOnly',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'raster_api.authentication.CookieTokenAuthentication',
         'raster_api.authentication.QueryKeyAuthentication',
         'raster_api.authentication.ExpiringTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
