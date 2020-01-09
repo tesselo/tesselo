@@ -22,11 +22,11 @@ from django.views.generic.base import TemplateView
 from tesselo.apiurls import apiurlpatterns
 
 urlpatterns = [
+    url(r'^accounts/', include('django.contrib.auth.urls')),
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False, permission_classes=[IsAdminUser])),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
     url(r'^sentinel/', include('sentinel.urls')),
-    url(r'^', include('django.contrib.auth.urls')),
     url(r'^app/', TemplateView.as_view(template_name='app.html')),
     url(r'^about$', TemplateView.as_view(template_name='about.html')),
     url(r'^spatial-insights-as-a-service$', TemplateView.as_view(template_name='spatial-insights-as-a-service.html')),

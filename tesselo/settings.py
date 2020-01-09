@@ -262,6 +262,7 @@ RASTER_PARSE_SINGLE_TASK = True
 RASTER_WORKDIR = os.environ.get('RASTER_WORKDIR', None)
 
 # Email settings.
+DEFAULT_FROM_EMAIL = 'no-reply@tesselo.com'
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
