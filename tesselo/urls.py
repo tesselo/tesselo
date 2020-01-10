@@ -26,13 +26,6 @@ urlpatterns = [
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False, permission_classes=[IsAdminUser])),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
-    url(r'^sentinel/', include('sentinel.urls')),
-    url(r'^app/', TemplateView.as_view(template_name='app.html')),
-    url(r'^about$', TemplateView.as_view(template_name='about.html')),
-    url(r'^spatial-insights-as-a-service$', TemplateView.as_view(template_name='spatial-insights-as-a-service.html')),
-    url(r'^solutions-for-sustainability$', TemplateView.as_view(template_name='solutions-for-sustainability.html')),
-    url(r'^terms$', TemplateView.as_view(template_name='terms.html')),
-    url(r'^$', TemplateView.as_view(template_name='index.html')),
 ]
 
 urlpatterns += apiurlpatterns
