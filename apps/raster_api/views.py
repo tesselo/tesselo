@@ -35,7 +35,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
-from raster_api.const import EXPIRING_TOKEN_LIFESPAN, NAIP_MIN_ZOOM
+from raster_api.const import COOKIE_AUTH_KEY, EXPIRING_TOKEN_LIFESPAN, NAIP_MIN_ZOOM
 from raster_api.exceptions import MissingZoomLevel
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.models import ReadOnlyToken
@@ -491,11 +491,26 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
             token.delete()
             token = Token.objects.create(user=user)
 
-        return Response({
+        # Compute expiration date.
+        expiration = token.created + EXPIRING_TOKEN_LIFESPAN
+
+        # Create reponse.
+        response = Response({
             'token': token.key,
-            'expires': token.created + EXPIRING_TOKEN_LIFESPAN,
+            'expires': expiration,
             'is_staff': user.is_staff,
         })
+
+        # Set token as cookie.
+        response.set_cookie(
+            COOKIE_AUTH_KEY,
+            token,
+            expires=expiration,
+            httponly=True,
+            domain=request.META['HTTP_HOST'],
+        )
+
+        return response
 
 
 class RemoveAuthToken(APIView):
@@ -506,8 +521,14 @@ class RemoveAuthToken(APIView):
     renderer_classes = (renderers.JSONRenderer,)
 
     def post(self, request, *args, **kwargs):
+        # Delete token from DB.
         Token.objects.filter(user=request.user).delete()
-        return Response({'logout': 'Successfully logged out.'})
+        # Create response
+        response = Response({'logout': 'Successfully logged out.'})
+        # Unset cookie.
+        response.delete_cookie(COOKIE_AUTH_KEY, domain=request.META['HTTP_HOST'])
+
+        return response
 
 
 def get_tile(prefix, bounds, scale):

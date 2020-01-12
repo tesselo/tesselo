@@ -18,7 +18,6 @@ from rest_framework.permissions import IsAdminUser
 
 from django.conf.urls import include, url
 from django.contrib.gis import admin
-from django.views.generic.base import TemplateView
 from tesselo.apiurls import apiurlpatterns
 
 urlpatterns = [

@@ -115,10 +115,11 @@ WSGI_APPLICATION = 'tesselo.wsgi.application'
 
 # CORS Settings
 CORS_ORIGIN_WHITELIST = [
-    "https://tesselo.com",
-    "https://staging.tesselo.com",
-    "https://dev.tesselo.com",
+    "https://app.tesselo.com",
+    "https://stagingapp.tesselo.com",
+    "https://devapp.tesselo.com",
     "http://localhost:8080",
+    "http://127.0.0.1:8080",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
