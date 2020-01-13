@@ -2,11 +2,11 @@ module.exports = {
   get_base_url: function(casper){
     const stage = casper.cli.get('stage')
     if ( stage == 'dev' || stage == 'staging') {
-      const url = 'https://' + stage + '.tesselo.com/'
+      const url = 'https://' + stage + 'api.tesselo.com/'
     } else if (stage == 'localhost') {
       const url = 'http://localhost/'
     } else {
-      const url = 'https://tesselo.com/'
+      const url = 'https://api.tesselo.com/'
     }
     casper.echo('Using ' + url)
     return url
