@@ -118,8 +118,8 @@ router.register(r'reportschedule', ReportScheduleViewSet, base_name='reportsched
 router.register(r'reportaggregation', ReportAggregationViewSet, base_name='reportaggregation')
 
 apiurlpatterns = [
-    url(r'^token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view())),
-    url(r'^token-logout/', RemoveAuthToken.as_view()),
+    url(r'^token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view()), name='api-token-auth'),
+    url(r'^token-logout/', RemoveAuthToken.as_view(), name='api-token-logout'),
     url(r'^wmts/', WMTSAPIView.as_view(), name='wmts-service'),
     url(r'^', include(router.urls)),
 ]

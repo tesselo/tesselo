@@ -141,8 +141,8 @@ class SentinelViewsTests(TestCase):
 
         # Invite lucille to the aggregation area and raster layers, now she can create the value counts.
         self.client.login(username='michael', password='bananastand')
-        self.client.get('/api/rasterlayer/{0}/invite/user/view/{1}'.format(rst.id, lucille.id))
-        self.client.get('/api/aggregationlayer/{0}/invite/user/view/{1}'.format(agglyr.id, lucille.id))
+        self.client.get('/rasterlayer/{0}/invite/user/view/{1}'.format(rst.id, lucille.id))
+        self.client.get('/aggregationlayer/{0}/invite/user/view/{1}'.format(agglyr.id, lucille.id))
         self.client.login(username='lucille', password='bananastand')
         response = self.client.post(url, json.dumps(dat), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

@@ -507,7 +507,7 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
             token,
             expires=expiration,
             httponly=True,
-            domain=request.META['HTTP_HOST'],
+            domain=request.META.get('HTTP_HOST', None),
         )
 
         return response
@@ -518,7 +518,7 @@ class RemoveAuthToken(APIView):
     Destroy the current token of the user by sending an authenticated POST
     request to this url.
     """
-    renderer_classes = (renderers.JSONRenderer,)
+    renderer_classes = (renderers.JSONRenderer, )
 
     def post(self, request, *args, **kwargs):
         # Delete token from DB.
@@ -526,7 +526,10 @@ class RemoveAuthToken(APIView):
         # Create response
         response = Response({'logout': 'Successfully logged out.'})
         # Unset cookie.
-        response.delete_cookie(COOKIE_AUTH_KEY, domain=request.META['HTTP_HOST'])
+        response.delete_cookie(
+            COOKIE_AUTH_KEY,
+            domain=request.META.get('HTTP_HOST', None),
+        )
 
         return response
 
