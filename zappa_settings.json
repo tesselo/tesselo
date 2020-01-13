@@ -33,7 +33,7 @@
       "DB_USER": "tesselo",
       "DB_NAME": "tesselo_staging"
     },
-    "domain": "staging.tesselo.com"
+    "domain": "stagingapi.tesselo.com"
   },
   "production": {
     "extends": "dev",
@@ -46,7 +46,7 @@
       "DB_USER": "tesselo",
       "DB_NAME": "tesselo_production"
     },
-    "domain": "tesselo.com",
+    "domain": "api.tesselo.com",
     "events": [
       {
         "function": "apps.sentinel.tasks.push_scheduled_composite_builds",
