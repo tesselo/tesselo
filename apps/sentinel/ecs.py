@@ -168,7 +168,7 @@ def snap_terrain_correction(sentinel1tile_id):
     return run_ecs_command(
         ['snap_terrain_correction', sentinel1tile_id],
         vcpus=2,
-        memory=8192,
+        memory=1024*14,
         retry=1,
         queue='tesselo-{stage}-snap',
         job='tesselo-{stage}-snap',
