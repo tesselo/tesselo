@@ -9,7 +9,9 @@ RUN curl -O http://step.esa.int/downloads/7.0/installers/esa-snap_sentinel_unix_
 RUN snap --nosplash --nogui --modules --update-all
 
 # Set gpt max memory.
-RUN sed -i -e 's/-Xmx10G/-Xmx14G/g' /usr/local/snap/bin/gpt.vmoptions
+# Try setting with gpt --diag
+# RUN sed -i -e 's/-Xmx10G/-Xmx14G/g' /usr/local/snap/bin/gpt.vmoptions
+RUN echo -Xmx13G > /usr/local/snap/bin/gpt.vmoptions
 
 # Link gpt so it can be used systemwide.
 RUN ln -s /usr/local/snap/bin/gpt /usr/bin/gpt
