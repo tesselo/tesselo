@@ -167,8 +167,8 @@ def parse_s3_sentinel_1_inventory():
 def snap_terrain_correction(sentinel1tile_id):
     return run_ecs_command(
         ['snap_terrain_correction', sentinel1tile_id],
-        vcpus=2,
-        memory=1024*14,
+        vcpus=4,
+        memory=1024 * 20,
         retry=1,
         queue='tesselo-{stage}-snap',
         job='tesselo-{stage}-snap',
