@@ -187,6 +187,8 @@ def snap_terrain_correction(sentinel1tile_id):
         tile.prefix,
         gpt_input_path,
     )
+    print('Disks before download')
+    subprocess.run('df -h', shell=True)
     subprocess.run(cmd_s3download, shell=True, check=True)
 
     # Apply graph.
@@ -196,12 +198,18 @@ def snap_terrain_correction(sentinel1tile_id):
         input=gpt_input_path,
         output=gpt_output_path,
     )
+    print('Disks before GPT')
+    subprocess.run('df -h', shell=True)
     subprocess.run(cmd_gpt, shell=True, check=True)
 
     # Remove original product to save disk space.
+    print('Disks before removing original')
+    subprocess.run('df -h', shell=True)
     shutil.rmtree(gpt_input_path)
 
     # Ingest the resulting rasters as tiles.
+    print('Disks before reprojecting into TIF files')
+    subprocess.run('df -h', shell=True)
     gpt_output_file_data_path = os.path.join(const.GPT_WORKDIR, '{}_gpt_out.data'.format(tile.product_name))
     for output_band_path in glob.glob(os.path.join(gpt_output_file_data_path, '*.img')):
         for band_key, name in const.BAND_CHOICES:
@@ -279,5 +287,8 @@ def snap_terrain_correction(sentinel1tile_id):
             except:
                 tile.write('Failed processing band {}. {}'.format(band_key, traceback.format_exc()), Sentinel1Tile.FAILED)
                 raise
+
+    print('Disks before process end')
+    subprocess.run('df -h', shell=True)
 
     tile.write('Finished processing band {}'.format(band_key), Sentinel1Tile.FINISHED)
