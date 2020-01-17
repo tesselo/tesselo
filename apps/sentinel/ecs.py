@@ -140,10 +140,6 @@ def build_predicted_pyramid(predicted_layer_id):
     return run_ecs_command(['build_predicted_pyramid', predicted_layer_id])
 
 
-def export_training_data(traininglayerexport_id):
-    return run_ecs_command(['export_training_data', traininglayerexport_id], vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
-
-
 def ingest_naip_manifest():
     return run_ecs_command(['ingest_naip_manifest'], retry=1)
 
@@ -170,6 +166,6 @@ def snap_terrain_correction(sentinel1tile_id):
         vcpus=4,
         memory=1024 * 20,
         retry=1,
-        queue='tesselo-{stage}-snap',
+        queue='tesselo-{stage}-snap-20GB',
         job='tesselo-{stage}-snap',
     )
