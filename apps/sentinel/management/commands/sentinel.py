@@ -1,8 +1,7 @@
 from raster_aggregation.tasks import aggregation_layer_parser
 
 from classify.tasks import (
-    build_predicted_pyramid, export_training_data, predict_sentinel_chunk, predict_sentinel_layer,
-    train_sentinel_classifier
+    build_predicted_pyramid, predict_sentinel_chunk, predict_sentinel_layer, train_sentinel_classifier
 )
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -30,7 +29,6 @@ class Command(BaseCommand):
         'predict_sentinel_layer': predict_sentinel_layer,
         'predict_sentinel_chunk': predict_sentinel_chunk,
         'build_predicted_pyramid': build_predicted_pyramid,
-        'export_training_data': export_training_data,
         'ingest_naip_manifest': ingest_naip_manifest,
         'push_scheduled_composite_builds': push_scheduled_composite_builds,
         'populate_report': populate_report,

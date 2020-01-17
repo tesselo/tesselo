@@ -21,7 +21,7 @@ from classify.const import (
     SENTINEL_PIXELTYPE, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME,
     ZOOM
 )
-from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayerExport
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk
 from classify.utils import RNNRobustScaler
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
@@ -68,6 +68,77 @@ def get_rasterlayer_ids(band_names, rasterlayer_lookup):
     return rasterlayer_ids
 
 
+def populate_training_matrix_sample(sample, is_regressor, categories, rasterlayer_lookup, target_type, all_touched, band_names):
+    X = numpy.empty(shape=(0, len(band_names)), dtype=SENTINEL_PIXELTYPE)
+    Y = numpy.empty(shape=(0, ), dtype=target_type)
+    # Track pixel IDs to allow merging different training matrices from
+    # different traininglayers.
+    PID = numpy.empty(shape=(0, ), dtype='int64')
+    SID = numpy.empty(shape=(0, ), dtype='int64')
+    # Check for consistency in training samples for dicrete datasets.
+    if not is_regressor:
+        if sample.category in categories:
+            if sample.value != categories[sample.category]:
+                raise ValueError(VALUE_CONFIG_ERROR_MSG)
+        else:
+            categories[sample.category] = sample.value if is_regressor else int(sample.value)
+    # Take rasterlayer lookup from the trainingsample if it was not provided as
+    # input.
+    if rasterlayer_lookup:
+        rasterlayer_lookup_sample = rasterlayer_lookup
+    elif sample.composite:
+        rasterlayer_lookup_sample = sample.composite.rasterlayer_lookup
+    else:
+        rasterlayer_lookup_sample = sample.sentineltile.rasterlayer_lookup
+    # Convert lookup to id list.
+    rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup_sample)
+    # Loop over index range for tiles intersecting with the sample geom.
+    idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
+    for tilex in range(idx[0], idx[2] + 1):
+        for tiley in range(idx[1], idx[3] + 1):
+            # Get stacked tile data for this tile.
+            data = get_classifier_data(rasterlayer_ids, ZOOM, tilex, tiley)
+            if data is None:
+                continue
+            # Create a target raster for the rasterization.
+            bounds = tile_bounds(tilex, tiley, ZOOM)
+            rast = GDALRaster(
+                {
+                    'width': WEB_MERCATOR_TILESIZE,
+                    'height': WEB_MERCATOR_TILESIZE,
+                    'srid': WEB_MERCATOR_SRID,
+                    'scale': [SCALE, -SCALE],
+                    'origin': [bounds[0], bounds[3]],
+                    'datatype': 1,
+                    'nr_of_bands': 1,
+                }
+            )
+            # Rasterize the sample area.
+            sample_rast = rasterize(sample.geom, rast, all_touched=all_touched)
+            # Create a selector boolean array from rasterized geometry.
+            sample_pixels = sample_rast.bands[0].data().ravel()
+            selector = sample_pixels == 1
+            # Create a constant array with sample value for all intersecting pixels.
+            sample_values = (sample.value * numpy.ones(sum(selector))).astype(target_type)
+            # Add sample values to dependent variable.
+            Y = numpy.hstack([sample_values, Y])
+            # Use selector to pick sample pixels over geom.
+            data = data[selector]
+            # Add explanatory variables to stack.
+            X = numpy.vstack([data, X])
+            # Compute pixel ids for this tile.
+            pid_from = (tiley * (2 ** ZOOM) + tilex) * WEB_MERCATOR_TILESIZE ** 2
+            pid_to = pid_from + WEB_MERCATOR_TILESIZE ** 2
+            pids = numpy.arange(pid_from, pid_to)
+            PID = numpy.hstack([pids[selector], PID])
+            # Make array with sample id for separating validation pixels at
+            # training sample level (instead of pixel level).
+            sample_id_values = (sample.id * numpy.ones(sum(selector))).astype('int64')
+            SID = numpy.hstack([sample_id_values, SID])
+
+    return Y, X, PID, SID
+
+
 def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None, is_regressor=False, all_touched=True):
     # Determine sample value datatype.
     target_type = REGRESSION_DATATYPE if is_regressor else CLASSIFICATION_DATATYPE
@@ -78,66 +149,28 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
     # Track pixel IDs to allow merging different training matrices from
     # different traininglayers.
     PID = numpy.empty(shape=(0, ), dtype='int64')
+    SID = numpy.empty(shape=(0, ), dtype='int64')
     # Dictionary for categories or statistics.
     categories = {}
     # Loop through training tiles to build training set.
     for sample in traininglayer.trainingsample_set.all():
-        # Check for consistency in training samples for dicrete datasets.
-        if not is_regressor:
-            if sample.category in categories:
-                if sample.value != categories[sample.category]:
-                    raise ValueError(VALUE_CONFIG_ERROR_MSG)
-            else:
-                categories[sample.category] = sample.value if is_regressor else int(sample.value)
-        # Take rasterlayer lookup from the trainingsample if it was not
-        # provided as input.
-        if rasterlayer_lookup:
-            rasterlayer_lookup_sample = rasterlayer_lookup
-        elif sample.composite:
-            rasterlayer_lookup_sample = sample.composite.rasterlayer_lookup
-        else:
-            rasterlayer_lookup_sample = sample.sentineltile.rasterlayer_lookup
-        # Convert lookup to id list.
-        rasterlayer_ids = get_rasterlayer_ids(band_names, rasterlayer_lookup_sample)
-        # Loop over index range for tiles intersecting with the sample geom.
-        idx = tile_index_range(sample.geom.transform(3857, clone=True).extent, ZOOM)
-        for tilex in range(idx[0], idx[2] + 1):
-            for tiley in range(idx[1], idx[3] + 1):
-                # Get stacked tile data for this tile.
-                data = get_classifier_data(rasterlayer_ids, ZOOM, tilex, tiley)
-                if data is None:
-                    continue
-                # Create a target raster for the rasterization.
-                bounds = tile_bounds(tilex, tiley, ZOOM)
-                rast = GDALRaster(
-                    {
-                        'width': WEB_MERCATOR_TILESIZE,
-                        'height': WEB_MERCATOR_TILESIZE,
-                        'srid': WEB_MERCATOR_SRID,
-                        'scale': [SCALE, -SCALE],
-                        'origin': [bounds[0], bounds[3]],
-                        'datatype': 1,
-                        'nr_of_bands': 1,
-                    }
-                )
-                # Rasterize the sample area.
-                sample_rast = rasterize(sample.geom, rast, all_touched=all_touched)
-                # Create a selector boolean array from rasterized geometry.
-                sample_pixels = sample_rast.bands[0].data().ravel()
-                selector = sample_pixels == 1
-                # Create a constant array with sample value for all intersecting pixels.
-                sample_values = (sample.value * numpy.ones(sum(selector))).astype(target_type)
-                # Add sample values to dependent variable.
-                Y = numpy.hstack([sample_values, Y])
-                # Use selector to pick sample pixels over geom.
-                data = data[selector]
-                # Add explanatory variables to stack.
-                X = numpy.vstack([data, X])
-                # Compute pixel ids for this tile.
-                pid_from = (tiley * (2 ** ZOOM) + tilex) * WEB_MERCATOR_TILESIZE ** 2
-                pid_to = pid_from + WEB_MERCATOR_TILESIZE ** 2
-                pids = numpy.arange(pid_from, pid_to)
-                PID = numpy.hstack([pids[selector], PID])
+        Yh, Xh, PIDh, SIDh = populate_training_matrix_sample(
+            sample,
+            is_regressor,
+            categories,
+            rasterlayer_lookup,
+            target_type,
+            all_touched,
+            band_names,
+        )
+        # Add sample values to dependent variable.
+        Y = numpy.hstack([Yh, Y])
+        # Add explanatory variables to stack.
+        X = numpy.vstack([Xh, X])
+        # Add pixel ids for this tile to stack.
+        PID = numpy.hstack([PIDh, PID])
+        # Add sample IDs to stack.
+        SID = numpy.hstack([SIDh, SID])
 
     if is_regressor:
         # For continuous values, track statistics instead of a legend.
@@ -153,7 +186,7 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
 
     traininglayer.save()
 
-    return X, Y, PID
+    return X, Y, PID, SID
 
 
 def get_keras_model(keras_model_json, optimizer, loss=None, metrics=None, loss_weights=None, sample_weight_mode=None, weighted_metrics=None, target_tensors=None):
@@ -177,7 +210,7 @@ def populate_training_matrix_time(classifier):
         classifier.write('Collecting training data for "{}"'.format(composite))
         rasterlayer_lookup = composite.rasterlayer_lookup
         try:
-            X, Y, PID = populate_training_matrix(
+            X, Y, PID, SID = populate_training_matrix(
                 classifier.traininglayer,
                 classifier.band_names.split(','),
                 rasterlayer_lookup,
@@ -246,7 +279,7 @@ def train_sentinel_classifier(classifier_id):
         action = 'Collected'
         # Check if the classifier has a custom data source specified.
         if classifier.composites.count():
-            X, Y, PID = populate_training_matrix_time(classifier)
+            X, Y, PID, SID = populate_training_matrix_time(classifier)
         else:
             if classifier.sentineltile:
                 rasterlayer_lookup = classifier.sentineltile.rasterlayer_lookup
@@ -254,7 +287,7 @@ def train_sentinel_classifier(classifier_id):
                 rasterlayer_lookup = None
 
             try:
-                X, Y, PID = populate_training_matrix(
+                X, Y, PID, SID = populate_training_matrix(
                     classifier.traininglayer,
                     classifier.band_names.split(','),
                     rasterlayer_lookup,
@@ -568,34 +601,3 @@ def build_predicted_pyramid(predicted_layer_id):
 
     # Push report job.
     push_reports('predictedlayer', pred.id)
-
-
-def export_training_data(traininglayerexport_id, bands_to_export='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B10,B11,B12'):
-    """
-    Export training data to a file over a date range for monthly composites.
-    """
-    # Get export object.
-    exp = TrainingLayerExport.objects.get(pk=traininglayerexport_id)
-    exp.write('Starting training data export.')
-
-    # Get rasterlayer lookup if source was provided.
-    rasterlayer_lookup = None
-    if exp.composite:
-        rasterlayer_lookup = exp.composite.rasterlayer_lookup
-    elif exp.sentineltile:
-        rasterlayer_lookup = exp.sentineltile.rasterlayer_lookup
-
-    # Export all bands.
-    bands_to_export = bands_to_export.split(',')
-
-    # Get training data for this composite as floating point data.
-    exp.write('Extracting pixel values.')
-    X, Y, PID = populate_training_matrix(exp.traininglayer, bands_to_export, rasterlayer_lookup, is_regressor=exp.traininglayer.continuous)
-
-    # Save table in export instance.
-    exp.write('Uploading file to remote storage.')
-    with io.BytesIO() as fl:
-        numpy.savez_compressed(fl, X=X, Y=Y, PID=PID)
-        name = 'traininglayer-export-{}.npz'.format(exp.id)
-        exp.data.save(name, File(fl))
-    exp.write('Finished exporting training data.')

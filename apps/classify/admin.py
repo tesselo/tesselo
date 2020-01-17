@@ -1,8 +1,7 @@
 from guardian.admin import GuardedModelAdmin
 
 from classify.models import (
-    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport,
-    TrainingSample
+    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
 )
 from django import forms
 from django.contrib.gis import admin
@@ -110,19 +109,8 @@ class PredictedLayerChunkAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started predicting chunk.')
 
 
-class TrainingLayerExportAdmin(GuardedModelAdmin):
-    raw_id_fields = ('sentineltile', 'composite', )
-    actions = ['export_layer', ]
-
-    def export_layer(self, request, queryset):
-        for exp in queryset:
-            ecs.export_training_data(exp.id)
-        self.message_user(request, 'Exporting layers.')
-
-
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
-admin.site.register(TrainingLayerExport, TrainingLayerExportAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
 admin.site.register(PredictedLayerChunk, PredictedLayerChunkAdmin)

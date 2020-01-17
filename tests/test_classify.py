@@ -20,10 +20,8 @@ from tests.mock_functions import (
 )
 
 from classify.const import FITTING_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
-from classify.models import (
-    Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingLayerExport, TrainingSample
-)
-from classify.tasks import export_training_data, predict_sentinel_layer, train_sentinel_classifier
+from classify.models import Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
+from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from classify.utils import RNNRobustScaler
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -497,29 +495,6 @@ class SentinelClassifierTest(TestCase):
         self.clf.refresh_from_db()
         self.assertEqual(self.clf.status, Classifier.FAILED)
         self.assertIn('Classifiers require discrete input datasets.', self.clf.log)
-
-    def test_training_export(self):
-        # Get rasterlayer id.
-        band_names = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B8A', 'RL{}'.format(self.composite.compositeband_set.first().rasterlayer_id)]
-        band_names = ','.join(band_names)
-        # Create export task.
-        exp = TrainingLayerExport.objects.create(traininglayer=self.clf.traininglayer)
-        # Run export task.
-        export_training_data(exp.id, band_names)
-        # Check export file has been created.
-        exp.refresh_from_db()
-        dat = exp.data.read()
-        self.assertTrue(len(dat) > 500)
-
-        exp = TrainingLayerExport.objects.create(traininglayer=self.clf.traininglayer)
-        self.clf.traininglayer.continuous = True
-        self.clf.traininglayer.save()
-        # Run export task.
-        export_training_data(exp.id, band_names)
-        # Check export file has been created.
-        exp.refresh_from_db()
-        dat = exp.data.read()
-        self.assertTrue(len(dat) > 500)
 
     @skip('Cloud view is outdated.')
     def test_cloud_view(self):
