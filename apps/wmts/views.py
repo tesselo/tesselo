@@ -27,7 +27,7 @@ WMTS_BASE_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
         {layers}
         {mat}
         </Contents>
-        <ServiceMetadataURL xlink:href="https://tesselo.com/api/wmts/"/>
+        <ServiceMetadataURL xlink:href="https://api.tesselo.com/wmts/"/>
 </Capabilities>
 '''.strip()
 
@@ -97,7 +97,7 @@ class WMTSAPIView(APIView):
         # Get url base from request.
         host = request.get_host()
         protocol = 'http' if host == 'localhost' else 'https'
-        urlbase = '{}://{}/api/'.format(protocol, host)
+        urlbase = '{}://{}/'.format(protocol, host)
 
         # Get relevant objects for this user.
         formulas = get_objects_for_user(request.user, 'formulary.view_formula', with_superuser=False)
