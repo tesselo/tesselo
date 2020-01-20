@@ -136,7 +136,7 @@ def populate_training_matrix_sample(sample, is_regressor, categories, rasterlaye
             sample_id_values = (sample.id * numpy.ones(sum(selector))).astype('int64')
             SID = numpy.hstack([sample_id_values, SID])
 
-    return Y, X, PID, SID
+    return X, Y, PID, SID
 
 
 def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None, is_regressor=False, all_touched=True):
@@ -154,7 +154,7 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
     categories = {}
     # Loop through training tiles to build training set.
     for sample in traininglayer.trainingsample_set.all():
-        Yh, Xh, PIDh, SIDh = populate_training_matrix_sample(
+        Xh, Yh, PIDh, SIDh = populate_training_matrix_sample(
             sample,
             is_regressor,
             categories,
@@ -206,44 +206,73 @@ def populate_training_matrix_time(classifier):
     Xs = None
     Ys = None
     PIDs = None
-    for composite in classifier.composites.all():
-        classifier.write('Collecting training data for "{}"'.format(composite))
-        rasterlayer_lookup = composite.rasterlayer_lookup
-        try:
-            X, Y, PID, SID = populate_training_matrix(
-                classifier.traininglayer,
-                classifier.band_names.split(','),
-                rasterlayer_lookup,
-                classifier.is_regressor,
-                classifier.training_all_touched,
-            )
-        except ValueError:
-            classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
-            raise
-
-        if Xs is None:
-            Xs = X
-            Ys = Y
-            PIDs = PID
+    SIDs = None
+    # Dictionary for categories or statistics.
+    categories = {}
+    # Determine sample value datatype.
+    target_type = REGRESSION_DATATYPE if classifier.is_regressor else CLASSIFICATION_DATATYPE
+    # Get all classifier composites.
+    composites = classifier.composites.all().order_by('-min_date')
+    for index, sample in enumerate(classifier.traininglayer.trainingsample_set.all()):
+        if index % 50 == 0:
+            classifier.write('Collected data for {} training samples.'.format(index))
+        # Check if all composites should be included in training (fixed end
+        # date for all samples) or a flexible selection shall be used based on
+        # the sample date stamp.
+        if classifier.look_back_steps > 0:
+            # Get first composite after the min date.
+            composite_after = composites.filter(min_date__gte=sample.date)[0]
+            # Select the last N steps before the.
+            composite_before = composites.exclude(min_date__gte=sample.date)[:(classifier.look_back_steps - 1)]
+            sample_composites = list(composite_before) + [composite_after]
         else:
-            Ys = numpy.hstack([Ys, Y])
-            Xs = numpy.vstack([Xs, X])
-            PIDs = numpy.hstack([PIDs, PID])
+            # Select all available composites.
+            sample_composites = composites
+
+        for composite in sample_composites:
+            try:
+                X, Y, PID, SID = populate_training_matrix_sample(
+                    sample,
+                    classifier.is_regressor,
+                    categories,
+                    composite.rasterlayer_lookup,
+                    target_type,
+                    classifier.training_all_touched,
+                    classifier.band_names.split(','),
+                )
+            except ValueError:
+                classifier.write(VALUE_CONFIG_ERROR_MSG, classifier.FAILED)
+                raise
+
+            if Xs is None:
+                Xs = X
+                Ys = Y
+                PIDs = PID
+                SIDs = SID
+            else:
+                Ys = numpy.hstack([Ys, Y])
+                Xs = numpy.vstack([Xs, X])
+                PIDs = numpy.hstack([PIDs, PID])
+                SIDs = numpy.hstack([SIDs, SID])
+
     # Combine data
-    all_data = numpy.vstack([PIDs, Ys, Xs.T]).T
+    all_data = numpy.vstack([PIDs, SIDs, Ys, Xs.T]).T
     # Sort by PID
     all_data = all_data[PIDs.argsort()]
-    # Split into groups.
+    # Split into groups to achieve keras tensor shapes.
     try:
         all_data = numpy.array(numpy.vsplit(all_data, numpy.unique(PIDs).shape[0]))
     except ValueError:
         classifier.write(TRAINING_DATA_SPLIT_ERROR_MSG, classifier.FAILED)
         raise
-    # Extract individual arrays.
+
+    # Extract and return individual arrays.
     PIDs = all_data[:, 0, 0]
-    Ys = all_data[:, 0, 1]
-    Xs = all_data[:, :, 2:]
-    return Xs, Ys, PIDs
+    SIDs = all_data[:, 0, 1]
+    Ys = all_data[:, 0, 2]
+    Xs = all_data[:, :, 3:]
+
+    return Xs, Ys, PIDs, SIDs
 
 
 def train_sentinel_classifier(classifier_id):
@@ -305,7 +334,7 @@ def train_sentinel_classifier(classifier_id):
 
         # Store collected pixels.
         with TemporaryFile() as fl:
-            numpy.savez_compressed(fl, X=X, Y=Y, PID=PID)
+            numpy.savez_compressed(fl, X=X, Y=Y, PID=PID, SID=SID)
             name = 'classifier-collected-pixels-{}.npz'.format(classifier.id)
             classifier.collected_pixels.save(name, File(fl))
 

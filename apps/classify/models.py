@@ -40,6 +40,7 @@ class TrainingSample(models.Model):
     geom = models.PolygonField()
     category = models.CharField(max_length=100, default='', blank=True)
     value = models.FloatField()
+    date = models.DateField(null=True, blank=True)
     traininglayer = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -106,6 +107,7 @@ class Classifier(models.Model):
     collected_pixels = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
+    look_back_steps = models.PositiveIntegerField(default=0, help_text='Number of composite steps back from sample date should be included in training and predicting data collection. Ignored if zero.')
     band_names = models.CharField(max_length=500, default='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12', help_text='Comma-separated list of band names and layer ids. If an integer value is added, it is assumed to be a rasterlayer id that should be included in the export.')
     composites = models.ManyToManyField(Composite, blank=True, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.', related_name='old_composite')
     sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')

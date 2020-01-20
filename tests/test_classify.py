@@ -29,7 +29,6 @@ from django.contrib.gis.gdal import OGRGeometry
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild, SentinelTile
-from sentinel.tasks import composite_build_callback, sync_sentinel_bucket_utm_zone
 
 
 @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
@@ -84,13 +83,11 @@ class SentinelClassifierTest(TestCase):
             min_date='2016-01-01',
             max_date='2016-01-31',
         )
-        cls.build = CompositeBuild.objects.create(
-            composite=cls.composite,
-            aggregationlayer=cls.agglayer,
-        )
-        cls.build2 = CompositeBuild.objects.create(
-            composite=cls.composite2,
-            aggregationlayer=cls.agglayer,
+        cls.composite3 = Composite.objects.create(
+            name='The World 2',
+            official=True,
+            min_date='2015-11-01',
+            max_date='2015-11-30',
         )
 
         cls.traininglayer = TrainingLayer.objects.create(name='Test Training Layer')
@@ -101,6 +98,7 @@ class SentinelClassifierTest(TestCase):
             value=2,
             traininglayer=cls.traininglayer,
             composite=cls.composite,
+            date='2015-12-10',
         )
         cls.shadow = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844787 -459865, 11844797 -459865, 11844797 -459805, 11844787 -459805, 11844787 -459865))',
@@ -108,6 +106,7 @@ class SentinelClassifierTest(TestCase):
             value=1,
             traininglayer=cls.traininglayer,
             composite=cls.composite,
+            date='2015-12-12',
         )
         cls.cloudfree = TrainingSample.objects.create(
             geom='SRID=3857;POLYGON((11844887 -459865, 11844897 -459865, 11844897 -459805, 11844887 -459805, 11844887 -459865))',
@@ -115,6 +114,7 @@ class SentinelClassifierTest(TestCase):
             value=0,
             traininglayer=cls.traininglayer,
             composite=cls.composite,
+            date='2015-12-25',
         )
 
         cls.clf = Classifier.objects.create(
@@ -135,11 +135,6 @@ class SentinelClassifierTest(TestCase):
         cls.cloudfree.composite = cls.composite
         cls.cloudfree.save()
 
-        # Build data.
-        sync_sentinel_bucket_utm_zone(1)
-        composite_build_callback(cls.build.id, initiate=True, rebuild=True)
-        composite_build_callback(cls.build.id, initiate=False)
-
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -147,11 +142,6 @@ class SentinelClassifierTest(TestCase):
             shutil.rmtree(settings.MEDIA_ROOT)
         except:
             pass
-
-    def _get_data(self):
-        sync_sentinel_bucket_utm_zone(1)
-        composite_build_callback(self.build.id, initiate=True, rebuild=True)
-        composite_build_callback(self.build.id, initiate=False)
 
     def _get_files(self, path):
         files = []
@@ -412,8 +402,6 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(len(files), 1)
 
     def test_keras_classifier_time(self):
-        composite_build_callback(self.build2.id, initiate=True, rebuild=True)
-        composite_build_callback(self.build2.id, initiate=False)
         self.clf.algorithm = Classifier.KERAS
         self.clf.status = self.clf.UNPROCESSED
         # expected input data shape: (batch_size, timesteps, data_dim)
@@ -430,13 +418,33 @@ class SentinelClassifierTest(TestCase):
             "optimizer": "rmsprop",
             "loss": "categorical_crossentropy",
             "metrics": ["accuracy"],
-            "epochs": 10,
+            "epochs": 5,
             "batch_size": 5,
             "verbose": 0
         }'''
         self.clf.save()
+
+        # Associate composites to classifier.
         self.clf.composites.add(self.composite)
         self.clf.composites.add(self.composite2)
+        self.clf.composites.add(self.composite3)
+
+        # Test the look back feature.
+        self.clf.look_back_steps = 2
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertIn('Finished training algorithm', self.clf.log)
+        self.assertEqual(Classifier.FINISHED, self.clf.status)
+
+        # Reset look back feature and clasifier.
+        self.clf.collected_pixels.delete()
+        self.clf.look_back_steps = 0
+        self.clf.log = ''
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+
+        # Train classifier in full archive mode.
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
         self.assertTrue(isinstance(self.clf.clf, Pipeline))
@@ -444,6 +452,7 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
+
         # Test prediction.
         pred = PredictedLayer.objects.create(
             classifier=self.clf,
@@ -451,9 +460,11 @@ class SentinelClassifierTest(TestCase):
         )
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
+
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
         self.assertTrue(len(files), 1)
+
         # Test wrong configuration error.
         model = Sequential()
         model.add(GRU(32, return_sequences=True, return_state=False))  # returns a sequence of vectors of dimension 32
