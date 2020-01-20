@@ -60,7 +60,7 @@ class WMTSViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(title, response.content.decode())
         self.assertIn(
-            'https://testserver/api/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+            'https://testserver/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
                 self.formula.id,
                 self.composite.id,
             ),
@@ -76,7 +76,7 @@ class WMTSViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(title, response.content.decode())
         self.assertIn(
-            'https://testserver/api/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+            'https://testserver/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
                 self.formula_rgb.id,
                 self.composite.id,
             ),
@@ -109,7 +109,7 @@ class WMTSViewTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(title, response.content.decode())
         self.assertIn(
-            'https://testserver/api/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+            'https://testserver/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
                 self.formula.id,
                 self.composite.id,
             ),
@@ -126,7 +126,7 @@ class WMTSViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn(
-            'https://testserver/api/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
+            'https://testserver/formula/{}/composite/{}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png'.format(
                 self.formula.id,
                 self.composite_future.id,
             ),
