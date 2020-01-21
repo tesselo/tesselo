@@ -214,7 +214,7 @@ def populate_training_matrix_time(classifier):
     # Get all classifier composites.
     composites = classifier.composites.all().order_by('-min_date')
     for index, sample in enumerate(classifier.traininglayer.trainingsample_set.all()):
-        if index % 50 == 0:
+        if index % 50 == 0 and index > 0:
             classifier.write('Collected data for {} training samples.'.format(index))
         # Check if all composites should be included in training (fixed end
         # date for all samples) or a flexible selection shall be used based on
@@ -257,11 +257,14 @@ def populate_training_matrix_time(classifier):
 
     # Combine data
     all_data = numpy.vstack([PIDs, SIDs, Ys, Xs.T]).T
-    # Sort by PID
-    all_data = all_data[PIDs.argsort()]
-    # Split into groups to achieve keras tensor shapes.
+    # Sort by PID and SID
+    all_data = all_data[numpy.lexsort((PIDs, SIDs))]
+    # Count number of unique pixel IDs (PIDs) over each sample (SIDs).
+    nr_of_observations = len(Ys) / len(sample_composites)
+    # Split into groups by unique pixel/sampmle combos to convert data into
+    # keras ready tensor shapes.
     try:
-        all_data = numpy.array(numpy.vsplit(all_data, numpy.unique(PIDs).shape[0]))
+        all_data = numpy.array(numpy.vsplit(all_data, nr_of_observations))
     except ValueError:
         classifier.write(TRAINING_DATA_SPLIT_ERROR_MSG, classifier.FAILED)
         raise
@@ -279,7 +282,6 @@ def train_sentinel_classifier(classifier_id):
     """
     Trains a classifier based on the registered tiles and sample data.
     """
-
     # Get classifier model.
     classifier = Classifier.objects.get(pk=classifier_id)
 
@@ -290,8 +292,15 @@ def train_sentinel_classifier(classifier_id):
     elif not classifier.is_regressor and classifier.traininglayer.continuous:
         classifier.write('Classifiers require discrete input datasets.', classifier.FAILED)
         return
+    elif classifier.look_back_steps > 0 and classifier.composites.count() < classifier.look_back_steps:
+        classifier.write('Wrong look back configuration. Specify at least {} composites to look back to, found only {}.'.format(classifier.look_back_steps, classifier.composites.count()))
     else:
-        classifier.write('Started collecting training data', classifier.PROCESSING)
+        method = 'single layer'
+        if classifier.look_back_steps > 0:
+            method = 'limited look back'
+        elif classifier.composites.count():
+            method = 'all available composites'
+        classifier.write('Started collecting training data with {} input method'.format(method), classifier.PROCESSING)
 
     # Remove current accuracy matrix.
     if hasattr(classifier, 'classifieraccuracy'):
@@ -299,13 +308,13 @@ def train_sentinel_classifier(classifier_id):
 
     # Check if pixels have already been collected.
     if classifier.collected_pixels.name:
-        action = 'Loaded from file'
+        classifier.write('Found existing collected training data, loading from file.')
         loaded = numpy.load(classifier.collected_pixels)
         X = loaded['X']
         Y = loaded['Y']
         PID = loaded['PID']
     else:
-        action = 'Collected'
+        classifier.write('Collecting pixels from composites data.')
         # Check if the classifier has a custom data source specified.
         if classifier.composites.count():
             X, Y, PID, SID = populate_training_matrix_time(classifier)
@@ -338,10 +347,24 @@ def train_sentinel_classifier(classifier_id):
             name = 'classifier-collected-pixels-{}.npz'.format(classifier.id)
             classifier.collected_pixels.save(name, File(fl))
 
-    classifier.write('{} {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(action, len(Y), X.shape))
+    classifier.write('Found {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(len(Y), X.shape))
 
-    # Constructing split data.
-    selector = numpy.random.random(len(Y)) >= classifier.splitfraction
+    # Set fixed random seed if required.
+    if classifier.split_random_seed is not None:
+        numpy.random.seed(classifier.split_random_seed)
+
+    # Constructing split data based on sample.
+    if classifier.split_by_polygon:
+        unique_ids = numpy.unique(SID)
+        selected_ids = numpy.random.choice(
+            unique_ids,
+            int(len(unique_ids) * (1 - classifier.splitfraction)),
+            replace=False,
+        )
+        selector = numpy.in1d(SID, selected_ids)
+        print(selector.shape, SID.shape)
+    else:
+        selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
     clf_args = classifier.clf_args_dict
 

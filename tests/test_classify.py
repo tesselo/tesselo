@@ -28,7 +28,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from sentinel.models import Composite, CompositeBuild, SentinelTile
+from sentinel.models import Composite, SentinelTile
 
 
 @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
@@ -80,8 +80,8 @@ class SentinelClassifierTest(TestCase):
         cls.composite2 = Composite.objects.create(
             name='The World 2',
             official=True,
-            min_date='2016-01-01',
-            max_date='2016-01-31',
+            min_date='2015-10-01',
+            max_date='2015-10-31',
         )
         cls.composite3 = Composite.objects.create(
             name='The World 2',
@@ -92,48 +92,39 @@ class SentinelClassifierTest(TestCase):
 
         cls.traininglayer = TrainingLayer.objects.create(name='Test Training Layer')
 
-        cls.cloud = TrainingSample.objects.create(
-            geom='SRID=3857;POLYGON((11844687 -459865, 11844697 -459865, 11844697 -459805, 11844687 -459805, 11844687 -459865))',
-            category='Cloud',
-            value=2,
-            traininglayer=cls.traininglayer,
-            composite=cls.composite,
-            date='2015-12-10',
-        )
-        cls.shadow = TrainingSample.objects.create(
-            geom='SRID=3857;POLYGON((11844787 -459865, 11844797 -459865, 11844797 -459805, 11844787 -459805, 11844787 -459865))',
-            category='Shadow',
-            value=1,
-            traininglayer=cls.traininglayer,
-            composite=cls.composite,
-            date='2015-12-12',
-        )
-        cls.cloudfree = TrainingSample.objects.create(
-            geom='SRID=3857;POLYGON((11844887 -459865, 11844897 -459865, 11844897 -459805, 11844887 -459805, 11844887 -459865))',
-            category='Cloud free',
-            value=0,
-            traininglayer=cls.traininglayer,
-            composite=cls.composite,
-            date='2015-12-25',
-        )
+        counter = 0
+        STEP_SIZE = 25
+        for i in range(10):
+            for index, name in enumerate(['Cloud', 'Shadow', 'Cloud free']):
+                dat = [
+                    11844687 + STEP_SIZE * counter,
+                    -459865 + STEP_SIZE * counter,
+                    11844687 + STEP_SIZE * (counter + 1),
+                    -459865 + STEP_SIZE * counter,
+                    11844687 + STEP_SIZE * (counter + 1),
+                    -459865 + STEP_SIZE * (counter + 1),
+                    11844687 + STEP_SIZE * counter,
+                    -459865 + STEP_SIZE * (counter + 1),
+                    11844687 + STEP_SIZE * counter,
+                    -459865 + STEP_SIZE * counter,
+                ]
+                TrainingSample.objects.create(
+                    geom='SRID=3857;POLYGON(({} {}, {} {}, {} {}, {} {}, {} {}))'.format(*dat),
+                    category=name,
+                    value=index + 1,
+                    traininglayer=cls.traininglayer,
+                    composite=cls.composite,
+                    date='2015-{}-1{}'.format(numpy.random.choice([10, 11], 1)[0], i),
+                )
+                counter += 1
 
         cls.clf = Classifier.objects.create(
             name='Clouds',
             algorithm=Classifier.RF,
             traininglayer=cls.traininglayer,
             splitfraction=0.4,
+            training_all_touched=False,
         )
-
-        cls.clf.traininglayer.trainingsample_set.add(cls.cloud)
-        cls.clf.traininglayer.trainingsample_set.add(cls.shadow)
-        cls.clf.traininglayer.trainingsample_set.add(cls.cloudfree)
-
-        cls.cloud.composite = cls.composite
-        cls.cloud.save()
-        cls.shadow.composite = cls.composite
-        cls.shadow.save()
-        cls.cloudfree.composite = cls.composite
-        cls.cloudfree.save()
 
     @classmethod
     def tearDownClass(cls):
@@ -192,7 +183,7 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(self.clf.status, self.clf.FINISHED)
 
         # Assert legend was created.
-        self.assertEqual(self.clf.traininglayer.legend, {'0': 'Cloud free', '1': 'Shadow', '2': 'Cloud'})
+        self.assertEqual(self.clf.traininglayer.legend, {'1': 'Cloud', '2': 'Shadow', '3': 'Cloud free'})
 
         # Assert accuracy statistic has been calculated.
         self.assertNotEqual(self.clf.classifieraccuracy.accuracy_score, 0)
@@ -251,9 +242,9 @@ class SentinelClassifierTest(TestCase):
         self.assertNotEqual(self.clf.classifieraccuracy.rsquared, 0)
 
         # Error due to broken input data.
-        self.cloud.pk = None
-        self.cloud.value = 99
-        self.cloud.save()
+        sample = TrainingSample.objects.first()
+        sample.value = 99
+        sample.save()
         self.clf.traininglayer.continuous = False
         self.clf.traininglayer.save()
         self.clf.algorithm = Classifier.RF
@@ -418,8 +409,8 @@ class SentinelClassifierTest(TestCase):
             "optimizer": "rmsprop",
             "loss": "categorical_crossentropy",
             "metrics": ["accuracy"],
-            "epochs": 5,
-            "batch_size": 5,
+            "epochs": 3,
+            "batch_size": 50,
             "verbose": 0
         }'''
         self.clf.save()
@@ -431,6 +422,9 @@ class SentinelClassifierTest(TestCase):
 
         # Test the look back feature.
         self.clf.look_back_steps = 2
+        self.clf.splitfraction = 0.35
+        self.clf.split_random_seed = 23
+        self.clf.split_by_polygon = True
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf.refresh_from_db()
@@ -440,6 +434,7 @@ class SentinelClassifierTest(TestCase):
         # Reset look back feature and clasifier.
         self.clf.collected_pixels.delete()
         self.clf.look_back_steps = 0
+        self.clf.split_by_polygon = False
         self.clf.log = ''
         self.clf.status = self.clf.UNPROCESSED
         self.clf.save()
@@ -466,14 +461,10 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(len(files), 1)
 
         # Test wrong configuration error.
-        model = Sequential()
-        model.add(GRU(32, return_sequences=True, return_state=False))  # returns a sequence of vectors of dimension 32
-        model.add(BatchNormalization())
-        model.add(GRU(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-        model.add(BatchNormalization())
-        model.add(GRU(32))  # return a single vector of dimension 32
-        model.add(BatchNormalization())
-        model.add(Dense(2, activation='softmax'))  # Nr of nodes should be 3
+        model.layers.pop()  # Remove last layer.
+        # Replace last layer with a broken one, where the number of nodes is 2,
+        # and the correct nr of nodes is 3.
+        model.add(Dense(2, activation='softmax'))
         self.clf.keras_model_json = model.to_json()
         self.clf.save()
         with self.assertRaises(Exception):
@@ -561,7 +552,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
-        self.assertIn('Loaded from file', self.clf.log)
+        self.assertIn('loading from file', self.clf.log)
         loaded = numpy.load(self.clf.collected_pixels)
         X = loaded['X']
         Y = loaded['Y']
