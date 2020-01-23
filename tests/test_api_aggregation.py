@@ -50,7 +50,6 @@ class AggregationViewTests(TestCase):
                 'results': [
                     {
                         'id': self.agglayer.id,
-                        'aggregationareas': [self.aggarea.id],
                         'description': 'An arrested testfile.',
                         'extent': [4.999999999999991, 4.9999999999999805, 44.999999999999986, 40.00000000000001],
                         'max_zoom_level': 18,
