@@ -306,9 +306,8 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
         model = AggregationLayer
         fields = (
             'id', 'name', 'description', 'min_zoom_level', 'max_zoom_level',
-            'nr_of_areas', 'simplification_tolerance', 'aggregationareas',
-            'extent', 'shapefile', 'name_column', 'simplification_tolerance',
-            'parse_log', 'status',
+            'nr_of_areas', 'simplification_tolerance', 'extent', 'shapefile',
+            'name_column', 'simplification_tolerance', 'parse_log', 'status',
         )
         read_only_fields = ('nr_of_areas', 'status', 'parse_log', 'extent', )
 
