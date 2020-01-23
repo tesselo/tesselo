@@ -136,7 +136,7 @@ def populate_training_matrix_sample(sample, is_regressor, categories, rasterlaye
             sample_id_values = (sample.id * numpy.ones(sum(selector))).astype('int64')
             SID = numpy.hstack([sample_id_values, SID])
 
-    return X, Y, PID, SID
+    return X, Y, PID, SID, categories
 
 
 def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None, is_regressor=False, all_touched=True):
@@ -154,7 +154,7 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
     categories = {}
     # Loop through training tiles to build training set.
     for sample in traininglayer.trainingsample_set.all():
-        Xh, Yh, PIDh, SIDh = populate_training_matrix_sample(
+        Xh, Yh, PIDh, SIDh, categories = populate_training_matrix_sample(
             sample,
             is_regressor,
             categories,
@@ -172,6 +172,15 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
         # Add sample IDs to stack.
         SID = numpy.hstack([SIDh, SID])
 
+    save_traininglayer_legend(traininglayer, categories, Y, is_regressor)
+
+    return X, Y, PID, SID
+
+
+def save_traininglayer_legend(traininglayer, categories, Y, is_regressor):
+    """
+    Update traininglayer legend using categories from training matrix collection.
+    """
     if is_regressor:
         # For continuous values, track statistics instead of a legend.
         traininglayer.legend = {
@@ -185,8 +194,6 @@ def populate_training_matrix(traininglayer, band_names, rasterlayer_lookup=None,
         traininglayer.legend = {str(int(val)): key for key, val in categories.items()}
 
     traininglayer.save()
-
-    return X, Y, PID, SID
 
 
 def get_keras_model(keras_model_json, optimizer, loss=None, metrics=None, loss_weights=None, sample_weight_mode=None, weighted_metrics=None, target_tensors=None):
@@ -231,7 +238,7 @@ def populate_training_matrix_time(classifier):
 
         for composite in sample_composites:
             try:
-                X, Y, PID, SID = populate_training_matrix_sample(
+                X, Y, PID, SID, categories = populate_training_matrix_sample(
                     sample,
                     classifier.is_regressor,
                     categories,
@@ -274,6 +281,8 @@ def populate_training_matrix_time(classifier):
     SIDs = all_data[:, 0, 1]
     Ys = all_data[:, 0, 2]
     Xs = all_data[:, :, 3:]
+
+    save_traininglayer_legend(traininglayer, categories, Ys, is_regressor)
 
     return Xs, Ys, PIDs, SIDs
 
@@ -506,6 +515,14 @@ def predict_sentinel_layer(predicted_layer_id):
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
     pred.predictedlayerchunk_set.all().delete()
     pred.write('Started predicting layer.', pred.PROCESSING)
+
+    if pred.composites.count() < (pred.classifier.look_back_steps + 1):
+        pred.write('Insufficient number of composites. The classifier needs {} composites (look_back_steps + 1), found only {}.'.format(
+            pred.classifier.look_back_steps + 1,
+            pred.composites.count(),
+            pred.FAILED,
+        ))
+        return
 
     # Get tile range for compositeband or sentineltile for this prediction.
     tiles = get_prediction_index_range(pred)
