@@ -282,7 +282,7 @@ def populate_training_matrix_time(classifier):
     Ys = all_data[:, 0, 2]
     Xs = all_data[:, :, 3:]
 
-    save_traininglayer_legend(traininglayer, categories, Ys, is_regressor)
+    save_traininglayer_legend(classifier.traininglayer, categories, Ys, classifier.is_regressor)
 
     return Xs, Ys, PIDs, SIDs
 
@@ -371,7 +371,6 @@ def train_sentinel_classifier(classifier_id):
             replace=False,
         )
         selector = numpy.in1d(SID, selected_ids)
-        print(selector.shape, SID.shape)
     else:
         selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
@@ -515,14 +514,6 @@ def predict_sentinel_layer(predicted_layer_id):
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
     pred.predictedlayerchunk_set.all().delete()
     pred.write('Started predicting layer.', pred.PROCESSING)
-
-    if pred.composites.count() < (pred.classifier.look_back_steps + 1):
-        pred.write('Insufficient number of composites. The classifier needs {} composites (look_back_steps + 1), found only {}.'.format(
-            pred.classifier.look_back_steps + 1,
-            pred.composites.count(),
-            pred.FAILED,
-        ))
-        return
 
     # Get tile range for compositeband or sentineltile for this prediction.
     tiles = get_prediction_index_range(pred)
