@@ -6,6 +6,7 @@ from tempfile import TemporaryFile
 
 import h5py
 import numpy
+from keras.layers import Dense
 from keras.models import model_from_json
 from keras.wrappers.scikit_learn import KerasClassifier
 from raster.rasterize import rasterize
@@ -16,10 +17,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 from classify.const import (
-    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG, PIPELINE_ESTIMATOR_NAME,
-    PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE,
-    SENTINEL_PIXELTYPE, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME,
-    ZOOM
+    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG,
+    KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
+    KERAS_MIN_ONE_LAYER_ERROR_MSG, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG,
+    REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE, TRAINING_DATA_SPLIT_ERROR_MSG,
+    VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk
 from classify.utils import RNNRobustScaler
@@ -384,6 +386,24 @@ def train_sentinel_classifier(classifier_id):
                 'loss': 'categorical_crossentropy',
                 'metrics': ['accuracy'],
             }
+
+        # Instantiate keras classifier and cross check with training data specs.
+        try:
+            clf = model_from_json(classifier.keras_model_json)
+        except:
+            classifier.write(KERAS_JSON_MALFORMED_ERROR_MSG, Classifier.FAILED)
+            return
+        if not len(clf.layers):
+            classifier.write(KERAS_MIN_ONE_LAYER_ERROR_MSG, Classifier.FAILED)
+            return
+        elif not isinstance(clf.layers[-1], Dense):
+            classifier.write(KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, Classifier.FAILED)
+            return
+        elif not classifier.is_regressor and clf.layers[-1].units != len(numpy.unique(Y)):
+            classifier.write(KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL.format(clf.layers[-1].units, len(numpy.unique(Y))), Classifier.FAILED)
+            return
+
+        # Instantiate sklean wrapper for keras classifier.
         clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **clf_args)
     else:
         # Instantiate sklearn classifier.

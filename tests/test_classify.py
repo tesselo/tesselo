@@ -19,7 +19,10 @@ from tests.mock_functions import (
     point_to_test_file
 )
 
-from classify.const import FITTING_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
+from classify.const import (
+    KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
+    KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
+)
 from classify.models import Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
 from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from classify.utils import RNNRobustScaler
@@ -448,23 +451,47 @@ class SentinelClassifierTest(TestCase):
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
         self.assertTrue(len(files), 1)
 
-        # Test wrong configuration error.
-        model.layers.pop()  # Remove last layer.
+        # Test wrong configuration errors.
+        self.clf.keras_model_json = '{"this": "is not a keras model json"}'
+        self.clf.log = ''
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertIn(KERAS_JSON_MALFORMED_ERROR_MSG, self.clf.log)
+        self.assertEqual(self.clf.status, Classifier.FAILED)
+
+        # No-layers model.
+        error_model = Sequential()
+        self.clf.keras_model_json = error_model.to_json()
+        self.clf.log = ''
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertIn(KERAS_MIN_ONE_LAYER_ERROR_MSG, self.clf.log)
+        self.assertEqual(self.clf.status, Classifier.FAILED)
+
+        # Last not dense error.
+        error_model = Sequential()
+        error_model.add(GRU(32, return_sequences=True, return_state=False))
+        self.clf.keras_model_json = error_model.to_json()
+        self.clf.log = ''
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertIn(KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, self.clf.log)
+        self.assertEqual(self.clf.status, Classifier.FAILED)
+
         # Replace last layer with a broken one, where the number of nodes is 2,
         # and the correct nr of nodes is 3.
+        model.layers.pop()  # Remove last layer.
         model.add(Dense(2, activation='softmax'))
         self.clf.keras_model_json = model.to_json()
+        self.clf.log = ''
         self.clf.save()
-        with self.assertRaises(Exception):
-            train_sentinel_classifier(self.clf.id)
+        train_sentinel_classifier(self.clf.id)
         self.clf.refresh_from_db()
-        self.assertEqual(self.clf.status, self.clf.FAILED)
-        self.assertIn(FITTING_ERROR_MSG, self.clf.log)
-        # Expected full message: "Error when checking target: expected dense_2
-        # to have shape (2,) but got array with shape (3,)"
-        self.assertIn('Error when checking target', self.clf.log)
         self.assertIn(
-            'to have shape (2,) but got array with shape (3,)',
+            KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL.format(2, 3),
             self.clf.log,
         )
 
