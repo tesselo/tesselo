@@ -313,13 +313,16 @@ class AggregationLayerSerializer(AggregationLayerSerializerOriginal):
         read_only_fields = ('nr_of_areas', 'status', 'parse_log', 'extent', )
 
     def get_extent(self, obj):
-        extent = obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
-        # If this aggregation area does not have any geometries, return global
-        # view as placeholder.
-        if not extent:
-            return -180, -90, 180, 90
-        extent = Polygon.from_bbox(extent)
-        extent.srid = WEB_MERCATOR_SRID
+        if obj.extent:
+            extent = obj.extent
+        else:
+            extent = obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
+            # If this aggregation area does not have any geometries, return global
+            # view as placeholder.
+            if not extent:
+                return -180, -90, 180, 90
+            extent = Polygon.from_bbox(extent)
+            extent.srid = WEB_MERCATOR_SRID
         extent.transform(4326)
         return extent.extent
 

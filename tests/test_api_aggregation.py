@@ -83,3 +83,27 @@ class AggregationViewTests(TestCase):
         assign_perm('view_aggregationlayer', self.usr, self.agglayer)
         response = self.client.get(url + '?aggregationlayer=1234')
         self.assertEqual(response.status_code, 404)
+
+    def test_update_extent(self):
+        # Current extent is inexistent.
+        self.assertIsNone(self.agglayer.extent)
+        # Add new area.
+        AggregationArea.objects.create(
+            name='Testarea new extent',
+            aggregationlayer=self.agglayer,
+            geom='SRID=4326;MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),((15 4, 40 10, 10 20, 5 10, 15 4)))',
+        )
+        # Update extent url.
+        url = reverse('aggregationlayer-detail', kwargs={'pk': self.agglayer.id})
+        # Allow user to change extent.
+        assign_perm('view_aggregationlayer', self.usr, self.agglayer)
+        assign_perm('add_aggregationlayer', self.usr, self.agglayer)
+        # Request extent update.
+        response = self.client.post(url + '/update_extent')
+        self.assertEqual(response.status_code, 200)
+        # Extent has been updated.
+        self.agglayer.refresh_from_db()
+        self.assertEqual(
+            self.agglayer.extent.extent,
+            (556597.453966367, 445640.109656027, 5009377.08569731, 4865942.27950318),
+        )

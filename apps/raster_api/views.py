@@ -28,7 +28,9 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelV
 
 from django.conf import settings
 from django.contrib.auth.models import Group, User
+from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
+from django.contrib.gis.geos import Polygon
 from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponse
@@ -330,6 +332,22 @@ class AggregationLayerViewSet(PermissionsModelViewSet):
             aggregation_layer_parser_async(pk)
 
         return Response('Triggered parsing for aggregation layer {}'.format(pk))
+
+    @action(detail=True, methods=['post'])
+    def update_extent(self, request, pk=None):
+        """
+        Update extent of this aggregation layer.
+        """
+        obj = self.get_object()
+        extent = obj.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
+        if extent:
+            obj.extent = Polygon.from_bbox(extent)
+            obj.save()
+            msg = 'Updated extent of aggregationlayer.'
+        else:
+            msg = 'No polygons found, did not update extent.'
+
+        return Response(msg)
 
 
 class AggregationLayerVectorTilesViewSet(AggregationLayerVectorTilesViewSetOrig, PermissionsModelViewSet):
