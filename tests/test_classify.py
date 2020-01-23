@@ -94,7 +94,7 @@ class SentinelClassifierTest(TestCase):
 
         counter = 0
         STEP_SIZE = 25
-        for i in range(10):
+        for i in range(5):
             for index, name in enumerate(['Cloud', 'Shadow', 'Cloud free']):
                 dat = [
                     11844687 + STEP_SIZE * counter,
@@ -122,7 +122,7 @@ class SentinelClassifierTest(TestCase):
             name='Clouds',
             algorithm=Classifier.RF,
             traininglayer=cls.traininglayer,
-            splitfraction=0.4,
+            splitfraction=0.2,
             training_all_touched=False,
         )
 
