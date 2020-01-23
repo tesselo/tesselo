@@ -9,7 +9,7 @@ const creds = setup.get_creds(casper);
 
 const has_creds = creds.username && creds.password;
 
-casper.test.begin('Tesselo API is up and running', has_creds ? 3 : 0 , function suite(test) {
+casper.test.begin('Tesselo API is up and running', has_creds ? 4 : 1 , function suite(test) {
 
     casper.start(setup.get_base_url(casper) + 'api-auth/login/?next=/');
 
