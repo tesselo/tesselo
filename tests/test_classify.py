@@ -259,18 +259,6 @@ class SentinelClassifierTest(TestCase):
             self.clf.refresh_from_db()
             self.assertEqual(self.clf.status, Classifier.FAILED)
 
-    @skip('This test setup does not populate the sentineltiles yet.')
-    def test_classifier_prediction_sentineltile(self):
-        pred = PredictedLayer.objects.create(
-            sentineltile=SentinelTile.objects.first(),
-            classifier=self.clf,
-        )
-        self.assertEqual(pred.rasterlayer.rastertile_set.count(), 0)
-        train_sentinel_classifier(self.clf.id)
-        predict_sentinel_layer(pred.id)
-        pred.refresh_from_db()
-        self.assertTrue(pred.rasterlayer.rastertile_set.count() > 0)
-
     def test_classifier_prediction_composite_aggregationlayer(self):
         train_sentinel_classifier(self.clf.id)
         # Test error if no aggregationlayer was specified.
