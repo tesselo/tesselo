@@ -324,6 +324,7 @@ def train_sentinel_classifier(classifier_id):
         X = loaded['X']
         Y = loaded['Y']
         PID = loaded['PID']
+        SID = loaded['SID']
     else:
         classifier.write('Collecting pixels from composites data.')
         # Check if the classifier has a custom data source specified.
