@@ -22,7 +22,7 @@ class TrainingSampleSerializer(ModelSerializer):
         model = TrainingSample
         fields = (
             'id', 'sentineltile', 'composite', 'geom', 'category', 'value',
-            'traininglayer',
+            'traininglayer', 'date',
         )
 
 
@@ -45,7 +45,8 @@ class ClassifierSerializer(ModelSerializer):
             'id', 'name', 'algorithm', 'traininglayer', 'legend', 'status',
             'log', 'classifieraccuracy', 'splitfraction', 'band_names',
             'composites', 'sentineltile', 'keras_model_json', 'clf_args',
-            'needs_large_instance',
+            'needs_large_instance', 'training_all_touched', 'look_back_steps',
+            'split_by_polygon', 'split_random_seed',
         )
         read_only_fields = (
             'status', 'log', 'legend', 'classifieraccuracy', 'sentineltile',
