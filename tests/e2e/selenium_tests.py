@@ -18,6 +18,13 @@ class TestTesseloAPI(unittest.TestCase):
         self.browser.get('https://api.tesselo.com/api-auth/login/')
         self.assertEqual('Django REST framework', self.browser.title)
 
+    def testAPINothAuthenticated(self):
+        self.browser.get('https://api.tesselo.com/.json')
+        self.assertEqual(
+            '{"detail":"Authentication credentials were not provided."}',
+            self.browser.find_element_by_tag_name('pre').text,
+        )
+
     @unittest.skipUnless('TEST_USER' in os.environ, 'Login test requires creds.')
     def testLogin(self):
 
