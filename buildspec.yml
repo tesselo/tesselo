@@ -4,11 +4,11 @@ phases:
   install:
     commands:
       - apt-get update
-      - echo Installing casperjs for e2e testing...
-      - curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-      - apt-get install -y nodejs
-      - npm install -g phantomjs@2.1.1 casperjs@1.1.4
-      - echo Installing postgis for local testing...
+      - echo Installing chromium and python3 pip for selenium e2e testing
+      - apt-get install -y chromium-browser python3-pip
+      - echo Installing selenium for e2e testing
+      - pip3 install selenium
+      - echo Installing postgis for local testing
       - apt-get install -y software-properties-common wget
       - add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main"
       - wget -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -39,5 +39,5 @@ phases:
       - docker push 595064993071.dkr.ecr.eu-west-1.amazonaws.com/tesselo:$STAGE
       - docker tag tesselo-worker-snap:latest 595064993071.dkr.ecr.eu-west-1.amazonaws.com/tesselo:$STAGE-snap
       - docker push 595064993071.dkr.ecr.eu-west-1.amazonaws.com/tesselo:$STAGE-snap
-      - echo Running e2e casperjs tests...
-      - casperjs test --stage=$STAGE --username=$TEST_USER --password=$TEST_PASSWORD tests/e2e/tests
+      - echo Running e2e selenium tests...
+      - python3 tests/e2e/selenium_tests.py
