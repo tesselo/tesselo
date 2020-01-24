@@ -12,6 +12,7 @@ class TestTesseloAPI(unittest.TestCase):
     def setUp(self):
         options = Options()
         options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
         self.browser = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', options=options)
 
     def testLoginTitle(self):
