@@ -266,9 +266,9 @@ class SentinelClassifierTest(TestCase):
         train_sentinel_classifier(self.clf.id)
         # Test error if no aggregationlayer was specified.
         pred = PredictedLayer.objects.create(
-            composite=self.composite,
             classifier=self.clf,
         )
+        pred.composites.add(self.composite)
         with self.assertRaisesMessage(ValueError, PREDICTION_CONFIG_ERROR_MSG):
             predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
@@ -326,10 +326,10 @@ class SentinelClassifierTest(TestCase):
         self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
         # Test prediction.
         pred = PredictedLayer.objects.create(
-            composite=self.composite,
             classifier=self.clf,
             aggregationlayer=self.agglayer,
         )
+        pred.composites.add(self.composite)
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.
@@ -373,10 +373,10 @@ class SentinelClassifierTest(TestCase):
 
         # Test prediction.
         pred = PredictedLayer.objects.create(
-            composite=self.composite,
             classifier=self.clf,
             aggregationlayer=self.agglayer,
         )
+        pred.composites.add(self.composite)
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.

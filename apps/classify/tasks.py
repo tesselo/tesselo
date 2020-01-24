@@ -538,6 +538,16 @@ def predict_sentinel_layer(predicted_layer_id):
     pred.predictedlayerchunk_set.all().delete()
     pred.write('Started predicting layer.', pred.PROCESSING)
 
+    # Check consistency of composite input with required lenght from classifier.
+    composite_count = pred.composites.count()
+    if composite_count > 1 and pred.classifier.look_back_steps > 0 and composite_count != pred.classifier.look_back_steps + 1:
+        msg = 'Layer configuration error. Number of input composites is not consistent with classifier. Found {} composites, expected {}.'
+        pred.write(
+            msg.format(composite_count, pred.classifier.look_back_steps + 1),
+            pred.FAILED,
+        )
+        return
+
     # Get tile range for compositeband or sentineltile for this prediction.
     tiles = get_prediction_index_range(pred)
 
@@ -584,14 +594,19 @@ def predict_sentinel_chunk(chunk_id):
     # Get band names for data matrix construction.
     band_names = chunk.predictedlayer.classifier.band_names.split(',')
     # Get rasterlayer ids.
-    is_rnn = False
-    if chunk.predictedlayer.classifier.composites.count() > 1:
+    composite_count = chunk.predictedlayer.composites.count()
+    if chunk.predictedlayer.sentineltile:
+        is_rnn = False
+        rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
+    elif composite_count == 0:
         is_rnn = True
         rasterlayer_lookup = [composite.rasterlayer_lookup for composite in chunk.predictedlayer.classifier.composites.all()]
-    elif chunk.predictedlayer.composite_id:
+    elif composite_count == 1:
+        is_rnn = False
         rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
-    else:
-        rasterlayer_lookup = chunk.predictedlayer.sentineltile.rasterlayer_lookup
+    elif composite_count > 1:
+        is_rnn = True
+        rasterlayer_lookup = [composite.rasterlayer_lookup for composite in chunk.predictedlayer.composites.all()]
     # Predict tiles over this chunk's range.
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
 

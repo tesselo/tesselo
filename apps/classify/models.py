@@ -197,7 +197,7 @@ class PredictedLayer(models.Model):
     )
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
-    composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
+    composites = models.ManyToManyField(Composite)
     aggregationlayer = models.ForeignKey(AggregationLayer, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
@@ -207,8 +207,8 @@ class PredictedLayer(models.Model):
     def __str__(self):
         if self.classifier and self.classifier.is_keras:
             using = ''
-        elif self.composite:
-            using = 'using {}'.format(self.composite.name)
+        elif self.composites.count():
+            using = 'using {} composites'.format(self.composites.count())
         elif self.sentineltile:
             using = 'using {}'.format(self.sentineltile)
         else:
@@ -227,10 +227,9 @@ class PredictedLayer(models.Model):
         if not hasattr(self, 'rasterlayer'):
             # Create rasterlayer if it does not exist.
             self.rasterlayer = RasterLayer.objects.create(
-                name='Predicted layer CLF {0} {1} {2}'.format(
+                name='PredictedLayer {0} CLF {1}'.format(
+                    self.id,
                     self.classifier_id,
-                    'WL' if self.composite else 'ST',
-                    self.composite_id if self.composite else self.sentineltile_id,
                 ),
                 datatype=RasterLayer.CATEGORICAL,
                 max_zoom=ZOOM_LEVEL_10M,

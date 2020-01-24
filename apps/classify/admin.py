@@ -87,7 +87,7 @@ class ClassifierAdmin(GuardedModelAdmin):
 
 
 class PredictedLayerAdmin(GuardedModelAdmin):
-    raw_id_fields = ('composite', 'sentineltile', 'rasterlayer', )
+    raw_id_fields = ('sentineltile', 'rasterlayer', )
     actions = ['predict_layer', ]
 
     def predict_layer(self, request, queryset):
