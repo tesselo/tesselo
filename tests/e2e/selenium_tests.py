@@ -12,7 +12,7 @@ class TestTesseloAPI(unittest.TestCase):
     def setUp(self):
         options = Options()
         options.add_argument('--headless')
-        self.browser = webdriver.Chrome(options=options)
+        self.browser = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', options=options)
 
     def testLoginTitle(self):
         self.browser.get('https://api.tesselo.com/api-auth/login/')

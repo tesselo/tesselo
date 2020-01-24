@@ -5,9 +5,9 @@ phases:
     commands:
       - apt-get update
       - echo Installing chromium and python3 pip for selenium e2e testing
-      - apt-get install -y chromium-browser python3-pip
+      - apt-get install -y python3-pip chromium-browser chromium-chromedriver
       - echo Installing selenium for e2e testing
-      - pip3 install selenium
+      - pip3 install --upgrade --ignore-installed selenium urllib3
       - echo Installing postgis for local testing
       - apt-get install -y software-properties-common wget
       - add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main"
