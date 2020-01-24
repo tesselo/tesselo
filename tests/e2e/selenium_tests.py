@@ -14,13 +14,20 @@ class TestTesseloAPI(unittest.TestCase):
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         self.browser = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', options=options)
+        # Set appropriate api endpoint.
+        self.stage = os.environ.get('STAGE')
+        if self.stage == 'production':
+            api_prefix = ''
+        else:
+            api_prefix = self.stage
+        self.api = 'https://{}api.tesselo.com/'.format(api_prefix)
 
     def testLoginTitle(self):
-        self.browser.get('https://api.tesselo.com/api-auth/login/')
+        self.browser.get('{}api-auth/login/'.format(self.api))
         self.assertEqual('Django REST framework', self.browser.title)
 
     def testAPINothAuthenticated(self):
-        self.browser.get('https://api.tesselo.com/.json')
+        self.browser.get('{}.json'.format(self.api))
         self.assertEqual(
             '{"detail":"Authentication credentials were not provided."}',
             self.browser.find_element_by_tag_name('pre').text,
@@ -29,7 +36,7 @@ class TestTesseloAPI(unittest.TestCase):
     @unittest.skipUnless('TEST_USER' in os.environ, 'Login test requires creds.')
     def testLogin(self):
 
-        self.browser.get('https://stagingapi.tesselo.com/api-auth/login/')
+        self.browser.get('{}api-auth/login/'.format(self.api))
 
         usrname = self.browser.find_element_by_css_selector('#id_username')
         usrname.send_keys(os.environ.get('TEST_USER'))
