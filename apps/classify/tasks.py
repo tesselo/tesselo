@@ -221,9 +221,9 @@ def populate_training_matrix_time(classifier):
     # Determine sample value datatype.
     target_type = REGRESSION_DATATYPE if classifier.is_regressor else CLASSIFICATION_DATATYPE
     # Get all classifier composites.
-    composites = classifier.composites.all().order_by('-min_date')
+    composites = classifier.composites.all().order_by('min_date')
     for index, sample in enumerate(classifier.traininglayer.trainingsample_set.all()):
-        if index % 50 == 0 and index > 0:
+        if index % 250 == 0 and index > 0:
             classifier.write('Collected data for {} training samples.'.format(index))
         # Check if all composites should be included in training (fixed end
         # date for all samples) or a flexible selection shall be used based on
@@ -232,8 +232,13 @@ def populate_training_matrix_time(classifier):
             # Get first composite after the min date.
             composite_after = composites.filter(min_date__gte=sample.date)[0]
             # Select the last N steps before the.
-            composite_before = composites.exclude(min_date__gte=sample.date)[:(classifier.look_back_steps - 1)]
-            sample_composites = list(composite_before) + [composite_after]
+            if classifier.look_back_steps > 1:
+                composites_before = composites.order_by('-min_date').exclude(min_date__gte=sample.date)[:(classifier.look_back_steps - 1)]
+                composites_before = reversed(list(composites_before))
+            else:
+                composites_before = []
+            # Combine the "last after date" and "N before date" composite lists.
+            sample_composites = list(composites_before) + [composite_after]
         else:
             # Select all available composites.
             sample_composites = composites
@@ -603,13 +608,14 @@ def predict_sentinel_chunk(chunk_id):
         rasterlayer_lookup = [composite.rasterlayer_lookup for composite in chunk.predictedlayer.classifier.composites.all()]
     elif composite_count == 1:
         is_rnn = False
-        rasterlayer_lookup = chunk.predictedlayer.composite.rasterlayer_lookup
+        rasterlayer_lookup = chunk.predictedlayer.composites.first().rasterlayer_lookup
     elif composite_count > 1:
+        # We have previously ensured that this predicted layer has the right
+        # number of composites to do the "look-back"
         is_rnn = True
         rasterlayer_lookup = [composite.rasterlayer_lookup for composite in chunk.predictedlayer.composites.all()]
     # Predict tiles over this chunk's range.
     for tilex, tiley, tilez in list(tiles)[chunk.from_index:chunk.to_index]:
-
         if is_rnn:
             data = []
             for lookup in rasterlayer_lookup:

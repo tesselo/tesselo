@@ -277,9 +277,9 @@ class SentinelClassifierTest(TestCase):
         # Test with aggregationlayer argument.
         pred = PredictedLayer.objects.create(
             aggregationlayer=self.agglayer,
-            composite=self.composite,
             classifier=self.clf,
         )
+        pred.composites.add(self.composite)
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
         # Tiles have been created.
