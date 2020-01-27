@@ -5,14 +5,17 @@ from django.db import migrations
 def forward(apps, schema_editor):
     PredictedLayer = apps.get_model("classify", "PredictedLayer")
     for lyr in PredictedLayer.objects.all():
-        lyr.composites.add(lyr.composite)
+        if lyr.composite:
+            lyr.composites.add(lyr.composite)
 
 
 def backward(apps, schema_editor):
     PredictedLayer = apps.get_model("classify", "PredictedLayer")
     for lyr in PredictedLayer.objects.all():
-        lyr.composite = lyr.composites.first()
-        lyr.save()
+        composite = lyr.composites.first()
+        if composite:
+            lyr.composite = composite
+            lyr.save()
 
 
 class Migration(migrations.Migration):
