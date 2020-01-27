@@ -66,7 +66,7 @@ class PredictedLayerSerializer(ModelSerializer):
     class Meta:
         model = PredictedLayer
         fields = (
-            'id', 'classifier', 'sentineltile', 'composite', 'rasterlayer',
+            'id', 'classifier', 'sentineltile', 'composites', 'rasterlayer',
             'log', 'chunks_count', 'chunks_done', 'classifier_name',
             'source_name', 'status', 'aggregationlayer', 'classifier_type',
             'aggregationlayer_name', 'legend',
@@ -87,8 +87,8 @@ class PredictedLayerSerializer(ModelSerializer):
         return ''
 
     def get_source_name(self, obj):
-        if obj.composite:
-            return obj.composite.name
+        if obj.composites.count():
+            return '{} composites'.format(obj.composites.count())
         elif obj.sentineltile:
             return obj.sentineltile.collected.date()
         else:

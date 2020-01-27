@@ -24,11 +24,11 @@ class RasterLegendViewTests(TestCase):
         url = reverse('predictedlayer-list')
         classifier = Classifier.objects.create(name='Classifier')
         composite = Composite.objects.create(name='Composite', min_date='2000-01-01', max_date='2000-03-31')
-        response = self.client.post(url, json.dumps({'name': 'Predictedlayer', 'classifier': classifier.id, 'composite': composite.id}), format='json', content_type='application/json')
+        response = self.client.post(url, json.dumps({'name': 'Predictedlayer', 'classifier': classifier.id, 'composites': [composite.id]}), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         result = json.loads(response.content.decode())
         self.assertEqual(result['classifier'], classifier.id)
-        self.assertEqual(result['composite'], composite.id)
+        self.assertEqual(result['composites'], [composite.id])
         # The user has permission to see the newly created predicted.
         response = self.client.get(url)
         result = json.loads(response.content.decode())

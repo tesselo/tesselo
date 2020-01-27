@@ -42,7 +42,8 @@ class WMTSViewTests(TestCase):
             max_date='3001-01-31',
         )
 
-        self.pred = PredictedLayer.objects.create(composite=self.composite)
+        self.pred = PredictedLayer.objects.create()
+        self.pred.composites.add(self.composite)
 
         self.url = reverse('wmts-service')
 
