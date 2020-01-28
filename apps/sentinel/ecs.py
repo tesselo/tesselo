@@ -166,6 +166,6 @@ def snap_terrain_correction(sentinel1tile_id):
         vcpus=4,
         memory=1024 * 20,
         retry=1,
-        queue='tesselo-{stage}-snap-20GB',
+        queue='tesselo-{stage}-snap',
         job='tesselo-{stage}-snap',
     )
