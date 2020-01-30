@@ -21,9 +21,9 @@ from django.contrib.gis import admin
 from tesselo.apiurls import apiurlpatterns
 
 urlpatterns = [
-    url(r'^accounts/', include('django.contrib.auth.urls')),
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False, permission_classes=[IsAdminUser])),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^accounts/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^accounts/', include('django.contrib.auth.urls')),
     url(r'^admin/', admin.site.urls),
 ]
 

@@ -1,0 +1,22 @@
+{% extends "rest_framework/login_base.html" %}
+
+{% block title%}Tesselo REST API{% endblock title %}
+
+{% block bootstrap_theme %}
+
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/lumen/bootstrap.min.css"/>
+
+    <style>
+    @font-face {
+      font-family: 'Glyphicons Halflings';
+      src: url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.eot');
+      src: url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.woff2') format('woff2'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.woff') format('woff'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.ttf') format('truetype'),
+           url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts//glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+    }
+    </style>
+{% endblock %}
+
+{% block branding %}<h3 style="margin: 0 0 20px;">Tesselo REST API</h3>{% endblock %}
