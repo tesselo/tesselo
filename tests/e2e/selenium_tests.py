@@ -23,8 +23,8 @@ class TestTesseloAPI(unittest.TestCase):
         self.api = 'https://{}api.tesselo.com/'.format(api_prefix)
 
     def testLoginTitle(self):
-        self.browser.get('{}api-auth/login/'.format(self.api))
-        self.assertEqual('Django REST framework', self.browser.title)
+        self.browser.get('{}accounts/login/'.format(self.api))
+        self.assertEqual('Tesselo REST API', self.browser.title)
 
     def testAPINothAuthenticated(self):
         self.browser.get('{}.json'.format(self.api))
@@ -36,7 +36,7 @@ class TestTesseloAPI(unittest.TestCase):
     @unittest.skipUnless('TEST_USER' in os.environ, 'Login test requires creds.')
     def testLogin(self):
 
-        self.browser.get('{}api-auth/login/'.format(self.api))
+        self.browser.get('{}accounts/login/'.format(self.api))
 
         usrname = self.browser.find_element_by_css_selector('#id_username')
         usrname.send_keys(os.environ.get('TEST_USER'))
