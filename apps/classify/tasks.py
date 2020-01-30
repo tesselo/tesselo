@@ -308,10 +308,8 @@ def train_sentinel_classifier(classifier_id):
     elif not classifier.is_regressor and classifier.traininglayer.continuous:
         classifier.write('Classifiers require discrete input datasets.', classifier.FAILED)
         return
-    elif classifier.look_back_steps > 0 and classifier.composites.count() < (classifier.look_back_steps + 1):
-        # Minimal number is look_back_steps + 1 because we have to look back N
-        # steps, and also include the "after the event" step.
-        classifier.write('Wrong look back configuration. Specify at least {} composites to look back to, found only {}.'.format(classifier.look_back_steps + 1, classifier.composites.count()))
+    elif classifier.look_back_steps > 0 and classifier.composites.count() < (classifier.look_back_steps):
+        classifier.write('Wrong look back configuration. Specify at least {} composites to look back to, found only {}.'.format(classifier.look_back_steps, classifier.composites.count()))
     else:
         method = 'single layer'
         if classifier.look_back_steps > 0:
@@ -545,10 +543,10 @@ def predict_sentinel_layer(predicted_layer_id):
 
     # Check consistency of composite input with required lenght from classifier.
     composite_count = pred.composites.count()
-    if composite_count > 1 and pred.classifier.look_back_steps > 0 and composite_count != pred.classifier.look_back_steps + 1:
+    if composite_count > 1 and pred.classifier.look_back_steps > 0 and composite_count != pred.classifier.look_back_steps:
         msg = 'Layer configuration error. Number of input composites is not consistent with classifier. Found {} composites, expected {}.'
         pred.write(
-            msg.format(composite_count, pred.classifier.look_back_steps + 1),
+            msg.format(composite_count, pred.classifier.look_back_steps),
             pred.FAILED,
         )
         return
