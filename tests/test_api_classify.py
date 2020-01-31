@@ -1,5 +1,6 @@
 import json
 
+from raster_aggregation.models import AggregationLayer
 from rest_framework import status
 
 from classify.models import Classifier
@@ -44,3 +45,20 @@ class RasterLegendViewTests(TestCase):
         response = self.client.get(url)
         result = json.loads(response.content.decode())
         self.assertEqual(result['count'], 0)
+
+    def test_filter_predictedlayer(self):
+        url = reverse('predictedlayer-list')
+        classifier = Classifier.objects.create(name='Classifier')
+        composite = Composite.objects.create(name='Composite', min_date='2000-01-01', max_date='2000-03-31')
+        agg = AggregationLayer.objects.create(name='Banana stand')
+        self.client.post(url, json.dumps({'name': 'Predictedlayer', 'classifier': classifier.id, 'composites': [composite.id], 'aggregationlayer': agg.id}), format='json', content_type='application/json')
+        response = self.client.get(url).json()
+        self.assertEqual(response['count'], 1)
+        response = self.client.get(url + '?year=2019').json()
+        self.assertEqual(response['count'], 0)
+        response = self.client.get(url + '?year=2000').json()
+        self.assertEqual(response['count'], 1)
+        response = self.client.get(url + '?aggregationlayer={}'.format(agg.id)).json()
+        self.assertEqual(response['count'], 1)
+        response = self.client.get(url + '?aggregationlayer={}'.format(agg.id + 1)).json()
+        self.assertEqual(response, {'aggregationlayer': ['Select a valid choice. That choice is not one of the available choices.']})
