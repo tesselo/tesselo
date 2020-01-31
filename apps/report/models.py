@@ -85,13 +85,13 @@ class ReportAggregation(models.Model):
 
     def __str__(self):
         dat = '{}'.format(self.id)
-        if hasattr(self, 'aggregationlayer'):
+        if hasattr(self, 'aggregationlayer') and self.aggregationlayer:
             dat += ' | {}'.format(self.aggregationlayer.name)
-        if hasattr(self, 'composite'):
+        if hasattr(self, 'composite') and self.composite:
             dat += ' | {}'.format(self.composite.name)
-        if hasattr(self, 'formula'):
+        if hasattr(self, 'formula') and self.formula:
             dat += ' | {}'.format(self.formula.name)
-        if hasattr(self, 'composite'):
+        if hasattr(self, 'predictedlayer') and self.predictedlayer:
             dat += ' | Pred {}'.format(self.predictedlayer.id)
         return dat
 
