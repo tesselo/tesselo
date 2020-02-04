@@ -195,6 +195,7 @@ class PredictedLayer(models.Model):
         (FINISHED, FINISHED),
         (FAILED, FAILED),
     )
+    name = models.CharField(max_length=500, default='')
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
     composites = models.ManyToManyField(Composite)
@@ -205,23 +206,26 @@ class PredictedLayer(models.Model):
     legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        if self.classifier and self.classifier.is_keras:
-            using = ''
-        elif self.composites.count():
-            using = 'using {} composites'.format(self.composites.count())
-        elif self.sentineltile:
-            using = 'using {}'.format(self.sentineltile)
+        if self.name:
+            return self.name
         else:
-            using = ''
+            if self.classifier and self.classifier.is_keras:
+                using = ''
+            elif self.composites.count():
+                using = 'using {} composites'.format(self.composites.count())
+            elif self.sentineltile:
+                using = 'using {}'.format(self.sentineltile)
+            else:
+                using = ''
 
-        agglayer = self.aggregationlayer.name if self.aggregationlayer else ''
+            agglayer = self.aggregationlayer.name if self.aggregationlayer else ''
 
-        return '{} over {} {} ({}).'.format(
-            self.classifier,
-            agglayer,
-            using,
-            self.status,
-        )
+            return '{} over {} {} ({}).'.format(
+                self.classifier,
+                agglayer,
+                using,
+                self.status,
+            )
 
     def save(self, *args, **kwargs):
         if not hasattr(self, 'rasterlayer'):
