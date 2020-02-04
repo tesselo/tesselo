@@ -177,7 +177,7 @@ def snap_terrain_correction(sentinel1tile_id):
     """
     # Get tile object.
     tile = Sentinel1Tile.objects.get(id=sentinel1tile_id)
-    tile.write('Started processing tile.', Sentinel1Tile.PROCESSING)
+    tile.write('Started processing tile with Batch Job ID "{}".'.format(os.environ.get('AWS_BATCH_JOB_ID', 'unknown')), Sentinel1Tile.PROCESSING)
 
     # Download data.
     tile.write('Downloading data.')
