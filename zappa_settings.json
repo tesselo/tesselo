@@ -20,7 +20,18 @@
     "memory_size": 1024,
     "log_level": "ERROR",
     "keep_warm": true,
-    "num_retained_versions": 10
+    "num_retained_versions": 10,
+    "events": [
+      {
+        "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
+        "event_source": {
+          "arn": "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
+          "events": [
+            "sns:Publish"
+          ]
+        }
+      }
+    ]
   },
   "staging": {
     "extends": "dev",
@@ -61,6 +72,8 @@
           ]
         }
       }
+
+
     ]
   }
 }
