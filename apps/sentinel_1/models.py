@@ -37,7 +37,7 @@ class Sentinel1Tile(models.Model):
     mission_datatake_id = models.IntegerField()
     product_unique_identifier = models.TextField()
     sci_hub_id = models.TextField()
-    footprint = models.PolygonField(null=True)
+    footprint = models.MultiPolygonField(null=True)
     filename_map = HStoreField()
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED, db_index=True)
     log = models.TextField(default='', blank=True)

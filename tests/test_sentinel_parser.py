@@ -58,7 +58,7 @@ class SentinelBucketParserTest(TestCase):
             mission_datatake_id=1,
             product_unique_identifier='test',
             sci_hub_id='test',
-            footprint='SRID=3857;POLYGON(( 11833687 -469452, 11833797 -469452, 11833797 -469352, 11833687 -469352, 11833687 -469452 ))',
+            footprint='SRID=3857;MULTIPOLYGON((( 11833687 -469452, 11833797 -469452, 11833797 -469352, 11833687 -469352, 11833687 -469452 )))',
             filename_map={},
             status=Sentinel1Tile.UNPROCESSED,
             log='',

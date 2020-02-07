@@ -16,7 +16,7 @@ from raster.tiles.const import WEB_MERCATOR_SRID
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 from django.contrib.gis.gdal import OGRGeometry
-from django.contrib.gis.geos import Polygon
+from django.contrib.gis.geos import MultiPolygon
 from sentinel.models import CompositeBuild
 from sentinel.tasks import composite_build_callback
 from sentinel.utils import locally_parse_raster
@@ -97,10 +97,9 @@ def ingest_s1_tile_from_prefix(tile_prefix, client=None, commit=True):
 
     if 'footprint' in tileinfo:
         footprint = OGRGeometry(str(tileinfo['footprint'])).geos
-
-        if not isinstance(footprint, Polygon):
-            footprint = Polygon(footprint, srid=footprint.srid)
-
+        if not isinstance(footprint, MultiPolygon):
+            # Attempt conversion.
+            footprint = MultiPolygon(footprint, srid=footprint.srid)
         # Set geom to none if tile data geom is not valid.
         if not footprint.valid:
             footprint = None
