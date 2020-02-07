@@ -33,18 +33,7 @@
       "DB_USER": "tesselo",
       "DB_NAME": "tesselo_staging"
     },
-    "domain": "stagingapi.tesselo.com",
-    "events": [
-      {
-        "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
-        "event_source": {
-          "arn": "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
-          "events": [
-            "sns:Publish"
-          ]
-        }
-      }
-    ]
+    "domain": "stagingapi.tesselo.com"
   },
   "production": {
     "extends": "dev",
@@ -71,9 +60,16 @@
             "sns:Publish"
           ]
         }
+      },
+      {
+        "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
+        "event_source": {
+          "arn": "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
+          "events": [
+            "sns:Publish"
+          ]
+        }
       }
-
-
     ]
   }
 }
