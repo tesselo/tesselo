@@ -224,7 +224,9 @@ class CompositeBand(models.Model):
     """
     Register RasterLayers as rasterlayer_lookup.
     """
-    band = models.CharField(max_length=7, choices=const.BAND_CHOICES)
+    BAND_CHOICES = const.BAND_CHOICES + s1const.BAND_CHOICES
+
+    band = models.CharField(max_length=7, choices=BAND_CHOICES)
     rasterlayer = models.ForeignKey(RasterLayer, on_delete=models.CASCADE)
     composite = models.ForeignKey('Composite', on_delete=models.CASCADE, null=True)
 
