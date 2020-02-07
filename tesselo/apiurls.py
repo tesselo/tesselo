@@ -6,9 +6,9 @@ from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaAlgebraAPIView, FormulaViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
-    CompositeViewSet, ExportAPIView, GroupViewSet, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet,
-    LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet, ReadOnlyTokenViewSet, RemoveAuthToken,
-    SentinelTileAggregationLayerViewSet, UserViewSet, ValueCountResultViewSet
+    CompositeViewSet, ExportAPIView, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
+    ObtainExpiringAuthToken, RasterLayerViewSet, ReadOnlyTokenViewSet, RemoveAuthToken,
+    SentinelTileAggregationLayerViewSet, ValueCountResultViewSet
 )
 from report.views import ReportAggregationViewSet, ReportScheduleViewSet
 from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
