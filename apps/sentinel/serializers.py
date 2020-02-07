@@ -19,9 +19,10 @@ class CompositeBuildSerializer(ModelSerializer):
         model = CompositeBuild
         fields = (
             'id', 'composite', 'aggregationlayer', 'log', 'status',
-            'owner', 'sentineltiles', 'compositetiles',
+            'owner', 'sentineltiles', 'compositetiles', 'include_sentinel_1',
+            'include_sentinel_2', 'sentinel1tiles',
         )
-        read_only_fields = ('sentineltiles', 'compositetiles', )
+        read_only_fields = ('sentineltiles', 'compositetiles', 'sentinel1tiles', )
 
 
 class CompositeTileSerializer(ModelSerializer):
@@ -30,5 +31,5 @@ class CompositeTileSerializer(ModelSerializer):
         model = CompositeTile
         fields = (
             'id', 'composite', 'status', 'tilez', 'tilex', 'tiley', 'scheduled',
-            'start', 'end', 'log',
+            'start', 'end', 'log', 'include_sentinel_1', 'include_sentinel_2',
         )

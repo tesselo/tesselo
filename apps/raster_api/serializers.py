@@ -255,11 +255,11 @@ class CompositeSerializer(PermissionsModelSerializer):
         fields = (
             'id', 'name', 'rasterlayer_lookup', 'compositeband_set', 'min_date',
             'max_date', 'interval', 'official', 'max_cloudy_pixel_percentage',
-            'active', 'start_week', 'interval', 'sentineltiles',
+            'active', 'start_week', 'interval', 'sentineltiles', 'sentinel1tiles',
         )
         read_only_fields = (
             'rasterlayer_lookup', 'compositeband_set', 'official', 'interval',
-            'sentineltiles',
+            'sentineltiles', 'sentinel1tiles',
         )
 
     def get_start_week(self, obj):

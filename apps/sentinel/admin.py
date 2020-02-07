@@ -64,7 +64,7 @@ class MGRSTileAdmin(admin.OSMGeoAdmin):
 
 class CompositeAdmin(GuardedModelAdmin):
     model = Composite
-    raw_id_fields = ('sentineltiles', )
+    raw_id_fields = ('sentineltiles', 'sentinel1tiles', )
     list_display = ('name', 'min_date', 'max_date')
     search_fields = ('name', )
     list_filter = ('active', 'min_date', 'max_date', 'interval', )
@@ -80,7 +80,7 @@ class SentinelTileSceneClassAdmin(admin.ModelAdmin):
 
 class CompositeBuildAdmin(admin.ModelAdmin):
     model = CompositeBuild
-    readonly_fields = ('sentineltiles', 'compositetiles', )
+    readonly_fields = ('sentineltiles', 'compositetiles', 'sentinel1tiles', )
     actions = ('run_composite_build', )
     list_filter = ('status', )
     raw_id_fields = ('composite', 'aggregationlayer', )
