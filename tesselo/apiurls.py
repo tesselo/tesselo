@@ -107,8 +107,6 @@ router.register(r'trainingsample', TrainingSampleViewSet, base_name='trainingsam
 router.register(r'classifier', ClassifierViewSet, base_name='classifier')
 router.register(r'predictedlayer', PredictedLayerViewSet, base_name='predictedlayer')
 
-router.register(r'user', UserViewSet, base_name='user')
-router.register(r'group', GroupViewSet, base_name='group')
 router.register(r'readonlytoken', ReadOnlyTokenViewSet, base_name='readonlytoken')
 
 router.register(r'bookmark', BookmarkViewSet, base_name='bookmark')
