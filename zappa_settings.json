@@ -20,18 +20,7 @@
     "memory_size": 1024,
     "log_level": "ERROR",
     "keep_warm": true,
-    "num_retained_versions": 10,
-    "events": [
-      {
-        "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
-        "event_source": {
-          "arn": "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
-          "events": [
-            "sns:Publish"
-          ]
-        }
-      }
-    ]
+    "num_retained_versions": 10
   },
   "staging": {
     "extends": "dev",
@@ -44,7 +33,18 @@
       "DB_USER": "tesselo",
       "DB_NAME": "tesselo_staging"
     },
-    "domain": "stagingapi.tesselo.com"
+    "domain": "stagingapi.tesselo.com",
+    "events": [
+      {
+        "function": "apps.sentinel_1.tasks.process_sentinel_sns_message",
+        "event_source": {
+          "arn": "arn:aws:sns:eu-central-1:214830741341:SentinelS1L1C",
+          "events": [
+            "sns:Publish"
+          ]
+        }
+      }
+    ]
   },
   "production": {
     "extends": "dev",
