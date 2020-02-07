@@ -15,7 +15,7 @@ from celery.utils.log import get_task_logger
 from dateutil import parser
 from raster.models import RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.utils import tile_bounds, tile_index_range
+from raster.tiles.utils import tile_bounds
 from raster_aggregation.models import AggregationArea
 
 from django.conf import settings
@@ -33,6 +33,8 @@ from sentinel.models import (
     SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, locally_parse_raster, write_raster_tile
+from sentinel_1 import const as s1const
+from sentinel_1.models import Sentinel1Tile
 
 logger = get_task_logger(__name__)
 
@@ -233,9 +235,7 @@ def get_range_tiles(sentineltiles, tilex, tiley, tilez):
     # Return data as tuples of scene, band number and pixel values.
     tiles = []
     for sentineltile in sentineltiles:
-        for sentineltileband in sentineltile.sentineltileband_set.all():
-            if sentineltileband.band not in bnds:
-                continue
+        for sentineltileband in sentineltile.sentineltileband_set.filter(band__in=bnds):
             tile = get_raster_tile(sentineltileband.layer_id, tilez, tilex, tiley)
             if not tile:
                 continue
@@ -267,8 +267,7 @@ def compositetile_stacks(ctile):
     sentineltiles = ctile.composite.get_sentineltiles()
 
     # Compute indexrange for this higher level tile.
-    bounds = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
-    indexrange = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
+    indexrange = ctile.index_range(const.ZOOM_LEVEL_60M)
 
     # Loop through tiles at 60m that intersect with bounding box.
     for tilex60 in range(indexrange[0], indexrange[2] + 1):
@@ -278,7 +277,7 @@ def compositetile_stacks(ctile):
             # Get tile bounding box as ewkt.
             bounds60 = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds60).wkt)
             # Filter sentinel scenes that overlap with this tile boundaries.
-            sentineltiles60 = sentineltiles.filter(tile_data_geom__bboverlaps=bounds60).only('prefix')
+            sentineltiles60 = sentineltiles.filter(tile_data_geom__intersects=bounds60).only('prefix')
             # Prefetch related objects.
             sentineltiles60 = sentineltiles60.select_related('sentineltilesceneclass').prefetch_related('sentineltileband_set')
 
@@ -336,25 +335,68 @@ def compositetile_stacks(ctile):
                             yield tilex10, tiley10, list(stacks.values())
 
 
-@task
-def process_compositetile(compositetile_id):
+def process_compositetile_s1(ctile, rasterlayer_lookup):
     """
-    Build a cloud free unified base layer for a given areas of interest and for
-    each sentinel band.
-
-    If reset is activated, the files are deleted and re-created from scratch.
+    Construct max zoom level raster tiles for S1 input.
     """
-    ctile = CompositeTile.objects.get(id=compositetile_id)
-    ctile.start = timezone.now()
-    ctile.end = None
-    ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
+    # Compute index range for the 10M zoom level over the compositetile.
+    indexrange = ctile.index_range(const.ZOOM_LEVEL_10M)
+    # Get list of scenes for this compoistetile.
+    bounds = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
+    bounds = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds).wkt)
+    sentinel1tiles = ctile.composite.get_sentinel1tiles().filter(footprint__intersects=bounds)
+    # Get tiles from available ingested S1 scenes.
+    counter = 0
+    for tilex in range(indexrange[0], indexrange[2] + 1):
+        for tiley in range(indexrange[1], indexrange[3] + 1):
+            # Prepare result dict.
+            result = {dvband: None for dvband in s1const.POLARIZATION_DV_BANDS}
+            # Loop through sentinel 1 tiles in order of appearance until all
+            # pixels are populated, or all available scenes have been exhausted.
+            for stile in sentinel1tiles:
+                for dvband in s1const.POLARIZATION_DV_BANDS:
+                    # Get tile for this scene.
+                    sband = stile.sentinel1tileband_set.get(band=dvband)
+                    tile = get_raster_tile(sband.layer_id, const.ZOOM_LEVEL_10M, tilex, tiley)
+                    tile = tile.bands[0].data()
+                    if result[dvband] is None:
+                        # Set result to be the first tile.
+                        result[dvband] = tile
+                    else:
+                        # Replace missing pixels with pixels from additional scene.
+                        missing_pixels = result[dvband] == s1const.SENTINEL_1_NODATA_VALUE
+                        result[dvband][missing_pixels] = tile[missing_pixels]
+                # Check if any nodata pixels are remaining, assuming that if one
+                # band is fully populated, the other one is as well. If fully
+                # populated, go to next tile.
+                if s1const.SENTINEL_1_NODATA_VALUE not in result[s1const.POLARIZATION_DV_BANDS[0]]:
+                    break
 
+            # Update results dict with data, using a random name for the in
+            # memory raster.
+            for band, data in result.items():
+                write_raster_tile(
+                    rasterlayer_lookup[band],
+                    data,
+                    const.ZOOM_LEVEL_10M,
+                    tilex,
+                    tiley,
+                    datatype=s1const.SENTINEL_1_DATA_TYPE,
+                )
+
+            # Log progress.
+            counter += 1
+            if counter % 100 == 0:
+                ctile.write('{count} S1 Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=tilex, y=tiley))
+
+
+def process_compositetile_s2(ctile, rasterlayer_lookup):
+    """
+    Construct max zoom level raster tiles for S2 input.
+    """
     # Get cloud algorithm.
     clouds = Clouds(ctile)
-    ctile.write('Using cloud removal algorithm {}'.format(ctile.get_version_string()))
-
-    # Get the list of master layers for all 13 bands.
-    rasterlayer_lookup = ctile.composite.rasterlayer_lookup
+    ctile.write('Using S2 cloud removal algorithm {}'.format(ctile.get_version_string()))
 
     # Loop over all TMS tiles in a given zone and get band stacks for available
     # scenes in that tile.
@@ -373,15 +415,8 @@ def process_compositetile(compositetile_id):
         # Compute mask for pixels where all stacks are over the exclude value.
         exclude = numpy.min(cloud_probs, axis=0) >= const.EXCLUDE_VALUE
 
-        # Create a copy of the generic results dict before updating values.
-        result_dict = const.RESULT_DICT.copy()
-
-        # Update result GDALRaster dictionary with bounds for this tile.
-        bounds = tile_bounds(x, y, const.ZOOM_LEVEL_10M)
-        result_dict['origin'] = bounds[0], bounds[3]
-
         # Loop over all bands.
-        for key, name in const.BAND_CHOICES:
+        for key in const.ALL_BANDS:
             # Merge scene tiles for this band into a composite tile using the selector index.
             bnds = numpy.array([stack[key] for stack in stacks])
 
@@ -404,21 +439,42 @@ def process_compositetile(compositetile_id):
         # Log progress.
         counter += 1
         if counter % 100 == 0:
-            ctile.write('{count} Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=x, y=y))
+            ctile.write('{count} S2 Tiles Created, currently at ({x}, {y}).'.format(count=counter, x=x, y=y))
+
+
+@task
+def process_compositetile(compositetile_id):
+    """
+    Build a cloud free unified base layer for a given areas of interest and for
+    each sentinel band.
+
+    If reset is activated, the files are deleted and re-created from scratch.
+    """
+    ctile = CompositeTile.objects.get(id=compositetile_id)
+    ctile.start = timezone.now()
+    ctile.end = None
+    ctile.write('Starting to build composite at max zoom level.', CompositeTile.PROCESSING)
+
+    # Get the list of master layers for all 13 bands.
+    rasterlayer_lookup = ctile.composite.rasterlayer_lookup
+
+    if ctile.include_sentinel_1:
+        rasterlayer_lookup_s1 = {key: val for key, val in rasterlayer_lookup.items() if key in s1const.POLARIZATION_DV_BANDS}
+        process_compositetile_s1(ctile, rasterlayer_lookup_s1)
+
+    if ctile.include_sentinel_2:
+        rasterlayer_lookup_s2 = {key: val for key, val in rasterlayer_lookup.items() if key in const.ALL_BANDS}
+        process_compositetile_s2(ctile, rasterlayer_lookup_s2)
 
     # Start pyramid building phase.
     ctile.write('Finished building composite tile at max zoom level, starting Pyramid.')
-
-    # Compute indexrange for pyramid.
-    bounds = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
-    indexrange60 = tile_index_range(bounds, const.ZOOM_LEVEL_60M, tolerance=1e-3)
 
     # Loop over all zoom levels to construct pyramid.
     zoomrange = reversed(range(1, const.ZOOM_LEVEL_10M + 1))
     for zoom in zoomrange:
         # Compute index range for the zone of interest.
         factor = 2 ** (zoom - const.ZOOM_LEVEL_60M)
-        indexrange = [int(idx * factor) for idx in indexrange60]
+        indexrange = [int(idx * factor) for idx in ctile.index_range(const.ZOOM_LEVEL_60M)]
         if zoom > const.ZOOM_LEVEL_60M:
             indexrange[2] += factor - 1
             indexrange[3] += factor - 1
@@ -438,7 +494,6 @@ def process_compositetile(compositetile_id):
         ctile.write(msg)
 
         # Loop over composite band tiles in blocks of four.
-        counter = 0
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
                 # Aggregate tiles for each composite band.
@@ -725,7 +780,11 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
 
     # Initiate the compositebuild related objects if requested.
     if initiate:
+        # Sentinel-1.
+        compositebuild.set_sentinel1tiles()
+        # Sentinel-2.
         compositebuild.set_sentineltiles()
+        # Composite build task tile.
         compositebuild.set_compositetiles()
 
     # Enforce re-building of composite tiles.
@@ -733,11 +792,33 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         for ctile in compositebuild.compositetiles.filter(status__in=(CompositeTile.FINISHED, CompositeTile.FAILED)):
             ctile.write('Rebuilding composite tile, setting status to unprocessed.', CompositeTile.UNPROCESSED)
 
+    still_ingesting_tiles = False
+
     # Flag to check scene status. If non-finished or non-broken tiles exist,
     # ingestion is assumed to be incomplete.
-    scene_ingestion_incomplete = compositebuild.sentineltiles.exclude(status__in=(SentinelTile.FINISHED, SentinelTile.BROKEN)).exists()
+    s1_scene_ingestion_incomplete = compositebuild.sentinel1tiles.exclude(status__in=(Sentinel1Tile.FINISHED, Sentinel1Tile.BROKEN)).exists()
+    if compositebuild.include_sentinel_1 and s1_scene_ingestion_incomplete:
+        # Ensure compsitebuild status is "ingesting scenes".
+        if compositebuild.status != CompositeBuild.INGESTING_SCENES:
+            compositebuild.status = CompositeBuild.INGESTING_SCENES
+            compositebuild.save()
+        # Call the L2A upgrader for the set of sentinel tiles that are still
+        # unprocessed or have failed processing.
+        sentinel1tiles = compositebuild.sentinel1tiles.filter(
+            status__in=(Sentinel1Tile.FAILED, Sentinel1Tile.UNPROCESSED)
+        )
 
-    if scene_ingestion_incomplete:
+        for stile in sentinel1tiles:
+            # Log scheduling of scene ingestion.
+            stile.scheduled = timezone.now()
+            stile.write('Scheduled scene ingestion, waiting for worker availability.', SentinelTile.PENDING)
+            ecs.snap_terrain_correction(stile.id)
+
+        still_ingesting_tiles = True
+
+    s2_scene_ingestion_incomplete = compositebuild.sentineltiles.exclude(status__in=(SentinelTile.FINISHED, SentinelTile.BROKEN)).exists()
+
+    if compositebuild.include_sentinel_2 and s2_scene_ingestion_incomplete:
         # Ensure compsitebuild status is "ingesting scenes".
         if compositebuild.status != CompositeBuild.INGESTING_SCENES:
             compositebuild.status = CompositeBuild.INGESTING_SCENES
@@ -752,7 +833,11 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
             stile.scheduled = timezone.now()
             stile.write('Scheduled scene ingestion, waiting for worker availability.', SentinelTile.PENDING)
             ecs.process_l2a(stile.id)
-        # Abort here and wait for callbacks from process_l2a.
+
+        still_ingesting_tiles = True
+
+    # Abort here and wait for callbacks from process_l2a and snap terrain correction.
+    if still_ingesting_tiles:
         return
 
     # Flag to check composite tile status.
@@ -770,12 +855,15 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
         )
 
         for compositetile in compositetiles:
-            # Log scheduling of composite tile build.
-            compositetile.scheduled = timezone.now()
+            # Copy settings from compositebuild into each composite tile.
             if compositebuild.cloud_version:
                 compositetile.cloud_version = compositebuild.cloud_version
             else:
                 compositetile.cloud_classifier = compositebuild.cloud_classifier
+            compositetile.include_sentinel_1 = compositebuild.include_sentinel_1
+            compositetile.include_sentinel_2 = compositebuild.include_sentinel_2
+            # Log scheduling of composite tile build.
+            compositetile.scheduled = timezone.now()
             compositetile.write('Scheduled composite builder, waiting for worker availability.', CompositeTile.PENDING)
             # Call build task.
             ecs.process_compositetile(compositetile.id)

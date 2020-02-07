@@ -15,6 +15,8 @@ from django.core.files.storage import DefaultStorage
 from django.utils import timezone
 from sentinel import const
 from sentinel.models import SentinelTile, SentinelTileBand, SentinelTileSceneClass
+from sentinel_1 import const as s1const
+from sentinel_1.models import Sentinel1Tile, Sentinel1TileBand
 
 
 def iterator_search(self, searchstring):
@@ -149,14 +151,21 @@ def point_to_test_file(source_url, filepath):
 
 
 def patch_get_raster_tile(layer_id, tilez, tilex, tiley):
-    try:
-        SentinelTileSceneClass.objects.get(layer_id=layer_id)
-    except:
-        data_max = 1e4
-    else:
+    if SentinelTileSceneClass.objects.filter(layer_id=layer_id).exists():
+        # For scene class layers, write small landcover class integers.
         data_max = 11
+    else:
+        # For other layers, use 10k data range.
+        data_max = 1e4
 
-    data = numpy.random.random_integers(0, data_max, (256, 256)).astype('uint16')
+    if Sentinel1TileBand.objects.filter(layer_id=layer_id).exists():
+        # Sentinel-1 bands have float32 data type.
+        data = numpy.random.random((256, 256)) * data_max
+        dtype = 6
+    else:
+        # Sentinel-2 layers have Int16 data type.
+        data = numpy.random.random_integers(0, data_max, (256, 256)).astype('int16')
+        dtype = 2
 
     return GDALRaster({
         'width': 256,
@@ -164,7 +173,7 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley):
         'origin': (11843687, -458452),
         'scale': [10, -10],
         'srid': WEB_MERCATOR_SRID,
-        'datatype': 2,
+        'datatype': dtype,
         'bands': [
             {'nodata_value': 0, 'data': data},
         ],
@@ -281,3 +290,47 @@ def patch_process_l2a(stile_id):
         tilez=zoom,
         rast=dest,
     )
+
+
+def patch_snap_terrain_correction(sentinel1tile_id):
+    # Get sentineltile.
+    stile = Sentinel1Tile.objects.get(id=sentinel1tile_id)
+    # Fake finished status on sentineltile.
+    stile.write('Finished terrain correction.', Sentinel1Tile.FINISHED)
+    # Ensure sentineltilebands exist.
+    for band in s1const.POLARIZATION_DV_BANDS:
+        if not Sentinel1TileBand.objects.filter(band=band, tile=stile).exists():
+            rst = RasterLayer.objects.create(name='Test raster ' + band)
+            Sentinel1TileBand.objects.create(band=band, tile=stile, layer=rst)
+    # Set bbox for writing fake tiles.
+    bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
+    # Create fake gdalraster tiles in sentinel tile bands.
+    for band in stile.sentinel1tileband_set.all():
+        # Compute geotransform for this raster tile.
+        idxr = tile_index_range(bbox, const.ZOOM_LEVEL_10M, tolerance=1e-3)
+        bounds = tile_bounds(idxr[0], idxr[1], const.ZOOM_LEVEL_10M)
+        res = const.BAND_RESOLUTIONS[const.BANDS_10M[0]]
+        # Setup random data.
+        data = (numpy.random.random((256, 256)) * 1e4).astype('float32')
+        # Create raster.
+        dest = GDALRaster({
+            'width': 256,
+            'height': 256,
+            'origin': (bounds[0], bounds[1]),
+            'scale': [res, -res],
+            'srid': WEB_MERCATOR_SRID,
+            'datatype': 6,
+            'bands': [
+                {'nodata_value': 0, 'data': data},
+            ],
+        })
+        # Write raster tile.
+        dest = io.BytesIO(dest.vsi_buffer)
+        dest = File(dest, name='tile.tif')
+        RasterTile.objects.create(
+            rasterlayer=band.layer,
+            tilex=idxr[0],
+            tiley=idxr[1],
+            tilez=const.ZOOM_LEVEL_10M,
+            rast=dest,
+        )

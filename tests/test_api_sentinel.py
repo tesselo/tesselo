@@ -41,12 +41,13 @@ class SentinelViewsTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         result = json.loads(response.content.decode())
         self.assertEqual(result['name'], 'Sentinel')
-        self.assertEqual(len(result['rasterlayer_lookup']), 13)
+        # All 13 S2 bands plus 2 S1 bands.
+        self.assertEqual(len(result['rasterlayer_lookup']), 13 + 2)
         # The user has permission to see the newly created rasterlayers.
         url = reverse('rasterlayer-list')
         response = self.client.get(url)
         result = json.loads(response.content.decode())
-        self.assertEqual(result['count'], 13)
+        self.assertEqual(result['count'], 13 + 2)
         self.assertEqual(result['results'][0]['name'], 'Sentinel - B01.jp2')
         # Lucille can not see the layers.
         User.objects.create_user(

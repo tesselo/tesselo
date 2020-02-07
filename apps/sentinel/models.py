@@ -3,7 +3,7 @@ import datetime
 
 from raster.models import RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID
-from raster.tiles.utils import tile_index_range
+from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationLayer
 
 from django.contrib.auth.models import User
@@ -14,6 +14,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from sentinel import const
 from sentinel.utils import populate_raster_metadata
+from sentinel_1 import const as s1const
+from sentinel_1.models import Sentinel1Tile
 
 
 def get_duration(obj):
@@ -250,6 +252,9 @@ class Composite(models.Model):
     # Defining parameters of the layer group.
     min_date = models.DateField(null=True, blank=True)
     max_date = models.DateField(null=True, blank=True)
+    # Sentinel-1 Parameters.
+    sentinel1tiles = models.ManyToManyField(Sentinel1Tile, blank=True, help_text='Limit the composite to a specific set of sentinel-1 tiles.')
+    # Sentinel-2 Parameters.
     max_cloudy_pixel_percentage = models.FloatField(default=100)
     sentineltiles = models.ManyToManyField(SentinelTile, blank=True, help_text='Limit the composite to a specific set of sentinel tiles.')
     # Parse related data.
@@ -303,6 +308,24 @@ class Composite(models.Model):
         # Return data ordered by decending date.
         return qs.order_by('-collected')
 
+    def get_sentinel1tiles(self):
+        if self.sentinel1tiles.count() > 0:
+            # Get specific sentinel tiles if specified.
+            qs = self.sentinel1tiles.all()
+        else:
+            # Preload tiles that are populated on the bands based on the composite
+            # layer group settings. Only use IW GRD with DV polarization, which
+            # represent 99% of over land data acquisitions.
+            qs = Sentinel1Tile.objects.filter(
+                stop_time__gte=self.min_date,
+                stop_time__lte=self.max_date,
+                product_type=s1const.PRODUCT_TYPE_GRD,
+                mode=s1const.ACQUISITON_IW,
+                polarization=s1const.POLARIZATION_DV,
+            )
+        # Return data ordered by decending date.
+        return qs.order_by('-stop_time')
+
 
 @receiver(post_save, sender=Composite)
 def create_compositeband_layers(sender, instance, created, **kwargs):
@@ -312,7 +335,7 @@ def create_compositeband_layers(sender, instance, created, **kwargs):
     if not created:
         return
 
-    for band, description in const.BAND_CHOICES:
+    for band in const.ALL_BANDS + s1const.POLARIZATION_DV_BANDS:
         raster = RasterLayer.objects.create(name='{0} - {1}'.format(instance.name, band))
         populate_raster_metadata(raster)
         # Create compositeband for this band.
@@ -349,6 +372,10 @@ class CompositeTile(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=CT_STATUS_CHOICES, default=UNPROCESSED)
+    # Sentinel-1 settings.
+    include_sentinel_1 = models.BooleanField(default=False)
+    # Sentinel-2 settings.
+    include_sentinel_2 = models.BooleanField(default=True)
     cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
     cloud_classifier = models.ForeignKey('classify.Classifier', null=True, blank=True, on_delete=models.SET_NULL)
 
@@ -378,6 +405,18 @@ class CompositeTile(models.Model):
         else:
             return 'Version {}'.format(self.cloud_version)
 
+    def index_range(self, zoom=const.ZOOM_LEVEL_60M):
+        """
+        Compute indexrange for an input zoom level.
+        """
+        if zoom not in (const.ZOOM_LEVEL_10M, const.ZOOM_LEVEL_20M, const.ZOOM_LEVEL_60M):
+            raise ValueError('Found invalid zoom "{}".'.format(zoom))
+        return tile_index_range(
+            tile_bounds(self.tilex, self.tiley, self.tilez),
+            zoom,
+            tolerance=1e-3,
+        )
+
 
 class CompositeBuild(models.Model):
     """
@@ -402,7 +441,10 @@ class CompositeBuild(models.Model):
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=50, choices=CB_STATUS_CHOICES, default=UNPROCESSED, blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    include_sentinel_1 = models.BooleanField(default=False)
+    include_sentinel_2 = models.BooleanField(default=True)
     sentineltiles = models.ManyToManyField(SentinelTile)
+    sentinel1tiles = models.ManyToManyField(Sentinel1Tile)
     compositetiles = models.ManyToManyField(CompositeTile)
     cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
     cloud_classifier = models.ForeignKey('classify.Classifier', null=True, blank=True, on_delete=models.SET_NULL, help_text='Use a classifier based cloud removal. The classifier is assumed to return a cloud probability or rank (the higher the output the more likely its a cloud). If specified, the cloud_version flag is ignored.')
@@ -433,7 +475,7 @@ class CompositeBuild(models.Model):
         # Build list of unique IDS for SentinelTiles that intersect with the
         # aggregation layer.
         for aggarea in self.aggregationlayer.aggregationarea_set.all():
-            for stile in sentineltiles.filter(tile_data_geom__bboverlaps=aggarea.geom):
+            for stile in sentineltiles.filter(tile_data_geom__intersects=aggarea.geom):
                 self.sentineltiles.add(stile)
 
     def set_compositetiles(self):
@@ -459,6 +501,17 @@ class CompositeBuild(models.Model):
                 tilez=tilez,
             )
             self.compositetiles.add(ctile)
+
+    def set_sentinel1tiles(self):
+        # Clear current set of sentineltiles.
+        self.sentinel1tiles.clear()
+        # Get SentinelTiles that need processing.
+        sentinel1tiles = self.composite.get_sentinel1tiles()
+        # Build list of unique IDS for SentinelTiles that intersect with the
+        # aggregation layer.
+        for aggarea in self.aggregationlayer.aggregationarea_set.all():
+            for stile in sentinel1tiles.filter(footprint__intersects=aggarea.geom):
+                self.sentinel1tiles.add(stile)
 
 
 class CompositeBuildSchedule(models.Model):

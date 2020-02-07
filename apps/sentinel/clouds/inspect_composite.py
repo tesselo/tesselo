@@ -162,7 +162,7 @@ def inspect_composite(composite_id, tilez, tilex, tiley):
     # Get composite tile for this composite.
     ctile = get_composite_tile(composite_id, tilez, tilex, tiley)
     # Get queryset for sentineltiles within the composite date range.
-    sentineltiles = ctile.composite.get_sentineltiles().filter(tile_data_geom__bboverlaps=bounds)
+    sentineltiles = ctile.composite.get_sentineltiles().filter(tile_data_geom__intersects=bounds)
     # Get raw image arrays from tiles.
     raw = get_tiles(sentineltiles, tilez, tilex, tiley)
     # Convert the GDALRaster tiles into one image with padded RGB images and

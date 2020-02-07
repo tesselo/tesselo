@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import (
-    client_get_object, iterator_search, patch_get_raster_tile, patch_process_l2a, patch_write_raster_tile,
-    point_to_test_file
+    client_get_object, iterator_search, patch_get_raster_tile, patch_process_l2a, patch_snap_terrain_correction,
+    patch_write_raster_tile, point_to_test_file
 )
 
 from classify.models import Classifier
@@ -21,6 +21,8 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
 )
 from sentinel.tasks import composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
+from sentinel_1 import const as s1const
+from sentinel_1.models import Sentinel1Tile
 
 
 @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
@@ -29,6 +31,7 @@ from sentinel.tasks import composite_build_callback, generate_bands_and_scenecla
 @patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @patch('sentinel.ecs.process_l2a', patch_process_l2a)
+@patch('sentinel.ecs.snap_terrain_correction', patch_snap_terrain_correction)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelBucketParserTest(TestCase):
 
@@ -40,11 +43,34 @@ class SentinelBucketParserTest(TestCase):
         self.zone = AggregationArea.objects.create(
             name='Test Agg Area',
             aggregationlayer=self.agglayer,
-            geom='SRID=3857;MULTIPOLYGON((( 11833687.0 -469452.0, 11833797.0 -469352.0, 11833797.0 -469352.0, 11833797.0 -469352.0, 11833687.0 -469452.0)))',
+            geom='SRID=3857;MULTIPOLYGON((( 11833687 -469452, 11833797 -469452, 11833797 -469352, 11833687 -469352, 11833687 -469452 )))',
+        )
+        self.s1scene = Sentinel1Tile.objects.create(
+            product_name='Test',
+            prefix='test',
+            mission_id='test',
+            product_type='GRD',
+            mode='IW',
+            polarization='DV',
+            start_time='2005-01-01',
+            stop_time='2005-01-01',
+            absolute_orbit_number=1,
+            mission_datatake_id=1,
+            product_unique_identifier='test',
+            sci_hub_id='test',
+            footprint='SRID=3857;POLYGON(( 11833687 -469452, 11833797 -469452, 11833797 -469352, 11833687 -469352, 11833687 -469452 ))',
+            filename_map={},
+            status=Sentinel1Tile.UNPROCESSED,
+            log='',
         )
 
         self.composite = Composite.objects.create(name='The World', min_date='2000-01-01', max_date='2100-01-01')
-        self.build = CompositeBuild.objects.create(composite=self.composite, aggregationlayer=self.agglayer)
+        self.build = CompositeBuild.objects.create(
+            composite=self.composite,
+            aggregationlayer=self.agglayer,
+            include_sentinel_1=False,
+            include_sentinel_2=True,
+        )
 
         settings.MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -76,6 +102,9 @@ class SentinelBucketParserTest(TestCase):
 
     def test_process_compositetile(self):
         sync_sentinel_bucket_utm_zone(1)
+        self.build.include_sentinel_1 = True
+        self.build.include_sentinel_2 = True
+        self.build.save()
         # Calling build callback. In testing mode there are no internal
         # callbacks, so this function needs to be called three times.
         # 1. Ingest scenes
@@ -94,11 +123,39 @@ class SentinelBucketParserTest(TestCase):
         self.assertIn('Scheduled composite builder, waiting for worker availability.', ctile.log)
         self.assertIn('Starting to build composite at max zoom level.', ctile.log)
         self.assertIn('Finished building composite tile at max zoom level, starting Pyramid.', ctile.log)
-        self.assertIn('Using cloud removal algorithm Version ', ctile.log)
+        self.assertIn('Using S2 cloud removal algorithm Version ', ctile.log)
         self.assertIn('Finished building composite tile.', ctile.log)
         # The status has been set to finished.
         self.assertEqual(ctile.status, CompositeTile.FINISHED)
-        # Check that the tiles have been created.
+        # Check that the S1 tiles have been created.
+        band = self.composite.compositeband_set.get(band=s1const.BDVV)
+        path = 'tiles/{}/14'.format(band.rasterlayer.id)
+        # Composite raster tile files have been created (RasterTiles are not
+        # tracked on the DB level anymore).
+        expected = [
+            '8368.tif',
+            '8369.tif',
+            '8370.tif',
+            '8371.tif',
+            '8372.tif',
+            '8373.tif',
+            '8374.tif',
+            '8375.tif',
+            '8376.tif',
+            '8377.tif',
+            '8378.tif',
+            '8379.tif',
+            '8380.tif',
+            '8381.tif',
+            '8382.tif',
+            '8383.tif',
+        ]
+        storage = DefaultStorage()
+        self.assertEqual(
+            sorted(storage.listdir(os.path.join(path, storage.listdir(path)[0][0]))[1]),
+            expected,
+        )
+        # Check that the S2 tiles have been created.
         band = self.composite.compositeband_set.get(band=const.BD2)
         path = 'tiles/{}/14'.format(band.rasterlayer.id)
         # Composite raster tile files have been created (RasterTiles are not
@@ -106,24 +163,7 @@ class SentinelBucketParserTest(TestCase):
         storage = DefaultStorage()
         self.assertEqual(
             sorted(storage.listdir(os.path.join(path, storage.listdir(path)[0][0]))[1]),
-            [
-                '8368.tif',
-                '8369.tif',
-                '8370.tif',
-                '8371.tif',
-                '8372.tif',
-                '8373.tif',
-                '8374.tif',
-                '8375.tif',
-                '8376.tif',
-                '8377.tif',
-                '8378.tif',
-                '8379.tif',
-                '8380.tif',
-                '8381.tif',
-                '8382.tif',
-                '8383.tif',
-            ]
+            expected,
         )
         # Run the classifier based version.
         with open('tests/data/classifier-1.pickle', 'rb') as fl:
@@ -131,7 +171,7 @@ class SentinelBucketParserTest(TestCase):
             self.build.save()
         composite_build_callback(self.build.id, rebuild=True)
         ctile.refresh_from_db()
-        self.assertIn('Using cloud removal algorithm Classifier ', ctile.log)
+        self.assertIn('Using S2 cloud removal algorithm Classifier ', ctile.log)
 
     def test_bucket_parser(self):
         sync_sentinel_bucket_utm_zone(1)

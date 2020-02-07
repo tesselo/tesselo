@@ -4,6 +4,7 @@ TILEINFO_BODY_KEY = 'Body'
 INVENTORY_BUCKET_NAME = 'sentinel-inventory'
 SENTINEL_1_NODATA_VALUE = 0
 SENTINEL_1_ZOOM = 14
+SENTINEL_1_DATA_TYPE = 6
 
 # List of band names.
 BDVV = 'VV'
@@ -18,6 +19,20 @@ BAND_CHOICES = (
     (BDHH, 'HH Polarization'),
     (BDHV, 'HV Polarization'),
 )
+
+# Polarization Modes.
+POLARIZATION_SV = 'SV'
+POLARIZATION_SH = 'DH'
+POLARIZATION_DV = 'DV'
+POLARIZATION_DH = 'DH'
+
+POLARIZATION_DV_BANDS = [BDVV, BDVH, ]
+
+# Acquisition modes.
+ACQUISITON_IW = 'IW'
+
+# Product types.
+PRODUCT_TYPE_GRD = 'GRD'
 
 # SNAP Graph processing tool.
 GPT_WORKDIR = '/data'
