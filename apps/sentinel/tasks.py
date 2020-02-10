@@ -361,6 +361,8 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     # Get tile for this scene.
                     sband = stile.sentinel1tileband_set.get(band=dvband)
                     tile = get_raster_tile(sband.layer_id, const.ZOOM_LEVEL_10M, tilex, tiley)
+                    if not tile:
+                        break
                     tile = tile.bands[0].data()
                     if result[dvband] is None:
                         # Set result to be the first tile.
@@ -374,6 +376,10 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                 # populated, go to next tile.
                 if s1const.SENTINEL_1_NODATA_VALUE not in result[s1const.POLARIZATION_DV_BANDS[0]]:
                     break
+
+            # Ignore this tile if no data was found for it.
+            if None in result.values():
+                continue
 
             # Update results dict with data, using a random name for the in
             # memory raster.
