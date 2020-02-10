@@ -344,7 +344,10 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
     # Get list of scenes for this compoistetile.
     bounds = tile_bounds(ctile.tilex, ctile.tiley, ctile.tilez)
     bounds = 'SRID={0};{1}'.format(WEB_MERCATOR_SRID, Envelope(bounds).wkt)
-    sentinel1tiles = ctile.composite.get_sentinel1tiles().filter(footprint__intersects=bounds)
+    sentinel1tiles = ctile.composite.get_sentinel1tiles().filter(
+        status=Sentinel1Tile.FINISHED,
+        footprint__intersects=bounds,
+    )
     # Get tiles from available ingested S1 scenes.
     counter = 0
     for tilex in range(indexrange[0], indexrange[2] + 1):
