@@ -378,7 +378,7 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     break
 
             # Ignore this tile if no data was found for it.
-            if None in result.values():
+            if any(val is None for val in result.values()):
                 continue
 
             # Update results dict with data, using a random name for the in

@@ -8,6 +8,7 @@ from formulary.permissions import RenderFormulaPermission
 from formulary.serializers import FormulaSerializer
 from raster_api.views import AlgebraAPIView, PermissionsModelViewSet
 from sentinel.models import Composite, SentinelTile
+from sentinel_1 import const
 
 
 class FormulaViewSet(PermissionsModelViewSet):
@@ -44,11 +45,22 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
             }
             if self.formula.rgb:
                 # RGB mode expects a specific pattern for the band names.
-                self._rasterlayer_lookup = {
-                    'r': lookup['B4'],
-                    'g': lookup['B3'],
-                    'b': lookup['B2'],
-                }
+                if self.formula.rgb_platform == Formula.S1:
+                    # Since these are decibel values, the difference of the two
+                    # bands is equivalent to the log of the ratio.
+                    self._rasterlayer_lookup = {
+                        'r': lookup[const.BDVV],
+                        'g': lookup[const.BDVH],
+                        'b': lookup[const.BDVV] - lookup[const.BDVH],
+                    }
+                elif self.formula.rgb_platform == Formula.S2:
+                    self._rasterlayer_lookup = {
+                        'r': lookup['B4'],
+                        'g': lookup['B3'],
+                        'b': lookup['B2'],
+                    }
+                else:
+                    raise ValueError('Unknown RGB platform {}.'.format(self.formula.rgb_platform))
             else:
                 # Only keep bands that are present in formula.
                 self._rasterlayer_lookup = {key: val for key, val in lookup.items() if key in self.formula.formula}

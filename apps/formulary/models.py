@@ -10,8 +10,14 @@ from report.tasks import push_reports
 
 class Formula(models.Model):
     """
-    Sentinel-2 ready formulas.
+    Sentinel-1 and Sentinel-2 ready formulas.
     """
+    S1 = 'S1'
+    S2 = 'S2'
+    PLATFORM_CHOICES = (
+        (S1, 'Sentinel-1'),
+        (S2, 'Sentinel-2'),
+    )
     COLOR_CHOICES = (
         ('BrBG', 'BrBG'),
         ('PRGn', 'PRGn'),
@@ -55,6 +61,7 @@ class Formula(models.Model):
     color_palette = models.CharField(max_length=50, choices=COLOR_CHOICES, null=True, blank=True)
     # RGB settings.
     rgb = models.BooleanField(default=False, help_text='Choose RGB vs Formula mode. If true the layer is rendered as RGB, otherwise as raster algebra.')
+    rgb_platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default=S2, help_text='Choose Platform for RGB interpretation.')
     rgb_enhance_brightness = models.FloatField(default=3.0, null=True, blank=True)
     rgb_enhance_sharpness = models.FloatField(default=1.2, null=True, blank=True)
     rgb_enhance_color = models.FloatField(default=1.9, null=True, blank=True)
