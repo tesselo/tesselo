@@ -43,7 +43,15 @@ class Sentinel1Tile(models.Model):
     log = models.TextField(default='', blank=True)
 
     def __str__(self):
-        return self.prefix
+        return '{} | {} | {} | {} | {} | {} | {}'.format(
+            self.id,
+            self.start_time,
+            self.status,
+            self.mission_id,
+            self.product_type,
+            self.mode,
+            self.polarization,
+        )
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
