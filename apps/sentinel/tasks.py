@@ -506,18 +506,19 @@ def process_compositetile(compositetile_id):
         for tilex in range(indexrange[0], indexrange[2] + 1, 2):
             for tiley in range(indexrange[1], indexrange[3] + 1, 2):
                 # Aggregate tiles for each composite band.
-                for rasterlayer_id in rasterlayer_lookup.values():
+                for band_name, rasterlayer_id in rasterlayer_lookup.items():
                     result = []
                     none_found = True
+                    dtype = numpy.float32 if band_name in s1const.POLARIZATION_DV_BANDS else numpy.int16
                     # Aggregate each tile in the block of 2x2.
                     for idx, dat in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                         tile = get_raster_tile(rasterlayer_id, zoom, tilex + dat[0], tiley + dat[1])
                         if tile:
                             none_found = False
-                            agg = aggregate_tile(tile.bands[0].data(), target_dtype=numpy.int16)
+                            agg = aggregate_tile(tile.bands[0].data(), target_dtype=dtype)
                         else:
                             size = WEB_MERCATOR_TILESIZE // 2
-                            agg = numpy.zeros((size, size), dtype=numpy.int16)
+                            agg = numpy.zeros((size, size), dtype=dtype)
                         result.append(agg)
 
                     # Continue if no tile could be found for this 2x2 block.
