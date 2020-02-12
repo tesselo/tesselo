@@ -370,7 +370,8 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     else:
                         # Replace missing pixels with pixels from additional scene.
                         missing_pixels = result[dvband] == s1const.SENTINEL_1_NODATA_VALUE
-                        result[dvband][missing_pixels] = tile[missing_pixels]
+                        if numpy.sum(missing_pixels) > 0:
+                            result[dvband][missing_pixels] = tile[missing_pixels]
                 # Check if any nodata pixels are remaining, assuming that if one
                 # band is fully populated, the other one is as well. If fully
                 # populated, go to next tile.
@@ -390,6 +391,7 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     const.ZOOM_LEVEL_10M,
                     tilex,
                     tiley,
+                    nodata_value=s1const.SENTINEL_1_NODATA_VALUE,
                     datatype=s1const.SENTINEL_1_DATA_TYPE,
                 )
 
