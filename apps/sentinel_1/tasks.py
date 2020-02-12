@@ -159,16 +159,19 @@ def snap_terrain_correction(sentinel1tile_id):
 
     Shell run example:
 
-    wd=/s1docker
-    input=/data/subset_0_of_S1A_IW_GRDH_1SDV_20170725T063423_20170725T063448_017624_01D7E9_94A3.dim
-    output=/data/subset_0_of_S1A_IW_GRDH_1SDV_20170725T063423_20170725T063448_017624_01D7E9_94A3_Orb_NR_Cal_Spk_TC_dB.dim
+    DATA=/path/to/data
+    INPUT=/data/subset_0_of_S1A_IW_GRDH_1SDV_20170725T063423_20170725T063448_017624_01D7E9_94A3.dim
+    OUTPUT=/data/subset_0_of_S1A_IW_GRDH_1SDV_20170725T063423_20170725T063448_017624_01D7E9_94A3_gpt_out.dim
     docker run --rm -it\
-     -v $wd:/data\
+     -v $DATA:/data\
      -v /path/to/repo/tesselo/apps/sentinel_1/graphs/snap_terrain_correction.xml:/snap_terrain_correction.xml\
-     tesselo-snap bash\
+     --env INPUT=$INPUT\
+     --env OUTPUT=$OUTPUT\
+     tesselo-snap \
      gpt /snap_terrain_correction.xml \
-      -Pinput=$input\
-      -Poutput=$output
+     -Pinput=$INPUT\
+     -Poutput=$OUTPUT
+
 
     Exmample files for testing:
 
