@@ -51,7 +51,7 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
                     self._rasterlayer_lookup = {
                         'r': lookup[const.BDVV],
                         'g': lookup[const.BDVH],
-                        'b': lookup[const.BDVV] - lookup[const.BDVH],
+                        'b': lookup[const.BDVV],
                     }
                 elif self.formula.rgb_platform == Formula.S2:
                     self._rasterlayer_lookup = {
