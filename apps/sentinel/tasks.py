@@ -511,7 +511,9 @@ def process_compositetile(compositetile_id):
                 for band_name, rasterlayer_id in rasterlayer_lookup.items():
                     result = []
                     none_found = True
-                    dtype = numpy.float32 if band_name in s1const.POLARIZATION_DV_BANDS else numpy.int16
+                    is_S1 = band_name in s1const.POLARIZATION_DV_BANDS
+                    # Determine data type.
+                    dtype = numpy.float32 if is_S1 else numpy.int16
                     # Aggregate each tile in the block of 2x2.
                     for idx, dat in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                         tile = get_raster_tile(rasterlayer_id, zoom, tilex + dat[0], tiley + dat[1])
@@ -532,8 +534,15 @@ def process_compositetile(compositetile_id):
                     lower = numpy.append(result[2], result[3], axis=1)
                     result = numpy.append(upper, lower, axis=0)
 
-                    # Write pixels into a tile.
-                    write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2)
+                    # Write pixels into a tile, using dtype and nodata specs of
+                    # each satellite system.
+                    if is_S1:
+                        nodata_value = s1const.SENTINEL_1_NODATA_VALUE
+                        datatype = 6
+                    else:
+                        nodata_value = const.SENTINEL_NODATA_VALUE
+                        datatype = 2
+                    write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2, nodata_value, datatype)
 
     ctile.end = timezone.now()
     ctile.write('Finished building composite tile.', CompositeTile.FINISHED)

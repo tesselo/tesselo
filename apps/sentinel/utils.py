@@ -180,7 +180,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
 
     if tile:
         # Get current pixel array for this tile.
-        current = tile.bands[0].data()
+        current = tile.bands[0].data().astype(result.dtype)
         # Flatten the data if the input was flat.
         if result.shape[0] == 65536:
             current = current.ravel()
