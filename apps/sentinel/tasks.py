@@ -364,6 +364,7 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     if not tile:
                         break
                     tile = tile.bands[0].data()
+                    # Populate result array with new pixels.
                     if result[dvband] is None:
                         # Set result to be the first tile.
                         result[dvband] = tile
@@ -372,6 +373,11 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                         missing_pixels = result[dvband] == s1const.SENTINEL_1_NODATA_VALUE
                         if numpy.sum(missing_pixels) > 0:
                             result[dvband][missing_pixels] = tile[missing_pixels]
+                    # Replace very dark pixels if possible. Pixels that are
+                    # below a threshold are likely to be dark scene edge
+                    # artifact pixels.
+                    artifact_pixels = result[dvband] < s1const.DARK_SCENE_EDGE_THRESHOLD
+                    result[dvband][artifact_pixels] = numpy.maximum.reduce([result[dvband], tile])[artifact_pixels]
                 # Check if any nodata pixels are remaining, assuming that if one
                 # band is fully populated, the other one is as well. If fully
                 # populated, go to next tile.
