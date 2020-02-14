@@ -8,6 +8,7 @@ from raster_aggregation.models import AggregationLayer
 
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.contrib.gis.geos import Polygon
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -509,11 +510,20 @@ class CompositeBuild(models.Model):
         self.sentinel1tiles.clear()
         # Get SentinelTiles that need processing.
         sentinel1tiles = self.composite.get_sentinel1tiles()
+        # Calculate union of all aggregation areas in this layer.
+        target_polygon = self.aggregationlayer.aggregationarea_set.aggregate(models.Union('geom'))['geom__union']
+        # Instantiate empty footprint union.
+        footprint_union = Polygon()
         # Build list of unique IDS for SentinelTiles that intersect with the
         # aggregation layer.
-        for aggarea in self.aggregationlayer.aggregationarea_set.all():
-            for stile in sentinel1tiles.filter(footprint__intersects=aggarea.geom):
-                self.sentinel1tiles.add(stile)
+        for stile in sentinel1tiles.filter(footprint__intersects=target_polygon):
+            self.sentinel1tiles.add(stile)
+            footprint_union = stile.footprint.union(footprint_union)
+            # Finish early if sentineltiles cover the agglayer extent. For
+            # Sentinel-1 data, any observation is valid, we don't need more than
+            # one observation per pixel.
+            if footprint_union.covers(target_polygon):
+                break
 
 
 class CompositeBuildSchedule(models.Model):
