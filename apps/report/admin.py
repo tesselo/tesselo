@@ -37,6 +37,7 @@ class ReportScheduleAdmin(admin.ModelAdmin):
     inlines = (AggregationLayerInline, PredictedLayerInline, FormulaInline, CompositeInline, )
     exclude = ('aggregationlayers', 'predictedlayers', 'formulas', 'composites', )
     search_fields = ('name', )
+    list_filter = ('active', )
 
     def run_schedule(self, request, queryset):
         """
