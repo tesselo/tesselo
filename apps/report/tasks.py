@@ -1,3 +1,5 @@
+import datetime
+
 from raster_aggregation.models import AggregationLayer
 
 from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
@@ -54,7 +56,8 @@ def push_reports(model, pk):
     # Create list of combinations that need updating from the related models.
     combos = []
     for agg in aggs:
-        for composite in composites:
+        # Ignore composites that are in the future.
+        for composite in composites.filter(min_date__lte=datetime.datetime.now().date()):
             for formula in formulas:
                 combos.append((agg, composite, formula, None))
         for pred in predictedlayers:
