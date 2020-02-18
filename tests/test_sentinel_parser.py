@@ -16,6 +16,7 @@ from django.contrib.gis.gdal import OGRGeometry
 from django.core.files import File
 from django.core.files.storage import DefaultStorage
 from django.test import TestCase, override_settings
+from jobs.models import BatchJob
 from sentinel import const
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand

@@ -5,6 +5,7 @@ import boto3
 from classify.models import Classifier
 from django.conf import settings
 from django.core.management import call_command
+from jobs.utils import track_job
 
 
 def get_batch_job_base():
@@ -104,40 +105,48 @@ def drive_sentinel_bucket_parser():
 
 
 def process_l2a(scene_id):
-    return run_ecs_command(['process_l2a', scene_id], retry=1, vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
+    job = run_ecs_command(['process_l2a', scene_id], retry=1, vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
+    return track_job('sentinel', 'sentineltile', scene_id, job)
 
 
 def process_compositetile(compositetile_id):
-    return run_ecs_command(['process_compositetile', compositetile_id])
+    job = run_ecs_command(['process_compositetile', compositetile_id])
+    return track_job('sentinel', 'compositetile', compositetile_id, job)
 
 
 def clear_sentineltile(sentineltile_id, depends_on=None):
-    return run_ecs_command(['clear_sentineltile', sentineltile_id], retry=1, vcpus=1, memory=512, depends_on=depends_on)
+    job = run_ecs_command(['clear_sentineltile', sentineltile_id], retry=1, vcpus=1, memory=512, depends_on=depends_on)
+    return track_job('sentinel', 'sentineltile', sentineltile_id, job)
 
 
 def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
-    return run_ecs_command(['composite_build_callback', compositebuild_id, initiate, rebuild])
+    job = run_ecs_command(['composite_build_callback', compositebuild_id, initiate, rebuild])
+    return track_job('sentinel', 'compositebuild', compositebuild_id, job)
 
 
 def train_sentinel_classifier(classifier_id):
     # Get large instance flag for this chunk.
     # Run ecs command with required instance size.
     if Classifier.objects.get(id=classifier_id).needs_large_instance:
-        return run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1, vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
+        job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1, vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
     else:
-        return run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1)
+        job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1)
+    return track_job('classify', 'classifier', classifier_id, job)
 
 
 def predict_sentinel_layer(predicted_layer_id):
-    return run_ecs_command(['predict_sentinel_layer', predicted_layer_id])
+    job = run_ecs_command(['predict_sentinel_layer', predicted_layer_id])
+    return track_job('classify', 'predictedlayer', predicted_layer_id, job)
 
 
 def predict_sentinel_chunk(chunk_id):
-    return run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1)
+    job = run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1)
+    return track_job('classify', 'predictedlayerchunk', chunk_id, job)
 
 
 def build_predicted_pyramid(predicted_layer_id):
-    return run_ecs_command(['build_predicted_pyramid', predicted_layer_id])
+    job = run_ecs_command(['build_predicted_pyramid', predicted_layer_id])
+    return track_job('classify', 'predictedlayer', predicted_layer_id, job)
 
 
 def ingest_naip_manifest():
@@ -153,7 +162,8 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
 
 def parse_aggregationlayer(pk):
-    return run_ecs_command(['parse_aggregationlayer', pk])
+    job = run_ecs_command(['parse_aggregationlayer', pk])
+    return track_job('raster_aggregation', 'aggregationlayer', pk, job)
 
 
 def parse_s3_sentinel_1_inventory():
@@ -161,7 +171,7 @@ def parse_s3_sentinel_1_inventory():
 
 
 def snap_terrain_correction(sentinel1tile_id):
-    return run_ecs_command(
+    job = run_ecs_command(
         ['snap_terrain_correction', sentinel1tile_id],
         vcpus=4,
         memory=1024 * 20,
@@ -169,3 +179,4 @@ def snap_terrain_correction(sentinel1tile_id):
         queue='tesselo-{stage}-snap',
         job='tesselo-{stage}-snap',
     )
+    return track_job('sentinel_1', 'sentinel1tile', sentinel1tile_id, job)
