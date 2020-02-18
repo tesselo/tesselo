@@ -24,8 +24,9 @@ from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from jobs import ecs
 from report.tasks import push_reports
-from sentinel import const, ecs
+from sentinel import const
 from sentinel.clouds.algorithms import Clouds
 from sentinel.clouds.utils import sun
 from sentinel.models import (

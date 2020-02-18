@@ -5,7 +5,8 @@ from classify.models import (
 )
 from django import forms
 from django.contrib.gis import admin
-from sentinel import const, ecs
+from jobs import ecs
+from sentinel import const
 from sentinel.models import CompositeBand, SentinelTileBand
 
 

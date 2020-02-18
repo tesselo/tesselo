@@ -50,7 +50,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo
 
     # Run locally if in debug mode.
     if settings.LOCAL:
-        call_command('sentinel', *command_input, verbosity=1)
+        call_command('jobs', *command_input, verbosity=1)
         return
 
     # Ensure input is in string format (required for the container overrides).
@@ -64,7 +64,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo
 
     # Set container overrides.
     command['containerOverrides'].update({
-        'command': ['python', 'manage.py', 'sentinel', ] + command_input,
+        'command': ['python', 'manage.py', 'jobs', ] + command_input,
         'vcpus': vcpus,
         'memory': memory,
     })

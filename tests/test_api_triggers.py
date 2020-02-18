@@ -12,10 +12,10 @@ from django.urls import reverse
 from sentinel.models import Composite, CompositeBuild
 
 
-@patch('sentinel.ecs.composite_build_callback', lambda *args, **kwargs: None)
-@patch('sentinel.ecs.process_compositetile', lambda *args, **kwargs: None)
-@patch('sentinel.ecs.train_sentinel_classifier', lambda *args, **kwargs: None)
-@patch('sentinel.ecs.predict_sentinel_layer', lambda *args, **kwargs: None)
+@patch('jobs.ecs.composite_build_callback', lambda *args, **kwargs: None)
+@patch('jobs.ecs.process_compositetile', lambda *args, **kwargs: None)
+@patch('jobs.ecs.train_sentinel_classifier', lambda *args, **kwargs: None)
+@patch('jobs.ecs.predict_sentinel_layer', lambda *args, **kwargs: None)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelApiTriggers(TestCase):
 

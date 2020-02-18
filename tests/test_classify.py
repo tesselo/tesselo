@@ -41,7 +41,7 @@ from sentinel.models import Composite, SentinelTile
 @patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('classify.tasks.get_raster_tile', patch_get_raster_tile)
 @patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
-@patch('sentinel.ecs.process_l2a', patch_process_l2a)
+@patch('jobs.ecs.process_l2a', patch_process_l2a)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
 
@@ -58,7 +58,7 @@ class SentinelClassifierTest(TestCase):
             patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile),
             patch('classify.tasks.get_raster_tile', patch_get_raster_tile),
             patch('classify.tasks.write_raster_tile', patch_write_raster_tile),
-            patch('sentinel.ecs.process_l2a', patch_process_l2a),
+            patch('jobs.ecs.process_l2a', patch_process_l2a),
         ]
         for mock in mocks:
             mock.start()

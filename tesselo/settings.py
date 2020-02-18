@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'wmts',
     'userinterface',
     'report',
+    'jobs',
 ]
 
 MIDDLEWARE = [

@@ -30,8 +30,8 @@ from sentinel_1.models import Sentinel1Tile
 @patch('sentinel.tasks.get_raster_tile', patch_get_raster_tile)
 @patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('raster.tiles.parser.urlretrieve', point_to_test_file)
-@patch('sentinel.ecs.process_l2a', patch_process_l2a)
-@patch('sentinel.ecs.snap_terrain_correction', patch_snap_terrain_correction)
+@patch('jobs.ecs.process_l2a', patch_process_l2a)
+@patch('jobs.ecs.snap_terrain_correction', patch_snap_terrain_correction)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelBucketParserTest(TestCase):
 

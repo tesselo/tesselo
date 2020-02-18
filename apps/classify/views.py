@@ -10,9 +10,9 @@ from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
 )
 from django.http import HttpResponse
+from jobs import ecs
 from raster_api.permissions import ChangePermissionObjectPermission, IsReadOnly
 from raster_api.views import PermissionsModelViewSet
-from sentinel import ecs
 
 
 class TrainingLayerViewSet(PermissionsModelViewSet):

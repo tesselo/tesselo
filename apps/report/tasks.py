@@ -2,9 +2,9 @@ import datetime
 
 from raster_aggregation.models import AggregationLayer
 
+from jobs import ecs
 from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.utils import populate_vc
-from sentinel import ecs
 
 
 def push_reports(model, pk):

@@ -29,8 +29,8 @@ from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
 from django.core.files import File
+from jobs import ecs
 from report.tasks import push_reports
-from sentinel import ecs
 from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
 
 

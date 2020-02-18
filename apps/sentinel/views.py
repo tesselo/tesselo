@@ -13,9 +13,10 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from jobs import ecs
 from raster_api.permissions import ChangePermissionObjectPermission, DependentObjectPermission
 from raster_api.views import IsReadOnly, PermissionsModelViewSet
-from sentinel import clouds, ecs
+from sentinel import clouds
 from sentinel.filters import SentinelTileFilter
 from sentinel.models import CompositeBuild, CompositeTile, SentinelTile
 from sentinel.serializers import CompositeBuildSerializer, CompositeTileSerializer, SentinelTileSerializer

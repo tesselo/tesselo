@@ -1,5 +1,5 @@
 from django.contrib.gis import admin
-from sentinel import ecs
+from jobs import ecs
 from sentinel_1.models import Sentinel1Tile, Sentinel1TileBand
 
 

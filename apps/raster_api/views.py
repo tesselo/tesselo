@@ -35,6 +35,7 @@ from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from jobs import ecs
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
 from raster_api.const import COOKIE_AUTH_KEY, EXPIRING_TOKEN_LIFESPAN, NAIP_MIN_ZOOM
@@ -55,7 +56,6 @@ from raster_api.tasks import (
     aggregation_layer_parser_async, compute_single_value_count_result, compute_single_value_count_result_async
 )
 from raster_api.utils import get_empty_tile
-from sentinel import ecs
 from sentinel.clouds.inspect_composite import inspect_composite
 from sentinel.models import Composite, SentinelTileAggregationLayer
 from sentinel.utils import get_raster_tile
