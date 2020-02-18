@@ -4,6 +4,7 @@ from unittest.mock import patch
 from raster_aggregation.models import AggregationLayer
 
 from django.test import TestCase
+from django.utils import timezone
 from sentinel.models import Composite, CompositeBuild, CompositeBuildSchedule
 from sentinel.tasks import push_scheduled_composite_builds
 
@@ -20,14 +21,14 @@ class SentinelCompositeScheduleTest(TestCase):
         self.composite = Composite.objects.create(
             name='The World',
             official=True,
-            min_date=datetime.datetime.now() - datetime.timedelta(days=7),
-            max_date=datetime.datetime.now() + datetime.timedelta(days=7),
+            min_date=timezone.now() - datetime.timedelta(days=7),
+            max_date=timezone.now() + datetime.timedelta(days=7),
         )
         self.composite2 = Composite.objects.create(
             name='The World 2',
             official=True,
-            min_date=datetime.datetime.now() - datetime.timedelta(days=7),
-            max_date=datetime.datetime.now() + datetime.timedelta(days=7),
+            min_date=timezone.now() - datetime.timedelta(days=7),
+            max_date=timezone.now() + datetime.timedelta(days=7),
         )
         self.build = CompositeBuild.objects.create(
             composite=self.composite,
@@ -39,7 +40,7 @@ class SentinelCompositeScheduleTest(TestCase):
         )
         self.schedule = CompositeBuildSchedule.objects.create(
             interval=CompositeBuildSchedule.WEEKLY,
-            delay_build_days=datetime.datetime.now().weekday(),
+            delay_build_days=timezone.now().weekday(),
         )
         self.schedule.compositebuilds.set([self.build, self.build2])
 
@@ -66,8 +67,8 @@ class SentinelCompositeScheduleTest(TestCase):
         self.assertEqual(CompositeBuild.objects.filter(status=CompositeBuild.FINISHED).count(), 1)
 
     def test_composite_scheduling_future(self):
-        self.composite.min_date = datetime.datetime.now() + datetime.timedelta(days=100)
-        self.composite.max_date = datetime.datetime.now() + datetime.timedelta(days=107)
+        self.composite.min_date = timezone.now() + datetime.timedelta(days=100)
+        self.composite.max_date = timezone.now() + datetime.timedelta(days=107)
         self.composite.save()
         push_scheduled_composite_builds()
         self.assertEqual(CompositeBuild.objects.get(id=self.build.id).status, CompositeBuild.UNPROCESSED)
@@ -81,14 +82,14 @@ class SentinelCompositeScheduleTest(TestCase):
 
     def test_composite_scheduling_monthly_match(self):
         self.schedule.interval = CompositeBuildSchedule.MONTHLY
-        self.schedule.delay_build_days = datetime.datetime.now().day - 1
+        self.schedule.delay_build_days = timezone.now().day - 1
         self.schedule.save()
         push_scheduled_composite_builds()
         self.assertEqual(CompositeBuild.objects.filter(status=CompositeBuild.FINISHED).count(), 2)
 
     def test_composite_scheduling_monthly_not_match(self):
         self.schedule.interval = CompositeBuildSchedule.MONTHLY
-        self.schedule.delay_build_days = datetime.datetime.now().day + 1
+        self.schedule.delay_build_days = timezone.now().day + 1
         self.schedule.save()
         push_scheduled_composite_builds()
         self.assertEqual(CompositeBuild.objects.filter(status=CompositeBuild.FINISHED).count(), 0)

@@ -10,6 +10,8 @@ import tempfile
 import traceback
 
 import boto3
+import dateutil
+import pytz
 import rasterio
 from raster.models import RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID
@@ -22,6 +24,9 @@ from sentinel.tasks import composite_build_callback
 from sentinel.utils import locally_parse_raster
 from sentinel_1 import const
 from sentinel_1.models import Sentinel1Tile, Sentinel1TileBand
+
+# Setup timezone for timestamp parsing.
+UTC = pytz.timezone('UTC')
 
 
 def parse_s3_sentinel_1_inventory():
@@ -64,9 +69,9 @@ def parse_s3_sentinel_1_inventory():
                 batch.append(new_tile)
                 counter += 1
                 if counter % 500 == 0:
-                    print('Created {} S1 Tiles'.format(counter))
                     Sentinel1Tile.objects.bulk_create(batch)
                     batch = []
+                    print('Created {} S1 Tiles'.format(counter))
 
             if len(batch):
                 Sentinel1Tile.objects.bulk_create(batch)
@@ -114,8 +119,8 @@ def ingest_s1_tile_from_prefix(tile_prefix, client=None, commit=True):
         product_type=tileinfo['productType'],
         mode=tileinfo['mode'],
         polarization=tileinfo['polarization'],
-        start_time=tileinfo['startTime'],
-        stop_time=tileinfo['stopTime'],
+        start_time=UTC.localize(dateutil.parser.parse(tileinfo['startTime']), is_dst=True),
+        stop_time=UTC.localize(dateutil.parser.parse(tileinfo['stopTime']), is_dst=True),
         absolute_orbit_number=tileinfo['absoluteOrbitNumber'],
         mission_datatake_id=tileinfo['missionDataTakeId'],
         product_unique_identifier=tileinfo['productUniqueIdentifier'],
