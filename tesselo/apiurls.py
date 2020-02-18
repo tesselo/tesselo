@@ -4,6 +4,7 @@ from classify.views import ClassifierViewSet, PredictedLayerViewSet, TrainingLay
 from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaAlgebraAPIView, FormulaViewSet
+from jobs.views import BatchJobViewSet
 from raster_api.views import (
     AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
     CompositeViewSet, ExportAPIView, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
@@ -114,6 +115,8 @@ router.register(r'bookmarkfolder', BookmarkFolderViewSet, base_name='bookmarkfol
 
 router.register(r'reportschedule', ReportScheduleViewSet, base_name='reportschedule')
 router.register(r'reportaggregation', ReportAggregationViewSet, base_name='reportaggregation')
+
+router.register(r'batchjob', BatchJobViewSet, base_name='batchjob')
 
 apiurlpatterns = [
     url(r'^token-auth/', csrf_exempt(ObtainExpiringAuthToken.as_view()), name='api-token-auth'),
