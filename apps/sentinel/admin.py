@@ -81,7 +81,7 @@ class SentinelTileSceneClassAdmin(admin.ModelAdmin):
 class CompositeBuildAdmin(admin.ModelAdmin):
     model = CompositeBuild
     readonly_fields = ('sentineltiles', 'compositetiles', 'sentinel1tiles', )
-    actions = ('run_composite_build', 'preflight')
+    actions = ('run_composite_build', 'run_preflight')
     list_filter = ('status', )
     raw_id_fields = ('composite', 'aggregationlayer', )
 
