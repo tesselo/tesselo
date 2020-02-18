@@ -81,7 +81,7 @@ class SentinelTileSceneClassAdmin(admin.ModelAdmin):
 class CompositeBuildAdmin(admin.ModelAdmin):
     model = CompositeBuild
     readonly_fields = ('sentineltiles', 'compositetiles', 'sentinel1tiles', )
-    actions = ('run_composite_build', )
+    actions = ('run_composite_build', 'preflight')
     list_filter = ('status', )
     raw_id_fields = ('composite', 'aggregationlayer', )
 
@@ -92,6 +92,11 @@ class CompositeBuildAdmin(admin.ModelAdmin):
             ecs.composite_build_callback(build.id, initiate=True, rebuild=True)
 
         self.message_user(request, 'Triggered Composite Builds {}'.format([build.id for build in queryset]))
+
+    def run_preflight(self, request, queryset):
+        for build in queryset:
+            build.preflight()
+        self.message_user(request, 'Computed preflight effort for Composite Builds {}'.format([build.id for build in queryset]))
 
 
 class CompositeTileAdmin(admin.ModelAdmin):

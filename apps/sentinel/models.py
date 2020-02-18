@@ -462,6 +462,21 @@ class CompositeBuild(models.Model):
             self.status = status
         self.save()
 
+    def preflight(self):
+        """
+        Initiate related objects to estimate effort.
+        """
+        # Don't update this list while the build is processing.
+        if self.status in (self.PENDING, self.INGESTING_SCENES, self.BUILDING_TILES):
+            return
+
+        # Sentinel-1.
+        self.set_sentinel1tiles()
+        # Sentinel-2.
+        self.set_sentineltiles()
+        # Composite build task tile.
+        self.set_compositetiles()
+
     def set_sentineltiles(self):
         # Clear current set of sentineltiles.
         self.sentineltiles.clear()

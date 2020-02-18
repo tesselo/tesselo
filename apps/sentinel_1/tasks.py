@@ -2,13 +2,13 @@ import datetime
 import glob
 import gzip
 import json
+import logging
 import os
 import pathlib
 import shutil
 import subprocess
 import tempfile
 import traceback
-import logging
 
 import boto3
 import dateutil

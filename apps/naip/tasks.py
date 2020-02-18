@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 import boto3
 
 from naip.models import NAIPQuadrangle

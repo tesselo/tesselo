@@ -802,12 +802,7 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
 
     # Initiate the compositebuild related objects if requested.
     if initiate:
-        # Sentinel-1.
-        compositebuild.set_sentinel1tiles()
-        # Sentinel-2.
-        compositebuild.set_sentineltiles()
-        # Composite build task tile.
-        compositebuild.set_compositetiles()
+        compositebuild.preflight()
 
     # Enforce re-building of composite tiles.
     if rebuild:

@@ -108,6 +108,21 @@ class CompositeBuildViewSet(PermissionsModelViewSet):
 
         return Response({'success': 'Triggered Composite Build {}'.format(cbuild.id)})
 
+    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated, IsReadOnly, ChangePermissionObjectPermission])
+    def preflight(self, request, pk):
+        """
+        Schedule a composite build task to build this composite.
+        """
+        # Get composite build object.
+        cbuild = self.get_object()
+        cbuild.preflight()
+        return Response({
+            'success': 'Computed preflight effort for Composite Build {}'.format(cbuild.id),
+            'compositetiles': cbuild.compositetiles.count(),
+            'sentineltiles': cbuild.sentineltiles.count(),
+            'sentinel1tiles': cbuild.sentinel1tiles.count(),
+        })
+
 
 class CompositeTileViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated, IsReadOnly, DependentObjectPermission)
