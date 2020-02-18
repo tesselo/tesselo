@@ -1,8 +1,10 @@
 import os
-
+import logging
 import boto3
 
 from naip.models import NAIPQuadrangle
+
+logger = logging.getLogger('django')
 
 
 def ingest_naip_prefix(prefix):
@@ -52,13 +54,13 @@ def ingest_naip_prefix(prefix):
             date=date,
         )
     except:
-        print('Failed', prefix)
+        logger.info('Failed', prefix)
         raise
 
 
 def ingest_naip_manifest():
     # Get current manifest file.
-    print('Getting manifest file.')
+    logger.info('Getting manifest file.')
     s3 = boto3.resource('s3')
     s3.Object('naip-analytic', 'manifest.txt').download_file('/tmp/manifest.txt', ExtraArgs={'RequestPayer': 'requester'})
     # Delete all existing naip quadrangles.
@@ -74,7 +76,7 @@ def ingest_naip_manifest():
                 bulk.append(naip)
                 counter += 1
             if len(bulk) == 2500:
-                print('Creating objects.', counter)
+                logger.info('Creating objects.', counter)
                 NAIPQuadrangle.objects.bulk_create(bulk)
                 bulk = []
         # Create the remaining objects.

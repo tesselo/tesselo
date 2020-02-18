@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 import traceback
+import logging
 
 import boto3
 import dateutil
@@ -28,6 +29,9 @@ from sentinel_1.models import Sentinel1Tile, Sentinel1TileBand
 # Setup timezone for timestamp parsing.
 UTC = pytz.timezone('UTC')
 
+# Get logger.
+logger = logging.getLogger('django')
+
 
 def parse_s3_sentinel_1_inventory():
     """
@@ -35,7 +39,7 @@ def parse_s3_sentinel_1_inventory():
 
     aws s3 ls s3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory/
     """
-    print('Starting inventory sync.')
+    logger.info('Starting inventory sync.')
     client = boto3.client('s3')
     today = datetime.datetime.now().date() - datetime.timedelta(days=1)
     # Get latest inventory manifest (created yesterday).
@@ -46,7 +50,7 @@ def parse_s3_sentinel_1_inventory():
     manifest = json.loads(manifest.get(const.TILEINFO_BODY_KEY).read().decode())
     # Loop through inventory files and ingest listed Sentinel-1 scenes.
     for dat in manifest['files']:
-        print('Working on file', dat['key'])
+        logger.info('Working on file', dat['key'])
         with tempfile.NamedTemporaryFile(suffix='.csv.gz') as csvgz:
             prefixes = set()
             client.download_file(
@@ -58,7 +62,7 @@ def parse_s3_sentinel_1_inventory():
                 for line in fl:
                     # Add prefix to unique list.
                     prefixes.add('/'.join(str(line).replace('"', '').split(',')[1].split('/')[:7]) + '/')
-            print('Found {} unique prefixes.'.format(len(prefixes)))
+            logger.info('Found {} unique prefixes.'.format(len(prefixes)))
             # Setup s1tiles from unique prefix list.
             batch = []
             counter = 0
@@ -71,7 +75,7 @@ def parse_s3_sentinel_1_inventory():
                 if counter % 500 == 0:
                     Sentinel1Tile.objects.bulk_create(batch)
                     batch = []
-                    print('Created {} S1 Tiles'.format(counter))
+                    logger.info('Created {} S1 Tiles'.format(counter))
 
             if len(batch):
                 Sentinel1Tile.objects.bulk_create(batch)
