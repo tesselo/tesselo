@@ -97,11 +97,16 @@ def ingest_s1_tile_from_prefix(tile_prefix, client=None, commit=True):
     tileinfo_key = tile_prefix + const.TILE_INFO_FILE
 
     # Get tile info json data.
-    tileinfo = client.get_object(
-        Key=tileinfo_key,
-        Bucket=const.BUCKET_NAME,
-        RequestPayer='requester',
-    )
+    try:
+        tileinfo = client.get_object(
+            Key=tileinfo_key,
+            Bucket=const.BUCKET_NAME,
+            RequestPayer='requester',
+        )
+    except client.exceptions.NoSuchKey:
+        logger.error('Could not ingest S1 prefix "{}", tileinfo key "{}" not found.'.format(tile_prefix, tileinfo_key))
+        return
+
     tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
 
     if 'footprint' in tileinfo:
