@@ -50,7 +50,7 @@ def parse_s3_sentinel_1_inventory():
     manifest = json.loads(manifest.get(const.TILEINFO_BODY_KEY).read().decode())
     # Loop through inventory files and ingest listed Sentinel-1 scenes.
     for dat in manifest['files']:
-        logger.info('Working on file', dat['key'])
+        logger.info('Working on file {}.'.format(dat['key']))
         with tempfile.NamedTemporaryFile(suffix='.csv.gz') as csvgz:
             prefixes = set()
             client.download_file(
