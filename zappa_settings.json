@@ -17,7 +17,7 @@
     "certificate_arn": "arn:aws:acm:us-east-1:595064993071:certificate/3cac1dfe-5915-4325-91fa-a53952cbd2e1",
     "domain": "devapi.tesselo.com",
     "slim_handler": true,
-    "memory_size": 1024,
+    "memory_size": 768,
     "log_level": "ERROR",
     "keep_warm": true,
     "num_retained_versions": 10
