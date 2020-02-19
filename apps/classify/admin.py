@@ -90,6 +90,8 @@ class ClassifierAdmin(GuardedModelAdmin):
 class PredictedLayerAdmin(GuardedModelAdmin):
     raw_id_fields = ('sentineltile', 'rasterlayer', )
     actions = ['predict_layer', ]
+    list_filter = ('status', )
+    search_fields = ('name', 'classifier__name', )
 
     def predict_layer(self, request, queryset):
         for pred in queryset:

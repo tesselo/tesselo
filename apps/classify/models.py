@@ -207,7 +207,7 @@ class PredictedLayer(models.Model):
 
     def __str__(self):
         if self.name:
-            return self.name
+            return '{} | {}'.format(self.name, self.status)
         else:
             if self.classifier and self.classifier.is_keras:
                 using = ''
@@ -220,7 +220,7 @@ class PredictedLayer(models.Model):
 
             agglayer = self.aggregationlayer.name if self.aggregationlayer else ''
 
-            return '{} over {} {} ({}).'.format(
+            return '{} over {} {} | {}.'.format(
                 self.classifier,
                 agglayer,
                 using,
