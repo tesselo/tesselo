@@ -198,7 +198,7 @@ class PredictedLayer(models.Model):
     name = models.CharField(max_length=500, default='', blank=True)
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
-    composites = models.ManyToManyField(Composite)
+    composites = models.ManyToManyField(Composite, blank=True)
     aggregationlayer = models.ForeignKey(AggregationLayer, null=True, blank=True, on_delete=models.SET_NULL)
     rasterlayer = models.ForeignKey(RasterLayer, blank=True, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
