@@ -72,7 +72,7 @@ def parse_s3_sentinel_1_inventory():
                     continue
                 batch.append(new_tile)
                 counter += 1
-                if counter % 500 == 0:
+                if counter % 2500 == 0:
                     Sentinel1Tile.objects.bulk_create(batch)
                     batch = []
                     logger.info('Created {} S1 Tiles'.format(counter))
