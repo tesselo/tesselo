@@ -195,7 +195,7 @@ class PredictedLayer(models.Model):
         (FINISHED, FINISHED),
         (FAILED, FAILED),
     )
-    name = models.CharField(max_length=500, default='')
+    name = models.CharField(max_length=500, default='', blank=True)
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
     composites = models.ManyToManyField(Composite)
