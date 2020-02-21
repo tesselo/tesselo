@@ -107,7 +107,12 @@ def ingest_s1_tile_from_prefix(tile_prefix, client=None, commit=True):
         logger.error('Could not ingest S1 prefix "{}", tileinfo key "{}" not found.'.format(tile_prefix, tileinfo_key))
         return
 
-    tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
+    # Decode json tile info data into a dictionary.
+    try:
+        tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
+    except json.decoder.JSONDecodeError:
+        logger.error('Could not ingest S1 prefix "{}", TileInfo json file is malformed.'.format(tile_prefix, tileinfo_key))
+        return
 
     if 'footprint' in tileinfo:
         footprint = OGRGeometry(str(tileinfo['footprint'])).geos
