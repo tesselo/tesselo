@@ -11,7 +11,8 @@ from raster_aggregation.models import AggregationLayer
 from classify.const import PIPELINE_ESTIMATOR_NAME, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField, HStoreField
-from django.db.models.signals import post_save
+from django.db.models import Max, Min
+from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
 from sentinel.const import ZOOM_LEVEL_10M
 from sentinel.models import Composite, SentinelTile
@@ -204,6 +205,8 @@ class PredictedLayer(models.Model):
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
+    min_date = models.DateField(null=True, blank=True, editable=False)
+    max_date = models.DateField(null=True, blank=True, editable=False)
 
     def __str__(self):
         if self.name:
@@ -246,7 +249,11 @@ class PredictedLayer(models.Model):
                 self.rasterlayer.legend_id = self.legend_id
                 self.rasterlayer.save()
 
-        super().save(*args, **kwargs)  # Call the "real" save() method.
+        if self.sentineltile:
+            self.min_date = self.sentineltile.collected.date()
+            self.max_date = self.sentineltile.collected.date()
+
+        super().save(*args, **kwargs)
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
@@ -254,6 +261,25 @@ class PredictedLayer(models.Model):
         if status:
             self.status = status
         self.save()
+
+
+@receiver(m2m_changed, sender=PredictedLayer.composites.through, weak=False, dispatch_uid="update_min_max_date_range_on_predictedlayer")
+def update_min_max_date_range_on_predictedlayer(sender, instance, **kwargs):
+    """
+    Automatically update min and max dates based on associated composites or
+    sentinel tile.
+    """
+    if instance.composites.count():
+        instance.min_date = instance.composites.aggregate(Min('min_date'))['min_date__min']
+        instance.max_date = instance.composites.aggregate(Max('max_date'))['max_date__max']
+    elif instance.sentineltile:
+        instance.min_date = instance.sentineltile.collected.date()
+        instance.max_date = instance.sentineltile.collected.date()
+    else:
+        instance.min_date = None
+        instance.max_date = None
+
+    instance.save()
 
 
 class PredictedLayerChunk(models.Model):

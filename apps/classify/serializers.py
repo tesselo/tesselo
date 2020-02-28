@@ -69,11 +69,12 @@ class PredictedLayerSerializer(ModelSerializer):
             'id', 'classifier', 'sentineltile', 'composites', 'rasterlayer',
             'log', 'chunks_count', 'chunks_done', 'classifier_name',
             'source_name', 'status', 'aggregationlayer', 'classifier_type',
-            'aggregationlayer_name', 'legend', 'name',
+            'aggregationlayer_name', 'legend', 'name', 'min_date', 'max_date',
         )
         read_only_fields = (
             'rasterlayer', 'log', 'chunks_count', 'chunks_done',
             'classifier_name', 'source_name', 'status', 'legend',
+            'min_date', 'max_date',
         )
 
     def get_classifier_name(self, obj):

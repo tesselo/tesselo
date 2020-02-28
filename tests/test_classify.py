@@ -1,9 +1,11 @@
+import datetime
 import os
 import shutil
 import tempfile
 from unittest import skip
 from unittest.mock import patch
 
+import dateutil
 import numpy
 from keras.layers import GRU, BatchNormalization, Dense, Dropout
 from keras.models import Sequential
@@ -31,7 +33,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from sentinel.models import Composite, SentinelTile
+from sentinel.models import Composite, MGRSTile, SentinelTile
 
 
 @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
@@ -575,3 +577,27 @@ class SentinelClassifierTest(TestCase):
         self.assertTrue(Y.shape[0] > 0)
         self.assertEqual(Y.shape[0], X.shape[0])
         self.assertEqual(Y.shape[0], PID.shape[0])
+
+    def test_predictedlayer_min_max_date_signal(self):
+        pred = PredictedLayer.objects.create()
+        pred.composites.set([self.composite, self.composite2, self.composite3])
+        pred.refresh_from_db()
+        self.assertEqual(pred.min_date, datetime.date(2015, 10, 1))
+        self.assertEqual(pred.max_date, datetime.date(2015, 12, 31))
+
+        stile_date = datetime.date(2015, 3, 23)
+        # Set up sentineltile.
+        mgrstile = MGRSTile.objects.create(utm_zone='AA', latitude_band='2', grid_square='AA')
+        stile = SentinelTile.objects.create(
+            prefix='test',
+            datastrip='test',
+            product_name='test',
+            mgrstile=mgrstile,
+            collected=dateutil.parser.parse("2015-03-23T19:04:17.320Z"),
+            cloudy_pixel_percentage=0.95,
+            data_coverage_percentage=100,
+        )
+        pred = PredictedLayer.objects.create(sentineltile=stile)
+        pred.refresh_from_db()
+        self.assertEqual(pred.min_date, stile_date)
+        self.assertEqual(pred.max_date, stile_date)
