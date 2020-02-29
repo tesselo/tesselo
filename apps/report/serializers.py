@@ -1,6 +1,6 @@
 import json
 
-from rest_framework.serializers import CharField, DateField, FloatField, SerializerMethodField
+from rest_framework.serializers import CharField, FloatField, SerializerMethodField
 
 from raster_api.serializers import PermissionsModelSerializer
 from report.models import ReportAggregation, ReportSchedule
@@ -28,8 +28,6 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
     pcount = FloatField(source='valuecountresult.stats_cumsum_t0')
     psum = FloatField(source='valuecountresult.stats_cumsum_t1')
     psumsq = FloatField(source='valuecountresult.stats_cumsum_t2')
-    min_date = DateField(source='composite.min_date')
-    max_date = DateField(source='composite.max_date')
 
     class Meta:
         model = ReportAggregation

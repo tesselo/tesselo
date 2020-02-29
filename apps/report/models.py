@@ -4,7 +4,7 @@ from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCo
 
 from classify.models import PredictedLayer
 from django.db import models
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from sentinel.models import Composite
 
@@ -83,6 +83,9 @@ class ReportAggregation(models.Model):
 
     valuecountresult = models.OneToOneField(ValueCountResult, on_delete=models.CASCADE, blank=True)
 
+    min_date = models.DateField(null=True, blank=True, editable=False)
+    max_date = models.DateField(null=True, blank=True, editable=False)
+
     def __str__(self):
         dat = '{}'.format(self.id)
         if hasattr(self, 'aggregationlayer') and self.aggregationlayer:
@@ -106,7 +109,7 @@ class ReportAggregation(models.Model):
             }
             # Only keep bands that are present in formula.
             layer_names = {key: val for key, val in layer_names.items() if key in formula}
-            # Add predictelayer keys to lookup.
+            # Add predictedlayer keys to lookup.
             for pred in self.formula.predictedlayerformula_set.all():
                 layer_names[pred.key] = pred.predictedlayer.rasterlayer_id
         elif self.predictedlayer_id:
@@ -139,3 +142,16 @@ class ReportAggregation(models.Model):
 def check_change_on_formula(sender, instance, **kwargs):
     if hasattr(instance, 'valuecountresult'):
         instance.valuecountresult.delete()
+
+
+@receiver(pre_save, sender=ReportAggregation, weak=False, dispatch_uid="auto_set_valuecountresult_min_max_dates")
+def auto_set_valuecountresult_min_max_dates(sender, instance, **kwargs):
+    if instance.composite:
+        src_object = instance.composite
+    elif instance.predictedlayer:
+        src_object = instance.predictedlayer
+    else:
+        return
+
+    instance.min_date = src_object.min_date
+    instance.max_date = src_object.max_date

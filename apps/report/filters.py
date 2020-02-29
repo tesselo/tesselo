@@ -5,8 +5,8 @@ from report.models import ReportAggregation
 
 class ReportAggregationFilter(FilterSet):
 
-    date_after = DateFilter(field_name='composite__min_date', lookup_expr='gte')
-    date_before = DateFilter(field_name='composite__max_date', lookup_expr='lte')
+    date_after = DateFilter(field_name='min_date', lookup_expr='gte')
+    date_before = DateFilter(field_name='max_date', lookup_expr='lte')
 
     class Meta:
         model = ReportAggregation

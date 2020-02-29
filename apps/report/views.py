@@ -35,6 +35,6 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
     ordering_fields = [
         'valuecountresult__stats_avg',
         'aggregationarea__name',
-        'composite__min_date',
+        'min_date',
     ]
-    ordering = ['aggregationarea__name', 'composite__min_date']
+    ordering = ['aggregationarea__name', 'min_date']

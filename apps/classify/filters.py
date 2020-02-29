@@ -5,7 +5,7 @@ from classify.models import PredictedLayer
 
 class PredictedLayerFilter(FilterSet):
 
-    year = NumberFilter(label='Year', field_name='min_date__year')
+    year = NumberFilter(label='Year', field_name='max_date__year')
 
     class Meta:
         model = PredictedLayer
