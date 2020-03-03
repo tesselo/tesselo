@@ -83,8 +83,8 @@ class ReportAggregation(models.Model):
 
     valuecountresult = models.OneToOneField(ValueCountResult, on_delete=models.CASCADE, blank=True)
 
-    min_date = models.DateField(null=True, blank=True, editable=False)
-    max_date = models.DateField(null=True, blank=True, editable=False)
+    min_date = models.DateField(null=True, blank=True, editable=False, db_index=True)
+    max_date = models.DateField(null=True, blank=True, editable=False, db_index=True)
 
     def __str__(self):
         dat = '{}'.format(self.id)
