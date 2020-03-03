@@ -8,16 +8,16 @@ def forward(apps, schema_editor):
     ReportAggregation = apps.get_model("report", "ReportAggregation")
 
     sq = Subquery(ReportAggregation.objects.filter(id=OuterRef('id'), composite__isnull=False).values('composite__min_date')[:1])
-    qs = ReportAggregation.objects.filter(composite__isnull=False).update(min_date=sq)
+    ReportAggregation.objects.filter(composite__isnull=False).update(min_date=sq)
 
     sq = Subquery(ReportAggregation.objects.filter(id=OuterRef('id'), composite__isnull=False).values('composite__max_date')[:1])
-    qs = ReportAggregation.objects.filter(composite__isnull=False).update(max_date=sq)
+    ReportAggregation.objects.filter(composite__isnull=False).update(max_date=sq)
 
     sq = Subquery(ReportAggregation.objects.filter(id=OuterRef('id'), predictedlayer__isnull=False).values('predictedlayer__min_date')[:1])
-    qs = ReportAggregation.objects.filter(predictedlayer__isnull=False).update(min_date=sq)
+    ReportAggregation.objects.filter(predictedlayer__isnull=False).update(min_date=sq)
 
     sq = Subquery(ReportAggregation.objects.filter(id=OuterRef('id'), predictedlayer__isnull=False).values('predictedlayer__max_date')[:1])
-    qs = ReportAggregation.objects.filter(predictedlayer__isnull=False).update(max_date=sq)
+    ReportAggregation.objects.filter(predictedlayer__isnull=False).update(max_date=sq)
 
 
 def backward(apps, schema_editor):
