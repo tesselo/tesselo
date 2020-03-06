@@ -11,7 +11,8 @@ class ReportScheduleSerializer(PermissionsModelSerializer):
     class Meta:
         model = ReportSchedule
         fields = (
-            'id', 'aggregationlayer', 'formula', 'composite', 'predictedlayer',
+            'id', 'aggregationlayers', 'formulas', 'composites',
+            'predictedlayers', 'active',
         )
 
 
