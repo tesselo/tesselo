@@ -108,6 +108,7 @@ class AggregationViewTests(TestCase):
                 'B3': self.composite.compositeband_set.get(band='B03.jp2').rasterlayer_id,
             }
         )
+        self.assertEqual(agg.valuecountresult.grouping, 'continuous')
 
     def test_create_aggregator_predicted(self):
         agg = ReportAggregation(
@@ -127,6 +128,7 @@ class AggregationViewTests(TestCase):
                 'x': self.predictedlayer.rasterlayer_id,
             }
         )
+        self.assertEqual(agg.valuecountresult.grouping, 'discrete')
 
     def test_create_aggregator_predicted_formula(self):
         # Create and populated predictedlayer.
