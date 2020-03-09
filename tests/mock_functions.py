@@ -150,13 +150,14 @@ def point_to_test_file(source_url, filepath):
     })
 
 
-def patch_get_raster_tile(layer_id, tilez, tilex, tiley):
-    if SentinelTileSceneClass.objects.filter(layer_id=layer_id).exists():
-        # For scene class layers, write small landcover class integers.
-        data_max = 11
-    else:
-        # For other layers, use 10k data range.
-        data_max = 1e4
+def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None):
+    if data_max is None:
+        if SentinelTileSceneClass.objects.filter(layer_id=layer_id).exists():
+            # For scene class layers, write small landcover class integers.
+            data_max = 11
+        else:
+            # For other layers, use 10k data range.
+            data_max = 1e4
 
     if Sentinel1TileBand.objects.filter(layer_id=layer_id).exists():
         # Sentinel-1 bands have float32 data type.
@@ -178,6 +179,10 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley):
             {'nodata_value': 0, 'data': data},
         ],
     })
+
+
+def patch_get_raster_tile_range_100(layer_id, tilez, tilex, tiley):
+    return patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=100)
 
 
 def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):

@@ -132,11 +132,30 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
         # Reset valuecount result object.
         vc = rep.get_valuecount()
+
         # Update the aggregation values, with minimal DB interactions.
         vc = populate_vc(vc)
+
         # Store valuecount link.
         rep.valuecountresult = vc
+
+        # Copy the data to the ReportAggregation.
+        rep.value = vc.value
+        rep.stats_min = vc.stats_min
+        rep.stats_max = vc.stats_max
+        rep.stats_avg = vc.stats_avg
+        rep.stats_std = vc.stats_std
+        rep.stats_cumsum_t0 = vc.stats_cumsum_t0
+        rep.stats_cumsum_t1 = vc.stats_cumsum_t1
+        rep.stats_cumsum_t2 = vc.stats_cumsum_t2
+
+        # For discrete reports, compute percentage as well.
+        valsum = sum([float(val) for key, val in vc.value.items()])
+        rep.value_percentage = {key: float(val) / valsum for key, val in vc.value.items()}
+
+        # Save data.
         rep.save()
+
         # Log progress.
         if counter % 250 == 0:
             task.write('Completed {}/{} aggregations.'.format(counter, total_jobs))

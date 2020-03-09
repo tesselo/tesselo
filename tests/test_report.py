@@ -1,10 +1,12 @@
 import io
 import tempfile
+from unittest.mock import patch
 
 import dateutil
 from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster_aggregation.models import AggregationArea, AggregationLayer
+from tests.mock_functions import patch_get_raster_tile_range_100
 
 from classify.models import PredictedLayer
 from django.contrib.auth.models import User
@@ -18,6 +20,7 @@ from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
+@patch('report.utils.get_raster_tile', patch_get_raster_tile_range_100)
 class AggregationViewTests(TestCase):
 
     def setUp(self):
@@ -39,13 +42,12 @@ class AggregationViewTests(TestCase):
         self.aggarea = AggregationArea.objects.create(
             name='Testarea',
             aggregationlayer=self.agglayer,
-
-            geom='SRID=3857;MULTIPOLYGON (((-8877202 -296836, -8877302 -296836, -8877302 -296936, -8877202 -296836)))',
+            geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11843887 -458452, 11843887 -458252, 11843687 -458252, 11843687 -458452)))',
         )
         self.aggarea2 = AggregationArea.objects.create(
-            name='Testarea 2',
+            name='Testarea',
             aggregationlayer=self.agglayer,
-            geom='SRID=3857;MULTIPOLYGON (((-8877202 -296836, -8877302 -296836, -8877302 -296936, -8877202 -296836)))',
+            geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11843887 -458452, 11843887 -458252, 11843687 -458252, 11843687 -458452)))',
         )
 
         self.formula = Formula.objects.create(
@@ -240,3 +242,18 @@ class AggregationViewTests(TestCase):
         push_reports('composite', self.composite.id)
         # The report was not pushed.
         self.assertEqual(ReportAggregation.objects.count(), 0)
+
+    def test_report_counts_copy(self):
+        self._create_report_schedule()
+        push_reports('composite', self.composite.id)
+        agg = ReportAggregation.objects.first()
+        # Statistics have been computed and are not null.
+        self.assertIsNotNone(agg.stats_max)
+        self.assertTrue(agg.stats_max > 0)
+        # Values have been copied correctly from valuecounts to aggreports.
+        self.assertEqual(agg.stats_min, agg.valuecountresult.stats_min)
+        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        # Percentages have been calculated.
+        key = next(iter(agg.value))
+        valsum = sum([float(val) for key, val in agg.value.items()])
+        self.assertEqual(float(agg.value_percentage[key]), float(agg.value[key]) / valsum)

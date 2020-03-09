@@ -3,6 +3,7 @@ import datetime
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
 
 from classify.models import PredictedLayer
+from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
@@ -85,6 +86,18 @@ class ReportAggregation(models.Model):
 
     min_date = models.DateField(null=True, blank=True, editable=False, db_index=True)
     max_date = models.DateField(null=True, blank=True, editable=False, db_index=True)
+
+    value = HStoreField(default=dict, db_index=True)
+    value_percentage = HStoreField(default=dict, db_index=True)
+
+    stats_min = models.FloatField(editable=False, blank=True, null=True, db_index=True)
+    stats_max = models.FloatField(editable=False, blank=True, null=True, db_index=True)
+    stats_avg = models.FloatField(editable=False, blank=True, null=True, db_index=True)
+    stats_std = models.FloatField(editable=False, blank=True, null=True, db_index=True)
+
+    stats_cumsum_t0 = models.FloatField(editable=False, blank=True, null=True, help_text='Nr of pixels counted.')
+    stats_cumsum_t1 = models.FloatField(editable=False, blank=True, null=True, help_text='Sum of pixel values.')
+    stats_cumsum_t2 = models.FloatField(editable=False, blank=True, null=True, help_text='Sum of squares of pixel values.')
 
     def __str__(self):
         dat = '{}'.format(self.id)
