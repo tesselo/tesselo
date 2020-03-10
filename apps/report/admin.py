@@ -51,7 +51,9 @@ class ReportScheduleAdmin(admin.ModelAdmin):
 class ReportAggregationAdmin(admin.ModelAdmin):
     readonly_fields = (
         'formula', 'aggregationlayer', 'aggregationarea', 'composite',
-        'predictedlayer', 'valuecountresult',
+        'predictedlayer', 'valuecountresult', 'min_date', 'max_date', 'value',
+        'value_percentage', 'stats_min', 'stats_max', 'stats_avg', 'stats_std',
+        'stats_cumsum_t0', 'stats_cumsum_t1', 'stats_cumsum_t2',
     )
 
 
