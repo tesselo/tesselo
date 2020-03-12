@@ -1,4 +1,5 @@
 import io
+import operator
 import tempfile
 from unittest.mock import patch
 
@@ -13,24 +14,17 @@ from django.contrib.auth.models import User
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from formulary.models import Formula, PredictedLayerFormula
 from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports
+from report.utils import populate_vc
 from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
 
 
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
-@patch('report.utils.get_raster_tile', patch_get_raster_tile_range_100)
-class AggregationViewTests(TestCase):
+class AggregationViewTestsBase(TestCase):
 
     def setUp(self):
-        self.usr = User.objects.create_user(
-            username='michael',
-            email='michael@bluth.com',
-            password='bananastand'
-        )
-        self.client.login(username='michael', password='bananastand')
-
         aggfile = tempfile.NamedTemporaryFile(suffix='.zip')
 
         self.agglayer = AggregationLayer.objects.create(
@@ -89,6 +83,11 @@ class AggregationViewTests(TestCase):
         sc.aggregationlayers.add(self.agglayer)
         return sc
 
+
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
+@patch('report.utils.get_raster_tile', patch_get_raster_tile_range_100)
+class AggregationViewTests(AggregationViewTestsBase):
+
     def test_create_aggregator_composite(self):
         agg = ReportAggregation(
             formula=self.formula,
@@ -97,8 +96,9 @@ class AggregationViewTests(TestCase):
             aggregationarea=self.aggarea,
         )
         vc = agg.get_valuecount()
-        vc.save()
+        vc = populate_vc(vc)
         agg.valuecountresult = vc
+        agg.copy_valuecount()
         agg.save()
         self.assertEqual(agg.valuecountresult.formula, 'B2/B3')
         self.assertEqual(
@@ -109,6 +109,8 @@ class AggregationViewTests(TestCase):
             }
         )
         self.assertEqual(agg.valuecountresult.grouping, 'continuous')
+        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertEqual(agg.stats_avg, agg.valuecountresult.stats_avg)
 
     def test_create_aggregator_predicted(self):
         agg = ReportAggregation(
@@ -119,8 +121,9 @@ class AggregationViewTests(TestCase):
 
         )
         vc = agg.get_valuecount()
-        vc.save()
+        vc = populate_vc(vc)
         agg.valuecountresult = vc
+        agg.copy_valuecount()
         agg.save()
         self.assertEqual(
             agg.valuecountresult.layer_names,
@@ -129,6 +132,8 @@ class AggregationViewTests(TestCase):
             }
         )
         self.assertEqual(agg.valuecountresult.grouping, 'discrete')
+        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertEqual(agg.stats_avg, agg.valuecountresult.stats_avg)
 
     def test_create_aggregator_predicted_formula(self):
         # Create and populated predictedlayer.
@@ -165,8 +170,9 @@ class AggregationViewTests(TestCase):
             aggregationarea=self.aggarea,
         )
         vc = agg.get_valuecount()
-        vc.save()
+        vc = populate_vc(vc)
         agg.valuecountresult = vc
+        agg.copy_valuecount()
         agg.save()
         self.assertEqual(
             agg.valuecountresult.layer_names,
@@ -180,6 +186,8 @@ class AggregationViewTests(TestCase):
             agg.valuecountresult.formula,
             self.formula.formula,
         )
+        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertEqual(agg.stats_avg, agg.valuecountresult.stats_avg)
 
     def test_report_schedule_formula_change(self):
         self._create_report_schedule()
@@ -259,3 +267,78 @@ class AggregationViewTests(TestCase):
         key = next(iter(agg.value))
         valsum = sum([float(val) for key, val in agg.value.items()])
         self.assertEqual(float(agg.value_percentage[key]), float(agg.value[key]) / valsum)
+
+
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
+@patch('report.utils.get_raster_tile', patch_get_raster_tile_range_100)
+class AggregationViewTestsApi(AggregationViewTestsBase):
+
+    def setUp(self):
+
+        super().setUp()
+
+        self.usr = User.objects.create_superuser(
+            username='michael',
+            email='michael@bluth.com',
+            password='bananastand'
+        )
+        self.client.login(username='michael', password='bananastand')
+
+    def test_api_ordering(self):
+        # Prepare data.
+        ReportAggregation.objects.all().delete()
+        for i in range(5):
+            aggarea = AggregationArea.objects.create(
+                name='Testarea',
+                aggregationlayer=self.agglayer,
+                geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11843887 -458452, 11843887 -458252, 11843687 -458252, 11843687 -458452)))',
+            )
+            agg = ReportAggregation(
+                formula=self.formula,
+                predictedlayer=self.predictedlayer,
+                aggregationlayer=self.agglayer,
+                aggregationarea=aggarea,
+
+            )
+            vc = agg.get_valuecount()
+            vc = populate_vc(vc)
+            agg.valuecountresult = vc
+            agg.copy_valuecount()
+            agg.save()
+
+        # Prepare url.
+        url = reverse('reportaggregation-list')
+        url += '?aggregationlayer={}'.format(self.agglayer.id)
+
+        # Prepare ordering queries.
+        agg = ReportAggregation.objects.first()
+        max_key = max(agg.value.items(), key=operator.itemgetter(1))[0]
+        max_key_percentage = max(agg.value_percentage.items(), key=operator.itemgetter(1))[0]
+        orderings = [
+            'value__{}'.format(max_key),
+            'value_percentage__{}'.format(max_key_percentage),
+
+        ]
+
+        for ordering in orderings:
+            # Compute expected order of ID list.
+            expected = list(ReportAggregation.objects.all().order_by(ordering).values_list('id', flat=True))
+
+            # Query api and compile resulting order.
+            response = self.client.get(url + '&ordering={}'.format(ordering))
+            result = response.json()
+            self.assertEqual(result['count'], 5)
+            result = [dat['id'] for dat in result['results']]
+
+            # Order is as expected.
+            self.assertEqual(result, expected)
+
+            # Invert query order.
+            response = self.client.get(url + '&ordering=-{}'.format(ordering))
+            result = response.json()
+            self.assertEqual(result['count'], 5)
+            result = [dat['id'] for dat in result['results']]
+
+            # Order is as expected.
+            expected = list(ReportAggregation.objects.all().order_by('-' + ordering).values_list('id', flat=True))
+            self.assertEqual(result, expected)

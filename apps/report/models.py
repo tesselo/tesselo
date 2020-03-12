@@ -150,6 +150,21 @@ class ReportAggregation(models.Model):
             grouping='discrete' if self.predictedlayer_id else 'continuous',
         )
 
+    def copy_valuecount(self):
+        # Copy the data to the ReportAggregation.
+        self.value = self.valuecountresult.value
+        self.stats_min = self.valuecountresult.stats_min
+        self.stats_max = self.valuecountresult.stats_max
+        self.stats_avg = self.valuecountresult.stats_avg
+        self.stats_std = self.valuecountresult.stats_std
+        self.stats_cumsum_t0 = self.valuecountresult.stats_cumsum_t0
+        self.stats_cumsum_t1 = self.valuecountresult.stats_cumsum_t1
+        self.stats_cumsum_t2 = self.valuecountresult.stats_cumsum_t2
+
+        # Compute percentage by value.
+        valsum = sum([float(val) for key, val in self.valuecountresult.value.items()])
+        self.value_percentage = {key: float(val) / valsum for key, val in self.valuecountresult.value.items()}
+
 
 @receiver(post_delete, sender=ReportAggregation, weak=False, dispatch_uid="remove_valuecount_before_delete")
 def check_change_on_formula(sender, instance, **kwargs):

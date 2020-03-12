@@ -1,5 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -27,14 +27,28 @@ class ReportAggregationPagination(PageNumberPagination):
 class ReportAggregationViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated, IsReadOnly, ReportAggregationPermission)
     pagination_class = ReportAggregationPagination
-    queryset = ReportAggregation.objects.all().order_by('id')
     serializer_class = ReportAggregationSerializer
-    filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
+    filter_backends = [SearchFilter, DjangoFilterBackend]
     filter_class = ReportAggregationFilter
     search_fields = ['aggregationarea__name', ]
-    ordering_fields = [
-        'valuecountresult__stats_avg',
+    normal_ordering_fields = [
+        'stats_avg',
+        '-stats_avg',
         'aggregationarea__name',
+        '-aggregationarea__name',
         'min_date',
+        '-min_date',
     ]
-    ordering = ['aggregationarea__name', 'min_date']
+    json_ordering_fields = [
+        'value__',
+        'value_percentage__',
+    ]
+
+    def get_queryset(self):
+        qs = ReportAggregation.objects.all()
+        ordering = self.request.GET.get('ordering', '')
+        if ordering in self.normal_ordering_fields or any(dat in ordering for dat in self.json_ordering_fields):
+            qs = qs.order_by(ordering)
+        else:
+            qs = qs.order_by('aggregationarea__name', 'min_date')
+        return qs
