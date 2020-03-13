@@ -21,28 +21,27 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
     value = SerializerMethodField()
     name = CharField(source='aggregationarea.name')
     geom = SerializerMethodField()
-    status = CharField(source='valuecountresult.status')
-    min = FloatField(source='valuecountresult.stats_min')
-    max = FloatField(source='valuecountresult.stats_max')
-    avg = FloatField(source='valuecountresult.stats_avg')
-    std = FloatField(source='valuecountresult.stats_std')
-    pcount = FloatField(source='valuecountresult.stats_cumsum_t0')
-    psum = FloatField(source='valuecountresult.stats_cumsum_t1')
-    psumsq = FloatField(source='valuecountresult.stats_cumsum_t2')
+    min = FloatField(source='stats_min')
+    max = FloatField(source='stats_max')
+    avg = FloatField(source='stats_avg')
+    std = FloatField(source='stats_std')
+    pcount = FloatField(source='stats_cumsum_t0')
+    psum = FloatField(source='stats_cumsum_t1')
+    psumsq = FloatField(source='stats_cumsum_t2')
 
     class Meta:
         model = ReportAggregation
         fields = (
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
-            'predictedlayer', 'valuecountresult', 'name', 'geom', 'min_date', 'max_date',
-            'value', 'status', 'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
+            'predictedlayer', 'name', 'geom', 'min_date', 'max_date', 'value',
+            'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
         )
 
     def get_value(self, obj):
         """
         Convert keys to strings and hstore values to floats.
         """
-        return {str(k): float(v) for k, v in obj.valuecountresult.value.items()}
+        return {str(k): float(v) for k, v in obj.value.items()}
 
     def get_geom(self, obj):
         """
