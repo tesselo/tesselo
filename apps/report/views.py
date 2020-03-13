@@ -46,9 +46,10 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = ReportAggregation.objects.all()
-        ordering = self.request.GET.get('ordering', '')
-        if ordering in self.normal_ordering_fields or any(dat in ordering for dat in self.json_ordering_fields):
-            qs = qs.order_by(ordering)
+        ordering = self.request.GET.get('ordering', '').split(',')
+        orderings = [dat for dat in ordering if dat in self.normal_ordering_fields or any(jdat in dat for jdat in self.json_ordering_fields)]
+        if len(orderings):
+            qs = qs.order_by(*orderings)
         else:
             qs = qs.order_by('aggregationarea__name', 'min_date')
         return qs

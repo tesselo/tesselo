@@ -289,7 +289,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         ReportAggregation.objects.all().delete()
         for i in range(5):
             aggarea = AggregationArea.objects.create(
-                name='Testarea',
+                name='Testarea {}'.format(i),
                 aggregationlayer=self.agglayer,
                 geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11843887 -458452, 11843887 -458252, 11843687 -458252, 11843687 -458452)))',
             )
@@ -317,7 +317,6 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         orderings = [
             'value__{}'.format(max_key),
             'value_percentage__{}'.format(max_key_percentage),
-
         ]
 
         for ordering in orderings:
@@ -342,3 +341,19 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             # Order is as expected.
             expected = list(ReportAggregation.objects.all().order_by('-' + ordering).values_list('id', flat=True))
             self.assertEqual(result, expected)
+
+        # Query api with double filter argument.
+        response = self.client.get(url + '&ordering=-aggregationarea__name,min_date')
+        result = response.json()
+        self.assertEqual(result['count'], 5)
+        result = [dat['id'] for dat in result['results']]
+        expected = list(ReportAggregation.objects.all().order_by('-aggregationarea__name', 'min_date').values_list('id', flat=True))
+        self.assertEqual(result, expected)
+
+        # Test default sorting.
+        response = self.client.get(url)
+        result = response.json()
+        self.assertEqual(result['count'], 5)
+        expected = list(ReportAggregation.objects.all().order_by('aggregationarea__name', 'min_date').values_list('id', flat=True))
+        result = [dat['id'] for dat in result['results']]
+        self.assertEqual(result, expected)
