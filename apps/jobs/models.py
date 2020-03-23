@@ -55,7 +55,7 @@ class BatchJob(models.Model):
             self.description = json.dumps(job)
             self.status = job['status']
             if len(job['attempts']):
-                self.log_stream_name = job['attempts'][0]['logStreamName']
+                self.log_stream_name = job['attempts'][0]['container']['logStreamName']
             else:
                 self.log_stream_name = ''
         self.save()
