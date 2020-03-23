@@ -802,7 +802,7 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
 
     # Initiate the compositebuild related objects if requested.
     if initiate:
-        compositebuild.preflight()
+        compositebuild.preflight(initiate=True)
 
     # Enforce re-building of composite tiles.
     if rebuild:

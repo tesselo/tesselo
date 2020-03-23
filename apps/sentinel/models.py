@@ -462,12 +462,12 @@ class CompositeBuild(models.Model):
             self.status = status
         self.save()
 
-    def preflight(self):
+    def preflight(self, initiate=False):
         """
         Initiate related objects to estimate effort.
         """
         # Don't update this list while the build is processing.
-        if self.status in (self.PENDING, self.INGESTING_SCENES, self.BUILDING_TILES):
+        if not initiate and self.status in (self.PENDING, self.INGESTING_SCENES, self.BUILDING_TILES):
             return
 
         # Sentinel-1.
