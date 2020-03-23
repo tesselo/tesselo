@@ -1,7 +1,6 @@
 import json
 
 import boto3
-from botocore.exceptions import NoCredentialsError
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -61,11 +60,8 @@ class BatchJob(models.Model):
         self.save()
 
     def get_log(self, limit=500):
-        try:
-            return logs.get_log_events(
-                logGroupName=const.LOG_GROUP_NAME,
-                logStreamName=self.log_stream_name,
-                limit=limit,
-            )
-        except NoCredentialsError:
-            return ''
+        return logs.get_log_events(
+            logGroupName=const.LOG_GROUP_NAME,
+            logStreamName=self.log_stream_name,
+            limit=limit,
+        )

@@ -7,14 +7,13 @@ from jobs.models import BatchJob
 
 class BatchJobSerializer(ModelSerializer):
 
-    log = SerializerMethodField()
     description = SerializerMethodField()
 
     class Meta:
         model = BatchJob
         fields = (
             'id', 'job_id', 'status', 'created', 'log_stream_name',
-            'description', 'log',
+            'description',
         )
 
     def get_description(self, obj):
@@ -23,6 +22,3 @@ class BatchJobSerializer(ModelSerializer):
         except json.decoder.JSONDecodeError:
             desc = 'Could not get description. JSON decode error.'
         return desc
-
-    def get_log(self, obj):
-        return obj.get_log()
