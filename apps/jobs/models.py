@@ -46,9 +46,7 @@ class BatchJob(models.Model):
     def update(self):
         desc = batch.describe_jobs(jobs=[self.job_id])
         if not len(desc['jobs']):
-            self.description = ''
             self.status = self.UNKNOWN
-            self.log_stream_name = ''
         else:
             job = desc['jobs'][0]
             self.description = json.dumps(job)
@@ -60,6 +58,8 @@ class BatchJob(models.Model):
         self.save()
 
     def get_log(self, limit=500):
+        if not self.log_stream_name:
+            return {'error': 'Log stream name is not specified for this job.'}
         return logs.get_log_events(
             logGroupName=const.LOG_GROUP_NAME,
             logStreamName=self.log_stream_name,
