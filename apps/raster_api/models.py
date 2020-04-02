@@ -7,6 +7,7 @@ from raster.models import Legend, LegendSemantics, RasterLayer
 from raster_aggregation.models import AggregationLayer
 
 from django.contrib.auth.models import User
+from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
@@ -37,6 +38,7 @@ class ReadOnlyToken(models.Model):
 class TesseloUserAccount(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     read_only = models.BooleanField(default=False)
+    profile = HStoreField(default=dict)
 
     def __str__(self):
         return 'Account for {}'.format(self.user.username)

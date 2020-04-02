@@ -5,10 +5,11 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from raster_api.models import TesseloUserAccount
 from raster_api.utils import expired
 
 
-class ApiLogoutViewTests(TestCase):
+class ApiAuthViewTests(TestCase):
 
     def setUp(self):
         self.usr = User.objects.create_user(
@@ -19,6 +20,18 @@ class ApiLogoutViewTests(TestCase):
         self.login_url = reverse('api-token-auth')
         self.logout_url = reverse('api-token-logout')
 
+    def test_login(self):
+        profile = {'baselayers': 'openlayers.org'}
+        TesseloUserAccount.objects.create(
+            user=self.usr,
+            profile=profile,
+        )
+        # Login.
+        response = self.client.post(self.login_url, data={'username': 'michael', 'password': 'bananastand'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Token.objects.filter(user=self.usr).exists())
+        self.assertDictEqual(response.json()['profile'], profile)
+
     def test_logout(self):
         # Unauthorized logout.
         response = self.client.post(self.logout_url)
@@ -28,6 +41,7 @@ class ApiLogoutViewTests(TestCase):
         response = self.client.post(self.login_url, data={'username': 'michael', 'password': 'bananastand'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Token.objects.filter(user=self.usr).exists())
+        self.assertDictEqual(response.json()['profile'], {})
 
         # Use token to logout via POST.
         token = response.json()['token']

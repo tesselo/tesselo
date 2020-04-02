@@ -512,11 +512,18 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
         # Compute expiration date.
         expiration = token.created + EXPIRING_TOKEN_LIFESPAN
 
+        # Obtain tesselo user account profile.
+        if hasattr(user, 'tesselouseraccount'):
+            profile = user.tesselouseraccount.profile
+        else:
+            profile = {}
+
         # Create reponse.
         response = Response({
             'token': token.key,
             'expires': expiration,
             'is_staff': user.is_staff,
+            'profile': profile,
         })
 
         # Set token as cookie.

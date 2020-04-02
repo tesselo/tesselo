@@ -1,7 +1,7 @@
+from botocore.exceptions import NoCredentialsError
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from botocore.exceptions import NoCredentialsError
 
 from jobs.models import BatchJob
 from jobs.serializers import BatchJobSerializer
