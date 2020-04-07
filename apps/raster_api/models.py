@@ -38,7 +38,7 @@ class ReadOnlyToken(models.Model):
 class TesseloUserAccount(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     read_only = models.BooleanField(default=False)
-    profile = HStoreField(default=dict)
+    profile = HStoreField(default=dict, blank=True)
 
     def __str__(self):
         return 'Account for {}'.format(self.user.username)
