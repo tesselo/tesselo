@@ -128,7 +128,12 @@ class SentinelTile(models.Model):
 
     @property
     def rasterlayer_lookup(self):
-        return {band.band: band.layer_id for band in self.sentineltileband_set.all()}
+        # Get all band lookups.
+        lookup = {band.band: band.layer_id for band in self.sentineltileband_set.all()}
+        # Add SCL to lookup.
+        if hasattr(self, 'sentineltilesceneclass'):
+            lookup[const.SCL] = self.sentineltilesceneclass.layer_id
+        return lookup
 
     @property
     def srid(self):
@@ -225,7 +230,7 @@ class CompositeBand(models.Model):
     """
     Register RasterLayers as rasterlayer_lookup.
     """
-    BAND_CHOICES = const.BAND_CHOICES + s1const.BAND_CHOICES
+    BAND_CHOICES = const.BAND_CHOICES_COMPOSITE + s1const.BAND_CHOICES
 
     band = models.CharField(max_length=7, choices=BAND_CHOICES)
     rasterlayer = models.ForeignKey(RasterLayer, on_delete=models.CASCADE)

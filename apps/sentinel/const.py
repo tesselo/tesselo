@@ -91,6 +91,8 @@ BAND_CHOICES = (
     (BD11, 'Band 11 - SWIR, WL 1.610, RES 20 m'),
     (BD12, 'Band 12 - SWIR, WL 2.190, RES 20 m'),
 )
+BAND_CHOICES_COMPOSITE = BAND_CHOICES + ((SCL, 'SCL - Scene Class, RES 20 m'), )
+
 
 # Official resolution of each band.
 BAND_RESOLUTIONS = {
@@ -107,13 +109,14 @@ BAND_RESOLUTIONS = {
     BD10: 60,
     BD11: 20,
     BD12: 20,
+    SCL: 20,
 }
 
 # List of bands by resolution.
 BANDS_10M = [BD2, BD3, BD4, BD8, ]
 BANDS_20M = [BD5, BD6, BD7, BD8A, BD11, BD12, ]
 BANDS_60M = [BD1, BD9, BD10, ]
-ALL_BANDS = [BD1, BD2, BD3, BD4, BD5, BD6, BD7, BD8, BD8A, BD9, BD10, BD11, BD12, ]
+ALL_BANDS = [BD1, BD2, BD3, BD4, BD5, BD6, BD7, BD8, BD8A, BD9, BD10, BD11, BD12, SCL]
 
 BANDS_COUNT_BY_RES = {
     ZOOM_LEVEL_10M: len(BANDS_10M),

@@ -419,10 +419,6 @@ def process_compositetile_s2(ctile, rasterlayer_lookup):
         # Compute the cloud probabilities for each avaiable scene band stack.
         cloud_probs = [clouds.clouds(stack) for stack in stacks]
 
-        # Remove the SCL Layers from the stacks.
-        for stack in stacks:
-            stack.pop(const.SCL, None)
-
         # Compute an array of scene indices with the lowest cloud probability.
         selector_index = numpy.argmin(cloud_probs, axis=0)
 
@@ -440,14 +436,19 @@ def process_compositetile_s2(ctile, rasterlayer_lookup):
             # Exclude bad pixels.
             composite_data[exclude] = const.SENTINEL_NODATA_VALUE
 
+            # Determine datatype.
+            datatype = 1 if key == const.SCL else 2
+
             # Update results dict with data, using a random name for the in
             # memory raster.
+
             write_raster_tile(
                 rasterlayer_lookup[key],
                 composite_data,
                 const.ZOOM_LEVEL_10M,
                 x,
                 y,
+                datatype=datatype,
             )
 
         # Log progress.
@@ -515,7 +516,12 @@ def process_compositetile(compositetile_id):
                     none_found = True
                     is_S1 = band_name in s1const.POLARIZATION_DV_BANDS
                     # Determine data type.
-                    dtype = numpy.float32 if is_S1 else numpy.int16
+                    if is_S1:
+                        dtype = numpy.float32
+                    elif band_name == const.SCL:
+                        dtype = numpy.uint8
+                    else:
+                        dtype = numpy.uint16
                     # Aggregate each tile in the block of 2x2.
                     for idx, dat in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                         tile = get_raster_tile(rasterlayer_id, zoom, tilex + dat[0], tiley + dat[1])
@@ -543,7 +549,7 @@ def process_compositetile(compositetile_id):
                         datatype = 6
                     else:
                         nodata_value = const.SENTINEL_NODATA_VALUE
-                        datatype = 2
+                        datatype = 1 if band_name == const.SCL else 2
                     write_raster_tile(rasterlayer_id, result, zoom - 1, tilex // 2, tiley // 2, nodata_value, datatype)
 
     ctile.end = timezone.now()
@@ -672,9 +678,7 @@ def download_l2a(tile):
     # Prepare data dirs.
     os.makedirs('/rasterwd/products/{}'.format(tile.id))
     # Download each band and scene class.
-    layers = {const.SCL: 20}
-    layers.update(const.BAND_RESOLUTIONS)
-    for band, resolution in layers.items():
+    for band, resolution in const.BAND_RESOLUTIONS.items():
         # Band 10 is not kept in L2A as it does not contain surface
         # information (its fully absorbed in atmosphere, any reflectance
         # is due to atmospheric scattering).
@@ -760,9 +764,7 @@ def run_sen2cor(tile):
         raise
 
     # Move files to parent dir.
-    layers = {const.SCL: 20}
-    layers.update(const.BAND_RESOLUTIONS)
-    for band, resolution in layers.items():
+    for band, resolution in const.BAND_RESOLUTIONS.items():
         # Band 10 is not kept in L2A as it does not contain surface
         # information (its fully absorbed in atmosphere, any reflectance
         # is due to atmospheric scattering).

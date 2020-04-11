@@ -1,4 +1,5 @@
 from guardian.shortcuts import assign_perm
+from numpy.testing import assert_almost_equal
 from raster_aggregation.models import AggregationArea, AggregationLayer
 
 from django.contrib.auth.models import User
@@ -30,6 +31,7 @@ class AggregationViewTests(TestCase):
         )
 
     def test_list_aggregation_layers(self):
+        self.maxDiff = None
         url = reverse('aggregationlayer-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -41,8 +43,10 @@ class AggregationViewTests(TestCase):
         assign_perm('view_aggregationlayer', self.usr, self.agglayer)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        result = response.json()
+        extent = result['results'][0].pop('extent')
         self.assertDictEqual(
-            response.json(),
+            result,
             {
                 'count': 1,
                 'next': None,
@@ -51,7 +55,6 @@ class AggregationViewTests(TestCase):
                     {
                         'id': self.agglayer.id,
                         'description': 'An arrested testfile.',
-                        'extent': [4.999999999999991, 4.9999999999999805, 44.999999999999986, 40.00000000000001],
                         'max_zoom_level': 18,
                         'min_zoom_level': 0,
                         'name': 'Near bananastand.',
@@ -64,6 +67,7 @@ class AggregationViewTests(TestCase):
                 ]
             },
         )
+        assert_almost_equal(extent, [5, 5, 45, 40])
 
     def test_list_aggregation_areas(self):
         url = reverse('aggregationarea-list')
@@ -102,7 +106,7 @@ class AggregationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         # Extent has been updated.
         self.agglayer.refresh_from_db()
-        self.assertEqual(
+        assert_almost_equal(
             self.agglayer.extent.extent,
             (556597.453966367, 445640.109656027, 5009377.08569731, 4865942.27950318),
         )
