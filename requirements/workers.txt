@@ -1,5 +1,5 @@
-scipy==1.2.1
-scikit-learn==0.20.2
-sentinelhub==2.5.1
-Keras==2.2.4
-tensorflow==1.12.0
+scipy==1.4.1
+scikit-learn==0.22.2
+sentinelhub==3.0.2
+Keras==2.3.1
+tensorflow==2.1.0
