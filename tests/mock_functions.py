@@ -165,14 +165,16 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None):
         dtype = 6
     else:
         # Sentinel-2 layers have Int16 data type.
-        data = numpy.random.random_integers(0, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('int16')
+        data = numpy.random.random_integers(1, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('int16')
         dtype = 2
+
+    bounds = tile_bounds(tilex, tiley, tilez)
 
     return GDALRaster({
         'width': WEB_MERCATOR_TILESIZE,
         'height': WEB_MERCATOR_TILESIZE,
-        'origin': (11843687, -458452),
-        'scale': [10, -10],
+        'origin': (bounds[0], bounds[3]),
+        'scale': (const.TILESCALE_10M, -const.TILESCALE_10M),
         'srid': WEB_MERCATOR_SRID,
         'datatype': dtype,
         'bands': [

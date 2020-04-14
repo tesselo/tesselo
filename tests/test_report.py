@@ -268,6 +268,33 @@ class AggregationViewTests(AggregationViewTestsBase):
         valsum = sum([float(val) for key, val in agg.value.items()])
         self.assertEqual(float(agg.value_percentage[key]), float(agg.value[key]) / valsum)
 
+    def test_percentage_covered(self):
+        # Prepare data.
+        AggregationArea.objects.all().delete()
+        self.aggarea = AggregationArea.objects.create(
+            name='Testarea',
+            aggregationlayer=self.agglayer,
+            geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11847887 -458452, 11847887 -454252, 11843687 -454252, 11843687 -458452)))',
+        )
+        # Compute statistics.
+        self._create_report_schedule()
+        push_reports('composite', self.composite.id)
+        # Percentage cover is close to one (given a pixel resolution error).
+        agg = ReportAggregation.objects.first()
+        self.assertAlmostEqual(agg.stats_percentage_covered, 1.00648246415756)
+
+    def test_percentage_covered_zero(self):
+        # Push formula bounds out of range.
+        self.formula.min_val = -1000
+        self.formula.max_val = -999
+        self.formula.save()
+        # Compute aggregation.
+        self._create_report_schedule()
+        push_reports('composite', self.composite.id)
+        # All values are out of range, zero pecent was covered by agg.
+        agg = ReportAggregation.objects.first()
+        self.assertEqual(agg.stats_percentage_covered, 0)
+
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 @patch('report.utils.get_raster_tile', patch_get_raster_tile_range_100)

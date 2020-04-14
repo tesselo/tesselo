@@ -12,5 +12,5 @@ class ReportAggregationFilter(FilterSet):
         model = ReportAggregation
         fields = (
             'formula', 'aggregationlayer', 'aggregationarea', 'predictedlayer',
-            'composite', 'date_after', 'date_before',
+            'composite', 'date_after', 'date_before', 'stats_percentage_covered',
         )

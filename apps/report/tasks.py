@@ -5,6 +5,7 @@ from raster_aggregation.models import AggregationLayer
 from jobs import ecs
 from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.utils import populate_vc
+from sentinel.const import TILESCALE_10M
 
 
 def push_reports(model, pk):
@@ -142,6 +143,12 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
         # Copy valuecount results into searchable fields.
         rep.copy_valuecount()
+
+        # Compute percentage covered.
+        if rep.stats_cumsum_t0:
+            rep.stats_percentage_covered = (rep.stats_cumsum_t0 * TILESCALE_10M ** 2) / agg.geom.area
+        else:
+            rep.stats_percentage_covered = 0
 
         # Save data.
         rep.save()

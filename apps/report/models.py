@@ -99,6 +99,8 @@ class ReportAggregation(models.Model):
     stats_cumsum_t1 = models.FloatField(editable=False, blank=True, null=True, help_text='Sum of pixel values.')
     stats_cumsum_t2 = models.FloatField(editable=False, blank=True, null=True, help_text='Sum of squares of pixel values.')
 
+    stats_percentage_covered = models.FloatField(editable=False, blank=True, null=True, help_text='Percentage of area covered by valid pixels.')
+
     def __str__(self):
         dat = '{}'.format(self.id)
         if hasattr(self, 'aggregationlayer') and self.aggregationlayer:
