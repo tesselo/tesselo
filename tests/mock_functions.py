@@ -6,7 +6,7 @@ import botocore.session
 import numpy
 from botocore.stub import Stubber
 from raster.models import RasterLayer, RasterTile
-from raster.tiles.const import WEB_MERCATOR_SRID
+from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from django.contrib.gis.gdal import GDALRaster
@@ -161,16 +161,16 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None):
 
     if Sentinel1TileBand.objects.filter(layer_id=layer_id).exists():
         # Sentinel-1 bands have float32 data type.
-        data = numpy.random.random((256, 256)) * data_max
+        data = numpy.random.random((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) * data_max
         dtype = 6
     else:
         # Sentinel-2 layers have Int16 data type.
-        data = numpy.random.random_integers(0, data_max, (256, 256)).astype('int16')
+        data = numpy.random.random_integers(0, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('int16')
         dtype = 2
 
     return GDALRaster({
-        'width': 256,
-        'height': 256,
+        'width': WEB_MERCATOR_TILESIZE,
+        'height': WEB_MERCATOR_TILESIZE,
         'origin': (11843687, -458452),
         'scale': [10, -10],
         'srid': WEB_MERCATOR_SRID,
@@ -190,8 +190,8 @@ def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=
 
     # Convert data to file-like object and store.
     rst = GDALRaster({
-        'width': 256,
-        'height': 256,
+        'width': WEB_MERCATOR_TILESIZE,
+        'height': WEB_MERCATOR_TILESIZE,
         'origin': (11843687, -458452),
         'scale': [10, -10],
         'srid': WEB_MERCATOR_SRID,
@@ -240,11 +240,11 @@ def patch_process_l2a(stile_id):
         idxr = tile_index_range(bbox, zoom, tolerance=1e-3)
         bounds = tile_bounds(idxr[0], idxr[1], zoom)
         # Setup random data.
-        data = numpy.random.random_integers(0, 1e4, (256, 256)).astype('uint16')
+        data = numpy.random.random_integers(0, 1e4, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('uint16')
         # Create raster.
         dest = GDALRaster({
-            'width': 256,
-            'height': 256,
+            'width': WEB_MERCATOR_TILESIZE,
+            'height': WEB_MERCATOR_TILESIZE,
             'origin': (bounds[0], bounds[1]),
             'scale': [res, -res],
             'srid': WEB_MERCATOR_SRID,
@@ -272,11 +272,11 @@ def patch_process_l2a(stile_id):
     idxr = tile_index_range(bbox, zoom, tolerance=1e-3)
     bounds = tile_bounds(idxr[0], idxr[1], zoom)
     # Setup random data.
-    data = numpy.random.random_integers(0, 11, (256, 256)).astype('uint8')
+    data = numpy.random.random_integers(0, 11, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('uint8')
     # Create raster.
     dest = GDALRaster({
-        'width': 256,
-        'height': 256,
+        'width': WEB_MERCATOR_TILESIZE,
+        'height': WEB_MERCATOR_TILESIZE,
         'origin': (bounds[0], bounds[1]),
         'scale': [res, -res],
         'srid': WEB_MERCATOR_SRID,
@@ -316,11 +316,11 @@ def patch_snap_terrain_correction(sentinel1tile_id):
         bounds = tile_bounds(idxr[0], idxr[1], const.ZOOM_LEVEL_10M)
         res = const.BAND_RESOLUTIONS[const.BANDS_10M[0]]
         # Setup random data.
-        data = (numpy.random.random((256, 256)) * 1e4).astype('float32')
+        data = (numpy.random.random((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) * 1e4).astype('float32')
         # Create raster.
         dest = GDALRaster({
-            'width': 256,
-            'height': 256,
+            'width': WEB_MERCATOR_TILESIZE,
+            'height': WEB_MERCATOR_TILESIZE,
             'origin': (bounds[0], bounds[1]),
             'scale': [res, -res],
             'srid': WEB_MERCATOR_SRID,
