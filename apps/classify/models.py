@@ -122,7 +122,7 @@ class Classifier(models.Model):
     log = models.TextField(blank=True, default='')
 
     def __str__(self):
-        return '{0} ({1})'.format(self.name, self.get_algorithm_display())
+        return '{0} | {1} | {3}'.format(self.name, self.get_algorithm_display(), self.status)
 
     _clf = None
 
