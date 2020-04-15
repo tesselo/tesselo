@@ -199,7 +199,6 @@ STATICFILES_DIRS = []
 
 # Set static root.
 STATIC_ROOT = '/tmp/staticfiles'
-# Set static url.
 if 'AWS_STORAGE_BUCKET_NAME_STATIC' in os.environ:
     # Get S3 bucket name.
     AWS_STORAGE_BUCKET_NAME_STATIC = os.environ.get('AWS_STORAGE_BUCKET_NAME_STATIC')
