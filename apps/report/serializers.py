@@ -28,6 +28,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
     pcount = FloatField(source='stats_cumsum_t0')
     psum = FloatField(source='stats_cumsum_t1')
     psumsq = FloatField(source='stats_cumsum_t2')
+    predictedlayer_rasterlayer = SerializerMethodField()
 
     class Meta:
         model = ReportAggregation
@@ -35,6 +36,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
             'predictedlayer', 'name', 'geom', 'min_date', 'max_date', 'value',
             'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
+            'predictedlayer_rasterlayer'
         )
 
     def get_value(self, obj):
@@ -48,3 +50,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
         Name of aggregation area.
         """
         return json.loads(obj.aggregationarea.geom.transform(4326, clone=True).geojson)
+
+    def get_predictedlayer_rasterlayer(self, obj):
+        if hasattr(obj, 'predictedlayer') and obj.predictedlayer:
+            return obj.predictedlayer.rasterlayer_id
