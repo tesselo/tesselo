@@ -36,7 +36,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
             'predictedlayer', 'name', 'geom', 'min_date', 'max_date', 'value',
             'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
-            'predictedlayer_rasterlayer'
+            'predictedlayer_rasterlayer', 'value_percentage',
         )
 
     def get_value(self, obj):
