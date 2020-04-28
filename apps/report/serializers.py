@@ -1,6 +1,6 @@
 import json
 
-from rest_framework.serializers import CharField, FloatField, SerializerMethodField
+from rest_framework.serializers import CharField, FloatField, HStoreField, SerializerMethodField
 
 from raster_api.serializers import PermissionsModelSerializer
 from report.models import ReportAggregation, ReportSchedule
@@ -21,6 +21,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
     value = SerializerMethodField()
     name = CharField(source='aggregationarea.name')
     geom = SerializerMethodField()
+    attributes = HStoreField(source='aggregationarea.attributes')
     min = FloatField(source='stats_min')
     max = FloatField(source='stats_max')
     avg = FloatField(source='stats_avg')
@@ -36,7 +37,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
             'predictedlayer', 'name', 'geom', 'min_date', 'max_date', 'value',
             'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
-            'predictedlayer_rasterlayer', 'value_percentage',
+            'predictedlayer_rasterlayer', 'value_percentage', 'attributes',
         )
 
     def get_value(self, obj):
