@@ -42,14 +42,27 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
     json_ordering_fields = [
         'value__',
         'value_percentage__',
+        '-value__',
+        '-value_percentage__',
     ]
 
     def get_queryset(self):
+        # Setup initial queryset.
         qs = ReportAggregation.objects.all()
+        # Get ordering query argument.
         ordering = self.request.GET.get('ordering', '').split(',')
-        orderings = [dat for dat in ordering if dat in self.normal_ordering_fields or any(jdat in dat for jdat in self.json_ordering_fields)]
+        # Match requested ordering with allowed ordering strings.
+        normal_orderings = [dat for dat in ordering if dat in self.normal_ordering_fields]
+        json_orderings = [dat for dat in ordering if any(dat.startswith(jdat) for jdat in self.json_ordering_fields)]
+        orderings = normal_orderings + json_orderings
+        # For json ordering, remove items that do not contain the json ordering value.
+        for jdat in json_orderings:
+            key = jdat.split('__')[1]
+            qs = qs.filter(value__has_key=key)
+        # Apply ordering filters.
         if len(orderings):
             qs = qs.order_by(*orderings)
         else:
             qs = qs.order_by('aggregationarea__name', 'min_date')
+
         return qs
