@@ -266,7 +266,6 @@ class Composite(models.Model):
     sentineltiles = models.ManyToManyField(SentinelTile, blank=True, help_text='Limit the composite to a specific set of sentinel tiles.')
     # Parse related data.
     active = models.BooleanField(default=True, help_text='If unchecked, this area will not be included in the parsing.')
-    official = models.BooleanField(default=False)
     interval = models.CharField(max_length=200, choices=INTERVAL_CHOICES, default=CUSTOM, editable=False)
 
     class Meta:

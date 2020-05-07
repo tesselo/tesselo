@@ -10,7 +10,7 @@ class CompositeFilter(FilterSet):
 
     class Meta:
         model = Composite
-        fields = ('active', 'official', 'interval', 'year', 'min_date', )
+        fields = ('active', 'interval', 'year', 'min_date', )
 
     def year_filter(self, queryset, field_name, value):
         return queryset.filter(**{

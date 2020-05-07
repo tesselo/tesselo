@@ -254,11 +254,11 @@ class CompositeSerializer(PermissionsModelSerializer):
         model = Composite
         fields = (
             'id', 'name', 'rasterlayer_lookup', 'compositeband_set', 'min_date',
-            'max_date', 'interval', 'official', 'max_cloudy_pixel_percentage',
+            'max_date', 'interval', 'max_cloudy_pixel_percentage',
             'active', 'start_week', 'interval', 'sentineltiles', 'sentinel1tiles',
         )
         read_only_fields = (
-            'rasterlayer_lookup', 'compositeband_set', 'official', 'interval',
+            'rasterlayer_lookup', 'compositeband_set', 'interval',
             'sentineltiles', 'sentinel1tiles',
         )
 

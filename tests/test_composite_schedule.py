@@ -20,13 +20,11 @@ class SentinelCompositeScheduleTest(TestCase):
         self.agglayer = AggregationLayer.objects.create(name='Test Agg Layer')
         self.composite = Composite.objects.create(
             name='The World',
-            official=True,
             min_date=timezone.now() - datetime.timedelta(days=7),
             max_date=timezone.now() + datetime.timedelta(days=7),
         )
         self.composite2 = Composite.objects.create(
             name='The World 2',
-            official=True,
             min_date=timezone.now() - datetime.timedelta(days=7),
             max_date=timezone.now() + datetime.timedelta(days=7),
         )

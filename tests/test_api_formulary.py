@@ -58,7 +58,6 @@ class TileViewsTests(TestCase):
         )
         self.composite = Composite.objects.create(
             name='Bananastand December 2015',
-            official=True,
             min_date='2015-12-01',
             max_date='2015-12-31',
         )

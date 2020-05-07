@@ -78,19 +78,16 @@ class SentinelClassifierTest(TestCase):
         )
         cls.composite = Composite.objects.create(
             name='The World',
-            official=True,
             min_date='2015-12-01',
             max_date='2015-12-31',
         )
         cls.composite2 = Composite.objects.create(
             name='The World 2',
-            official=True,
             min_date='2015-10-01',
             max_date='2015-10-31',
         )
         cls.composite3 = Composite.objects.create(
             name='The World 2',
-            official=True,
             min_date='2015-11-01',
             max_date='2015-11-30',
         )

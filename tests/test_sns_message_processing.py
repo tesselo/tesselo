@@ -55,7 +55,6 @@ class SnsMessageProcessingTest(TestCase):
         )
         composite = Composite.objects.create(
             name='The World',
-            official=True,
             min_date='2019-01-01',
             max_date='2019-02-01',
         )
