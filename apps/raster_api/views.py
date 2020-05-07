@@ -2,7 +2,7 @@ import io
 
 import boto3
 from django_filters.rest_framework import DjangoFilterBackend
-from guardian.shortcuts import assign_perm, get_groups_with_perms, get_users_with_perms, remove_perm
+from guardian.shortcuts import assign_perm, remove_perm
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
@@ -24,7 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from django.conf import settings
 from django.contrib.auth.models import Group, User
@@ -48,9 +48,9 @@ from raster_api.permissions import (
 )
 from raster_api.renderers import BinaryRenderer
 from raster_api.serializers import (
-    AggregationLayerSerializer, CompositeSerializer, GroupSerializer, LegendEntrySerializer, LegendSemanticsSerializer,
+    AggregationLayerSerializer, CompositeSerializer, LegendEntrySerializer, LegendSemanticsSerializer,
     LegendSerializer, RasterLayerSerializer, ReadOnlyTokenSerializer, SentinelTileAggregationLayerSerializer,
-    UserSerializer, ValueCountResultSerializer
+    ValueCountResultSerializer
 )
 from raster_api.tasks import (
     aggregation_layer_parser_async, compute_single_value_count_result, compute_single_value_count_result_async
@@ -66,20 +66,6 @@ class ReadOnlyTokenViewSet(ModelViewSet):
 
     def get_queryset(self):
         return ReadOnlyToken.objects.filter(user=self.request.user)
-
-
-class UserViewSet(ReadOnlyModelViewSet):
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
-    filter_backends = (SearchFilter, )
-    search_fields = ('username', )
-
-
-class GroupViewSet(ReadOnlyModelViewSet):
-    serializer_class = GroupSerializer
-    queryset = Group.objects.all()
-    filter_backends = (SearchFilter, )
-    search_fields = ('name', )
 
 
 class RasterAPIView(RasterView, ListModelMixin, GenericViewSet):
@@ -217,24 +203,6 @@ class PermissionsModelViewSet(ModelViewSet):
                 child.public = not child.public
                 child.save()
         return Response({'success': 'Made {} {} {}'.format(self._model, obj.id, 'public' if public_obj.public else 'private')})
-
-    @action(detail=True, methods=['get'])
-    def groups(self, request, pk=None):
-        """
-        List groups with permissions on this object.
-        """
-        obj = self.get_object()
-        serializer = GroupSerializer(get_groups_with_perms(obj), many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['get'])
-    def users(self, request, pk=None):
-        """
-        List users with permissions on this object.
-        """
-        obj = self.get_object()
-        serializer = UserSerializer(get_users_with_perms(obj), many=True)
-        return Response(serializer.data)
 
 
 class LegendViewSet(PermissionsModelViewSet):

@@ -13,7 +13,6 @@ from rest_framework.serializers import (
     CharField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
 )
 
-from django.contrib.auth.models import Group, User
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.geos import Polygon
 from django.shortcuts import get_object_or_404
@@ -31,22 +30,6 @@ class ReadOnlyTokenSerializer(ModelSerializer):
     def create(self, validated_data):
         validated_data.update({'user': self.context['request'].user})
         return super(ReadOnlyTokenSerializer, self).create(validated_data)
-
-
-class UserSerializer(ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ('id', 'username', )
-        read_only_fields = ('id', 'username', )
-
-
-class GroupSerializer(ModelSerializer):
-
-    class Meta:
-        model = Group
-        fields = ('id', 'name', )
-        read_only_fields = ('id', 'name', )
 
 
 class UserObjectPermissionSerializer(Serializer):
