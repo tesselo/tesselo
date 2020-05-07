@@ -19,7 +19,7 @@ class CompositeBuildSerializer(ModelSerializer):
         model = CompositeBuild
         fields = (
             'id', 'composite', 'aggregationlayer', 'log', 'status',
-            'owner', 'sentineltiles', 'compositetiles', 'include_sentinel_1',
+            'sentineltiles', 'compositetiles', 'include_sentinel_1',
             'include_sentinel_2', 'sentinel1tiles',
         )
         read_only_fields = ('sentineltiles', 'compositetiles', 'sentinel1tiles', )

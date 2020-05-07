@@ -6,7 +6,6 @@ from raster.tiles.const import WEB_MERCATOR_SRID
 from raster.tiles.utils import tile_bounds, tile_index_range
 from raster_aggregation.models import AggregationLayer
 
-from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon
 from django.db.models.signals import post_save
@@ -448,7 +447,6 @@ class CompositeBuild(models.Model):
     aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
     log = models.TextField(default='', blank=True)
     status = models.CharField(max_length=50, choices=CB_STATUS_CHOICES, default=UNPROCESSED, blank=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     include_sentinel_1 = models.BooleanField(default=False)
     include_sentinel_2 = models.BooleanField(default=True)
     sentineltiles = models.ManyToManyField(SentinelTile)
@@ -565,7 +563,6 @@ class CompositeBuildSchedule(models.Model):
     interval = models.CharField(max_length=50, choices=INTERVAL_CHOICES, default=MONTHLY, blank=True)
     compositebuilds = models.ManyToManyField(CompositeBuild)
     log = models.TextField(default='', blank=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     delay_build_days = models.IntegerField(default=0, help_text='Optinally delay the build of the interval by N days, to ensure internal registration of latest scenes.')
     continuous_scene_ingestion = models.BooleanField(default=False)
 
