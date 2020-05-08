@@ -8,9 +8,6 @@ from rest_framework.views import APIView
 from django.http import HttpResponse
 from raster_api.authentication import ExpiringTokenAuthentication, QueryKeyAuthentication
 from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
-from raster_api.views import PermissionsModelViewSet
-from wmts.models import WMTSLayer
-from wmts.serializers import WMTSLayerSerializer
 
 WMTS_BASE_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml" xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd" version="1.0.0">
@@ -161,9 +158,3 @@ class WMTSAPIView(APIView):
             )
 
         return TILE_MATRIX_SET_TEMPLATE.format(content=content)
-
-
-class WMTSLayerViewSet(PermissionsModelViewSet):
-    queryset = WMTSLayer.objects.all().order_by('title')
-    serializer_class = WMTSLayerSerializer
-    _model = 'wmtslayer'

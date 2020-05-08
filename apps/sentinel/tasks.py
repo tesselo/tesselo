@@ -461,8 +461,6 @@ def process_compositetile(compositetile_id):
     """
     Build a cloud free unified base layer for a given areas of interest and for
     each sentinel band.
-
-    If reset is activated, the files are deleted and re-created from scratch.
     """
     ctile = CompositeTile.objects.get(id=compositetile_id)
     ctile.start = timezone.now()

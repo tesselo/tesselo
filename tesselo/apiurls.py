@@ -14,7 +14,7 @@ from raster_api.views import (
 from report.views import ReportAggregationViewSet, ReportScheduleViewSet
 from sentinel.views import CompositeBuildViewSet, CompositeTileViewSet, SentinelTileViewSet
 from userinterface.views import BookmarkFolderViewSet, BookmarkViewSet
-from wmts.views import WMTSAPIView, WMTSLayerViewSet
+from wmts.views import WMTSAPIView
 
 router = routers.DefaultRouter(trailing_slash=False)
 
@@ -100,8 +100,6 @@ router.register(
     FormulaAlgebraAPIView,
     basename='formula_algebra'
 )
-
-router.register(r'wmtslayer', WMTSLayerViewSet, basename='wmtslayer')
 
 router.register(r'traininglayer', TrainingLayerViewSet, basename='traininglayer')
 router.register(r'trainingsample', TrainingSampleViewSet, basename='trainingsample')
