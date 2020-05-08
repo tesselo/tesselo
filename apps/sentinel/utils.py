@@ -90,15 +90,22 @@ def get_sentinel_tile_indices(sentineltile, zoom=const.ZOOM_LEVEL_10M):
             yield tilex, tiley, zoom
 
 
-def get_raster_tile(layer_id, tilez, tilex, tiley):
+def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
     """
     Bypass the database to fetch files using structured file name scheme. If the
     requested tile does not exists, higher level tiles are searched. If a higher
     level tile is found, it is warped to the requested zoom level. This ensures
     that a tile can be requested at any zoom level.
     """
+    # If asked for, add lower zoom levels as source candidates. Upper tiles are
+    # then down-scaled to the higher zoom levels.
+    if look_up:
+        zoomrange = range(tilez, -1, -1)
+    else:
+        zoomrange = [tilez]
+
     # Loop through zoom levels to search for a tile
-    for zoom in range(tilez, -1, -1):
+    for zoom in zoomrange:
 
         # Compute multiplier to find parent raster
         multiplier = 2 ** (tilez - zoom)
