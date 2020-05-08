@@ -671,6 +671,10 @@ def build_predicted_pyramid(predicted_layer_id):
 
     pred.write('Started building pyramid')
 
+    # Determine numpy and GDAL datatypes.
+    dtype = REGRESSION_DATATYPE if pred.classifier.is_regressor else CLASSIFICATION_DATATYPE
+    dtype_gdal = REGRESSION_DATATYPE_GDAL if pred.classifier.is_regressor else CLASSIFICATION_DATATYPE_GDAL
+
     # Loop through the tiles in each zoom level, bottom up.
     for tilez in range(ZOOM - 1, -1, -1):
         pred.write('Building pyramid at zoom level {}'.format(tilez))
@@ -688,7 +692,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 continue
             # Extract pixel values.
             tile_data = [
-                numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) if tile is None else tile.bands[0].data() for tile in tiles
+                numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype(dtype) if tile is None else tile.bands[0].data() for tile in tiles
             ]
             # Aggregate tile to lower resolution.
             tile_data = [aggregate_tile(tile, target_dtype=tile.dtype, discrete=tile.dtype is CLASSIFICATION_DATATYPE) for tile in tile_data]
@@ -705,7 +709,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 tilex=tilex,
                 tiley=tiley,
                 nodata_value=0,
-                datatype=1,
+                datatype=dtype_gdal,
             )
 
     pred.write('Finished building pyramid, prediction task completed.', pred.FINISHED)

@@ -9,6 +9,10 @@ from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
+from classify.const import (
+    CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL
+)
+from classify.models import PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
 from django.core.files.storage import DefaultStorage
@@ -150,7 +154,7 @@ def point_to_test_file(source_url, filepath):
     })
 
 
-def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None):
+def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None, look_up=True):
     if data_max is None:
         if SentinelTileSceneClass.objects.filter(layer_id=layer_id).exists():
             # For scene class layers, write small landcover class integers.
@@ -163,6 +167,13 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None):
         # Sentinel-1 bands have float32 data type.
         data = numpy.random.random((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)) * data_max
         dtype = 6
+    elif PredictedLayer.objects.filter(rasterlayer_id=layer_id).exists():
+        pred = PredictedLayer.objects.get(rasterlayer_id=layer_id)
+        # Determine numpy and GDAL datatypes for predicted layers.
+        is_regressor = pred.classifier.is_regressor if pred.classifier else False
+        dtype_numpy = REGRESSION_DATATYPE if is_regressor else CLASSIFICATION_DATATYPE
+        dtype = REGRESSION_DATATYPE_GDAL if is_regressor else CLASSIFICATION_DATATYPE_GDAL
+        data = numpy.random.random_integers(1, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype(dtype_numpy)
     else:
         # Sentinel-2 layers have Int16 data type.
         data = numpy.random.random_integers(1, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('int16')
@@ -183,7 +194,7 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None):
     })
 
 
-def patch_get_raster_tile_range_100(layer_id, tilez, tilex, tiley):
+def patch_get_raster_tile_range_100(layer_id, tilez, tilex, tiley, look_up=True):
     return patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=100)
 
 
@@ -205,15 +216,6 @@ def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=
     rst = io.BytesIO(rst.vsi_buffer)
     filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
     storage.save(filename, rst)
-
-    if not RasterTile.objects.filter(rasterlayer_id=layer_id, tilez=tilez, tilex=tilex, tiley=tiley).exists():
-        return RasterTile(
-            rasterlayer_id=layer_id,
-            tilez=tilez,
-            tilex=tilex,
-            tiley=tiley,
-            rast=filename,
-        )
 
 
 def patch_process_l2a(stile_id):
