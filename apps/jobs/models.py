@@ -48,9 +48,15 @@ class BatchJob(models.Model):
         if not len(desc['jobs']):
             self.status = self.UNKNOWN
         else:
+            # Get job description of first job result.
             job = desc['jobs'][0]
+            # Remove container environment, as it may contain secret keys.
+            if 'description' in job and 'container' in job['description'] and 'environment' in job['description']['container']:
+                del job['description']['container']['environment']
+            # Store description and status.
             self.description = json.dumps(job)
             self.status = job['status']
+            # Get log stream name of last attempt (there might be multiple attempts.)
             if len(job['attempts']):
                 self.log_stream_name = job['attempts'][0]['container']['logStreamName']
             else:
