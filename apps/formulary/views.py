@@ -12,7 +12,7 @@ from sentinel_1 import const
 
 
 class FormulaViewSet(PermissionsModelViewSet):
-    queryset = Formula.objects.all().order_by('name')
+    queryset = Formula.objects.all().order_by('-rgb', 'name')
     serializer_class = FormulaSerializer
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     search_fields = ('name', 'acronym')

@@ -104,7 +104,8 @@ class WMTSAPIView(APIView):
         # Filter future composites from list.
         composites = composites.filter(min_date__lte=datetime.datetime.now().date()).order_by('min_date')
 
-        # Order predictedlayers.
+        # Order predictedlayers and formulas.
+        formulas = formulas.order_by('-rgb', 'name')
         predictedlayers = predictedlayers.order_by('min_date')
 
         # Construct wmts layer list from wmts layers.
