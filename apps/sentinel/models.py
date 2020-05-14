@@ -389,7 +389,8 @@ class CompositeTile(models.Model):
         unique_together = (("composite", "tilez", "tilex", "tiley"), )
 
     def __str__(self):
-        return '{0} - {1}/{2}/{3} - {4} - Ran for {5}'.format(
+        return '{0} - {1} - {2}/{3}/{4} - {5} - Ran for {6}'.format(
+            self.id,
             self.composite.name,
             self.tilez,
             self.tilex,
