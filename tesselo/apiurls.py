@@ -1,6 +1,8 @@
 from rest_framework import routers
 
-from classify.views import ClassifierViewSet, PredictedLayerViewSet, TrainingLayerViewSet, TrainingSampleViewSet
+from classify.views import (
+    ClassifierViewSet, PredictedLayerTileViewSet, PredictedLayerViewSet, TrainingLayerViewSet, TrainingSampleViewSet
+)
 from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaAlgebraAPIView, FormulaViewSet
@@ -105,6 +107,11 @@ router.register(r'traininglayer', TrainingLayerViewSet, basename='traininglayer'
 router.register(r'trainingsample', TrainingSampleViewSet, basename='trainingsample')
 router.register(r'classifier', ClassifierViewSet, basename='classifier')
 router.register(r'predictedlayer', PredictedLayerViewSet, basename='predictedlayer')
+router.register(
+    r'predictedlayer/(?P<predictedlayer_id>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
+    PredictedLayerTileViewSet,
+    basename='predictedlayer_tile'
+)
 
 router.register(r'readonlytoken', ReadOnlyTokenViewSet, basename='readonlytoken')
 

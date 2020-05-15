@@ -6,13 +6,14 @@ from rest_framework.response import Response
 
 from classify.filters import PredictedLayerFilter
 from classify.models import Classifier, PredictedLayer, TrainingLayer, TrainingSample
+from classify.permissions import RenderPredictedLayerPermission
 from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
 )
 from django.http import HttpResponse
 from jobs import ecs
 from raster_api.permissions import ChangePermissionObjectPermission, IsReadOnly
-from raster_api.views import PermissionsModelViewSet
+from raster_api.views import AlgebraAPIView, PermissionsModelViewSet
 
 
 class TrainingLayerViewSet(PermissionsModelViewSet):
@@ -136,3 +137,36 @@ class PredictedLayerViewSet(PermissionsModelViewSet):
         pred.write('Scheduled layer prediction', pred.PENDING)
         ecs.predict_sentinel_layer(pred.id)
         return Response({'success': 'Triggered Layer Prediction {}'.format(pred.id)})
+
+
+class PredictedLayerTileViewSet(AlgebraAPIView):
+    permission_classes = (IsAuthenticated, RenderPredictedLayerPermission, )
+    _predictedlayer = None
+
+    @property
+    def predictedlayer(self):
+        if self._predictedlayer is None:
+            self._predictedlayer = PredictedLayer.objects.get(id=self.kwargs.get('predictedlayer_id'))
+        return self._predictedlayer
+
+    def get_ids(self):
+        if self._layer_ids is None:
+            # For TMS tile request, get the layer id from the url.
+            self._layer_ids = {'x': self.predictedlayer.rasterlayer_id}
+        return self._layer_ids
+
+    def get_formula(self):
+        # Set the formula to trivial for TMS requests.
+        return 'x'
+
+    def get_colormap(self, layer=None):
+        # Get legend for the input layer.
+        if hasattr(self.predictedlayer.rasterlayer, 'legend') and hasattr(self.predictedlayer.rasterlayer.legend, 'colormap'):
+            return self.predictedlayer.rasterlayer.legend.colormap
+        else:
+            # Use a continous grayscale color scheme.
+            return {
+                'continuous': True,
+                'from': (0, 0, 0),
+                'to': (255, 255, 255),
+            }
