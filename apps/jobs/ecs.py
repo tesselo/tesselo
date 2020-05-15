@@ -119,6 +119,11 @@ def clear_sentineltile(sentineltile_id, depends_on=None):
     return track_job('sentinel', 'sentineltile', sentineltile_id, job)
 
 
+def clear_composite(composite_id, depends_on=None):
+    job = run_ecs_command(['clear_composite', composite_id], retry=1, vcpus=1, memory=512, depends_on=depends_on)
+    return track_job('sentinel', 'composite', composite_id, job)
+
+
 def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
     job = run_ecs_command(['composite_build_callback', compositebuild_id, initiate, rebuild])
     return track_job('sentinel', 'compositebuild', compositebuild_id, job)

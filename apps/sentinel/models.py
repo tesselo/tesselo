@@ -435,6 +435,7 @@ class CompositeBuild(models.Model):
     BUILDING_TILES = 'Building Composite Tiles'
     FINISHED = 'Finished'
     FAILED = 'Failed'
+    CLEARED = 'Cleared'
     CB_STATUS_CHOICES = (
         (UNPROCESSED, UNPROCESSED),
         (PENDING, PENDING),
@@ -442,6 +443,7 @@ class CompositeBuild(models.Model):
         (BUILDING_TILES, BUILDING_TILES),
         (FINISHED, FINISHED),
         (FAILED, FAILED),
+        (CLEARED, CLEARED),
     )
     composite = models.ForeignKey(Composite, on_delete=models.CASCADE)
     aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)

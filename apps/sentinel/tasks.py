@@ -28,7 +28,7 @@ from sentinel import const
 from sentinel.clouds.algorithms import Clouds
 from sentinel.clouds.utils import sun
 from sentinel.models import (
-    BucketParseLog, CompositeBuild, CompositeBuildSchedule, CompositeTile, MGRSTile, SentinelTile,
+    BucketParseLog, Composite, CompositeBuild, CompositeBuildSchedule, CompositeTile, MGRSTile, SentinelTile,
     SentinelTileAggregationLayer, SentinelTileBand, SentinelTileSceneClass
 )
 from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, locally_parse_raster, write_raster_tile
@@ -1008,6 +1008,38 @@ def clear_sentineltile(sentineltile_id):
 
     # Write success message, reset status.
     tile.write('Finished clearing tiles, resetting status to unprocessed.', SentinelTile.UNPROCESSED)
+
+
+def clear_composite(composite_id):
+    """
+    Removes all tiles from this composite.
+    """
+    # Get composite.
+    composite = Composite.objects.get(id=composite_id)
+    # Create S3 resource.
+    s3 = boto3.resource('s3')
+    # Get bucket if name is provided (this makes the clearing testable without
+    # patching S3).
+    if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA'):
+        bucket = s3.Bucket(settings.AWS_STORAGE_BUCKET_NAME_MEDIA)
+    else:
+        bucket = None
+    # Set delete batch size to boto3 delete_objects limit of 1000 objects.
+    BATCH_SIZE = 1000
+    # Loop through bands.
+    for band in composite.compositeband_set.all():
+        # Delete all tiles for this band from S3.
+        prefix = 'tiles/{}/'.format(band.rasterlayer_id)
+        if bucket:
+            bucket.objects.page_size(BATCH_SIZE).filter(Prefix=prefix).delete()
+        # Unregister tiles from DB.
+        qs = band.rasterlayer.rastertile_set.all()
+        qs._raw_delete(qs.db)
+    # Remove composite tiles.
+    composite.compositetile_set.all().delete()
+    # Update all compositebuilds.
+    for build in composite.compositebuild_set.all():
+        build.write('Cleared composite.', CompositeBuild.CLEARED)
 
 
 def push_scheduled_composite_builds():

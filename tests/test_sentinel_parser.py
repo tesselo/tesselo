@@ -20,7 +20,9 @@ from sentinel import const
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
 )
-from sentinel.tasks import composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
+from sentinel.tasks import (
+    clear_composite, composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
+)
 from sentinel_1 import const as s1const
 from sentinel_1.models import Sentinel1Tile
 
@@ -220,3 +222,12 @@ class SentinelBucketParserTest(TestCase):
             ('B12.jp2', 13),
             ('SCL.jp2', 13),
         ])
+
+    def test_clear_composite(self):
+        CompositeTile.objects.create(composite=self.composite, tilez=4, tilex=23, tiley=23)
+        clear_composite(self.composite.id)
+        self.build.refresh_from_db()
+        # Build status is set to cleared.
+        self.assertEqual(self.build.status, CompositeBuild.CLEARED)
+        # Composite tile was cleared.
+        self.assertEqual(self.composite.compositetile_set.count(), 0)
