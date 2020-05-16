@@ -8,9 +8,9 @@ from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaAlgebraAPIView, FormulaViewSet
 from jobs.views import BatchJobViewSet
 from raster_api.views import (
-    AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet, AlgebraAPIView,
-    CompositeViewSet, ExportAPIView, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet, LegendViewSet,
-    ObtainExpiringAuthToken, RasterLayerViewSet, ReadOnlyTokenViewSet, RemoveAuthToken,
+    AdminAlgebraAPIView, AggregationAreaViewSet, AggregationLayerVectorTilesViewSet, AggregationLayerViewSet,
+    AlgebraAPIView, CompositeViewSet, ExportAPIView, LambdaView, LegendEntryViewSet, LegendSemanticsViewSet,
+    LegendViewSet, ObtainExpiringAuthToken, RasterLayerViewSet, ReadOnlyTokenViewSet, RemoveAuthToken,
     SentinelTileAggregationLayerViewSet, ValueCountResultViewSet
 )
 from report.views import ReportAggregationViewSet, ReportScheduleViewSet
@@ -27,7 +27,7 @@ router.register(r'legendentry', LegendEntryViewSet)
 
 router.register(
     r'tile/(?P<layer>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
-    AlgebraAPIView,
+    AdminAlgebraAPIView,
     basename='tile'
 )
 router.register(
@@ -37,7 +37,7 @@ router.register(
 )
 router.register(
     r'^pixel/(?P<xcoord>-?\d+(?:\.\d+)?)/(?P<ycoord>-?\d+(?:\.\d+)?)$',
-    AlgebraAPIView,
+    AdminAlgebraAPIView,
     basename='algebra-pixel'
 )
 router.register(

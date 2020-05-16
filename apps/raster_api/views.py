@@ -20,7 +20,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.views import APIView
@@ -112,7 +112,13 @@ class AlgebraAPIView(AlgebraView, RasterAPIView):
         return super(AlgebraAPIView, self).get(*args, **kwargs)
 
 
+class AdminAlgebraAPIView(AlgebraAPIView):
+    permission_classes = (IsAdminUser, )
+
+
 class ExportAPIView(ExportView, RasterAPIView):
+
+    permission_classes = (IsAdminUser, )
 
     def list(self, *args, **kwargs):
         return super(ExportAPIView, self).get(*args, **kwargs)
