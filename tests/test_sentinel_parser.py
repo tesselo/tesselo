@@ -21,7 +21,8 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
 )
 from sentinel.tasks import (
-    clear_composite, clear_sentineltile, composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
+    clear_composite, clear_sentineltile, composite_build_callback, generate_bands_and_sceneclass,
+    sync_sentinel_bucket_utm_zone
 )
 from sentinel_1 import const as s1const
 from sentinel_1.models import Sentinel1Tile
