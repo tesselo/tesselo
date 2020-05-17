@@ -457,6 +457,9 @@ class CompositeBuild(models.Model):
     cloud_version = models.IntegerField(null=True, blank=True, help_text='Leave empty to use latest version.')
     cloud_classifier = models.ForeignKey('classify.Classifier', null=True, blank=True, on_delete=models.SET_NULL, help_text='Use a classifier based cloud removal. The classifier is assumed to return a cloud probability or rank (the higher the output the more likely its a cloud). If specified, the cloud_version flag is ignored.')
 
+    class Meta:
+        ordering = ['composite__min_date', ]
+
     def __str__(self):
         return '{} - {} - {}'.format(self.composite, self.aggregationlayer, self.status)
 
