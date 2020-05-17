@@ -21,7 +21,7 @@ from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand
 )
 from sentinel.tasks import (
-    clear_composite, composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
+    clear_composite, clear_sentineltile, composite_build_callback, generate_bands_and_sceneclass, sync_sentinel_bucket_utm_zone
 )
 from sentinel_1 import const as s1const
 from sentinel_1.models import Sentinel1Tile
@@ -174,6 +174,16 @@ class SentinelBucketParserTest(TestCase):
         composite_build_callback(self.build.id, rebuild=True)
         ctile.refresh_from_db()
         self.assertIn('Using S2 cloud removal algorithm Classifier ', ctile.log)
+        # Test clearning of sentinel tile.
+        stile = SentinelTile.objects.first()
+        for band in stile.sentineltileband_set.all():
+            self.assertTrue(band.layer.rastertile_set.count() > 0)
+        self.assertEqual(stile.status, SentinelTile.FINISHED)
+        clear_sentineltile(stile.id)
+        for band in stile.sentineltileband_set.all():
+            self.assertEqual(band.layer.rastertile_set.count(), 0)
+        stile.refresh_from_db()
+        self.assertEqual(stile.status, SentinelTile.UNPROCESSED)
 
     def test_bucket_parser(self):
         sync_sentinel_bucket_utm_zone(1)
