@@ -962,26 +962,23 @@ def clear_sentineltile(sentineltile_id):
     tile = SentinelTile.objects.get(id=sentineltile_id)
     # Write process log and update status.
     tile.write('Clearing this sentineltile.', SentinelTile.PROCESSING)
+    # Create S3 resource.
+    s3 = boto3.resource('s3')
+    # Get bucket if name is provided (this makes the clearing testable without
+    # patching S3).
+    if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA'):
+        bucket = s3.Bucket(settings.AWS_STORAGE_BUCKET_NAME_MEDIA)
+    else:
+        bucket = None
     # Set delete batch size to boto3 delete_objects limit of 1000 objects.
     BATCH_SIZE = 1000
-    # Create S3 client.
-    client = boto3.client('s3')
     # Loop through bands.
     for band in tile.sentineltileband_set.all():
         tile.write('Clearing band {}.'.format(band.band))
-        # Get all raster tile ids for this band.
-        rastertiles = band.layer.rastertile_set.all().values_list('rast', flat=True)
-        # Loop through tiles in batches for deletion.
-        if len(rastertiles):
-            for i in range(0, len(rastertiles), BATCH_SIZE):
-                batch = rastertiles[i:i + BATCH_SIZE]
-                client.delete_objects(
-                    Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
-                    Delete={
-                        'Objects': [{'Key': rst} for rst in batch],
-                        'Quiet': False,
-                    },
-                )
+        # Delete all tiles for this band from S3.
+        prefix = 'tiles/{}/'.format(band.layer_id)
+        if bucket:
+            bucket.objects.page_size(BATCH_SIZE).filter(Prefix=prefix).delete()
         # Unregister tiles from DB.
         qs = band.layer.rastertile_set.all()
         qs._raw_delete(qs.db)
@@ -989,19 +986,10 @@ def clear_sentineltile(sentineltile_id):
     # Remove SCL if present.
     if hasattr(tile, 'sentineltilesceneclass'):
         tile.write('Clearing SCL.')
-        # Get all raster tile ids for this band.
-        rastertiles = tile.sentineltilesceneclass.layer.rastertile_set.all().values_list('rast', flat=True)
-        # Loop through tiles in batches for deletion.
-        if len(rastertiles):
-            for i in range(0, len(rastertiles), BATCH_SIZE):
-                batch = rastertiles[i:i + BATCH_SIZE]
-                client.delete_objects(
-                    Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA,
-                    Delete={
-                        'Objects': [{'Key': rst} for rst in batch],
-                        'Quiet': False,
-                    },
-                )
+        # Delete all tiles for this band from S3.
+        prefix = 'tiles/{}/'.format(tile.sentineltilesceneclass.layer_id)
+        if bucket:
+            bucket.objects.page_size(BATCH_SIZE).filter(Prefix=prefix).delete()
         # Unregister tiles from DB.
         qs = tile.sentineltilesceneclass.layer.rastertile_set.all()
         qs._raw_delete(qs.db)
