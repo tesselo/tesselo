@@ -44,21 +44,7 @@ class TrainingSampleAdmin(admin.OSMGeoAdmin):
     form = TrainingSampleForm
 
 
-class TrainingSampleInline(admin.TabularInline):
-    model = TrainingSample
-    readonly_fields = ('id', 'composite', 'sentineltile', )
-    exclude = ('geom', )
-    form = TrainingSampleForm
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
 class TrainingLayerAdmin(GuardedModelAdmin):
-    inlines = (TrainingSampleInline, )
     readonly_fields = ('legend', )
 
 
