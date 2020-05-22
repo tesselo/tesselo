@@ -133,7 +133,7 @@ def train_sentinel_classifier(classifier_id):
     # Get large instance flag for this chunk.
     # Run ecs command with required instance size.
     if Classifier.objects.get(id=classifier_id).needs_large_instance:
-        job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1, vcpus=2, memory=10000, queue='tesselo-{stage}-process-l2a')
+        job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1, vcpus=2, memory=int(1024*14.5), queue='tesselo-{stage}-process-l2a')
     else:
         job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1)
     return track_job('classify', 'classifier', classifier_id, job)
