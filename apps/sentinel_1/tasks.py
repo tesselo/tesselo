@@ -202,9 +202,12 @@ def snap_terrain_correction(sentinel1tile_id):
     tile = Sentinel1Tile.objects.get(id=sentinel1tile_id)
     tile.write('Started processing tile with Batch Job ID "{}".'.format(os.environ.get('AWS_BATCH_JOB_ID', 'unknown')), Sentinel1Tile.PROCESSING)
 
+    # Create subdir in workdir.
+    tilewd = os.path.join(const.GPT_WORKDIR, str(tile.id))
+    os.makedirs(tilewd, exist_ok=True)
+
     # Download data.
-    tile.write('Downloading data.')
-    gpt_input_path = os.path.join(const.GPT_WORKDIR, '{}.SAFE'.format(tile.product_name))
+    gpt_input_path = os.path.join(tilewd, '{}.SAFE'.format(tile.product_name))
     cmd_s3download = 'aws s3 sync --request-payer=requester s3://{}/{} {}'.format(
         const.BUCKET_NAME,
         tile.prefix,
@@ -214,7 +217,7 @@ def snap_terrain_correction(sentinel1tile_id):
 
     # Apply graph.
     tile.write('Applying terrain correction graph.')
-    gpt_output_path = os.path.join(const.GPT_WORKDIR, '{}_gpt_out.dim'.format(tile.product_name))
+    gpt_output_path = os.path.join(tilewd, '{}_gpt_out.dim'.format(tile.product_name))
     cmd_gpt = const.GPT_TERRAIN_CORRECTION_CMD_TEMPLATE.format(
         input=gpt_input_path,
         output=gpt_output_path,
@@ -225,7 +228,7 @@ def snap_terrain_correction(sentinel1tile_id):
     shutil.rmtree(gpt_input_path)
 
     # Ingest the resulting rasters as tiles.
-    gpt_output_file_data_path = os.path.join(const.GPT_WORKDIR, '{}_gpt_out.data'.format(tile.product_name))
+    gpt_output_file_data_path = os.path.join(tilewd, '{}_gpt_out.data'.format(tile.product_name))
     for output_band_path in glob.glob(os.path.join(gpt_output_file_data_path, '*.img')):
         for band_key, name in const.BAND_CHOICES:
             # Continue if this band choice is not present.
@@ -259,7 +262,7 @@ def snap_terrain_correction(sentinel1tile_id):
                     layer=rasterlayer,
                 )
             # Create tempdir for parsing.
-            tmpdir = os.path.join(const.GPT_WORKDIR, 'tmp{}'.format(band.id))
+            tmpdir = os.path.join(tilewd, 'tmp{}'.format(band.id))
             pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
             # Reproject raster into new TIFF file in tmp folder. Use rasterio
             # because of the exotic file type that is not handled well by
@@ -304,6 +307,9 @@ def snap_terrain_correction(sentinel1tile_id):
                 raise
 
     tile.write('Finished processing band {}'.format(band_key), Sentinel1Tile.FINISHED)
+
+    # Remove tile working directory.
+    shutil.rmtree(tilewd)
 
     # Run callbacks to continue build chain.
     for cbuild in tile.compositebuild_set.filter(status=CompositeBuild.INGESTING_SCENES):
