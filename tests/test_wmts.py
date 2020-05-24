@@ -92,7 +92,7 @@ class WMTSViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(title, response.content.decode())
-        self.assertIn('/tile/{}/'.format(self.pred.rasterlayer_id), response.content.decode())
+        self.assertIn('/predictedlayer/{}/'.format(self.pred.id), response.content.decode())
 
     def test_wmts_read_only_auth_key(self):
         self.client.logout()

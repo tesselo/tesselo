@@ -128,9 +128,9 @@ class WMTSAPIView(APIView):
                 )
 
         for pred in predictedlayers:
-            url = "{urlbase}tile/{predictedlayer}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}".format(
+            url = "{urlbase}predictedlayer/{predictedlayer}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}".format(
                 urlbase=urlbase,
-                predictedlayer=pred.rasterlayer_id,
+                predictedlayer=pred.id,
                 keyname=GET_QUERY_PARAMETER_AUTH_KEY,
                 keyval=key,
             )
