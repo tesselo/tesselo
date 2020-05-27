@@ -2,7 +2,7 @@ import os
 
 import boto3
 
-from classify.models import Classifier
+from classify.models import Classifier, TrainingPixels
 from django.conf import settings
 from django.core.management import call_command
 from jobs.utils import track_job
@@ -185,3 +185,21 @@ def snap_terrain_correction(sentinel1tile_id):
         job='tesselo-{stage}-snap',
     )
     return track_job('sentinel_1', 'sentinel1tile', sentinel1tile_id, job)
+
+
+def populate_trainingpixels(trainingpixels_id):
+    job = run_ecs_command(['populate_trainingpixels', trainingpixels_id])
+    return track_job('classify', 'trainingpixels', trainingpixels_id, job)
+
+
+def populate_trainingpixels_patch(trainingpixels_patch_id):
+    job = run_ecs_command(['populate_trainingpixels_patch', trainingpixels_patch_id])
+    return track_job('classify', 'trainingpixelspatch', trainingpixels_patch_id, job)
+
+
+def combine_trainingpixels_patches(trainingpixels_id):
+    if TrainingPixels.objects.get(id=trainingpixels_id).needs_large_instance:
+        job = run_ecs_command(['combine_trainingpixels_patches', trainingpixels_id], retry=1, vcpus=2, memory=int(1024 * 14.5), queue='tesselo-{stage}-process-l2a')
+    else:
+        job = run_ecs_command(['combine_trainingpixels_patches', trainingpixels_id], retry=1)
+    return track_job('classify', 'classifier', trainingpixels_id, job)

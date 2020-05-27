@@ -25,7 +25,10 @@ from classify.const import (
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
     KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
 )
-from classify.models import Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
+from classify.models import (
+    Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingPixels, TrainingPixelsPatch,
+    TrainingSample
+)
 from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from classify.utils import RNNRobustScaler
 from django.conf import settings
@@ -33,6 +36,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from jobs import ecs
 from sentinel.models import Composite, MGRSTile, SentinelTile
 
 
@@ -60,6 +64,7 @@ class SentinelClassifierTest(TestCase):
             patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile),
             patch('classify.tasks.get_raster_tile', patch_get_raster_tile),
             patch('classify.tasks.write_raster_tile', patch_write_raster_tile),
+            patch('classify.collectpixels.get_raster_tile', patch_get_raster_tile),
             patch('jobs.ecs.process_l2a', patch_process_l2a),
         ]
         for mock in mocks:
@@ -141,6 +146,46 @@ class SentinelClassifierTest(TestCase):
         for root, subdirs, files in os.walk(os.path.join(settings.MEDIA_ROOT, path)):
             files += files
         return files
+
+    def test_training_pixels_collection(self):
+        tr = TrainingPixels.objects.create(
+            name='abc',
+            band_names='B03,B04',
+            traininglayer=self.traininglayer,
+            buffer=0,
+        )
+        tr.composites.add(self.composite)
+        tr.composites.add(self.composite2)
+        tr.composites.add(self.composite3)
+        ecs.populate_trainingpixels(tr.id)
+        tr.refresh_from_db()
+        self.assertEqual(tr.trainingpixelspatch_set.count(), 1)
+        self.assertEqual(tr.trainingpixelspatch_set.first().status, TrainingPixelsPatch.FINISHED)
+        self.assertEqual(tr.status, TrainingPixels.FINISHED)
+        ecs.combine_trainingpixels_patches(tr.id)
+        tr.refresh_from_db()
+        X, Y, PID, SID, categories = tr.unpack_collected_pixels()
+        self.assertDictEqual(categories, {'Cloud': 1, 'Shadow': 2, 'Cloud free': 3})
+        self.assertEqual(X.shape, (196, 3, 2))
+        self.assertEqual(Y.shape, (196, ))
+        self.assertEqual(PID.shape, (196, ))
+        self.assertEqual(PID.shape, (196, ))
+
+    def test_training_pixels_collection_buffer(self):
+        tr = TrainingPixels.objects.create(
+            name='abc',
+            band_names='B03,B04,B08,B09',
+            traininglayer=self.traininglayer,
+            buffer=50,
+        )
+        tr.composites.add(self.composite)
+        tr.composites.add(self.composite2)
+        tr.composites.add(self.composite3)
+        ecs.populate_trainingpixels(tr.id)
+        ecs.combine_trainingpixels_patches(tr.id)
+        tr.refresh_from_db()
+        X, Y, PID, SID, categories = tr.unpack_collected_pixels()
+        self.assertEqual(X.shape, (2625, 3, 4))
 
     def test_classifier_training(self):
         # SVM

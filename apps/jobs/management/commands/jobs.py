@@ -1,5 +1,8 @@
 from raster_aggregation.tasks import aggregation_layer_parser
 
+from classify.collectpixels import (
+    combine_trainingpixels_patches, populate_trainingpixels, populate_trainingpixels_patch
+)
 from classify.tasks import (
     build_predicted_pyramid, predict_sentinel_chunk, predict_sentinel_layer, train_sentinel_classifier
 )
@@ -36,6 +39,9 @@ class Command(BaseCommand):
         'parse_aggregationlayer': aggregation_layer_parser,
         'parse_s3_sentinel_1_inventory': parse_s3_sentinel_1_inventory,
         'snap_terrain_correction': snap_terrain_correction,
+        'populate_trainingpixels': populate_trainingpixels,
+        'populate_trainingpixels_patch': populate_trainingpixels_patch,
+        'combine_trainingpixels_patches': combine_trainingpixels_patches,
     }
 
     def add_arguments(self, parser):

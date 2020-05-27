@@ -4,6 +4,7 @@ import json
 import pickle
 import zipfile
 
+import numpy
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import Legend, RasterLayer
 from raster_aggregation.models import AggregationLayer
@@ -46,6 +47,86 @@ class TrainingSample(models.Model):
 
     def __str__(self):
         return '{0} - {1}'.format(self.category, self.composite if self.composite else self.sentineltile)
+
+
+class TrainingPixels(models.Model):
+    """
+    Training pixels for one composite over a training layer sample set.
+    """
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    ST_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+    name = models.CharField(max_length=100)
+    traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
+    look_back_steps = models.PositiveIntegerField(default=0, help_text='Number of composite steps back from sample date should be included in training and predicting data collection. Ignored if zero.')
+    band_names = models.CharField(max_length=500, default='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12', help_text='Comma-separated list of band names and layer ids. If an integer value is added, it is assumed to be a rasterlayer id that should be included in the export.')
+    composites = models.ManyToManyField(Composite, blank=True, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
+    sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
+    training_all_touched = models.BooleanField(default=True, help_text='Sets the all_touched flag when rasterizing the training samples.')
+    needs_large_instance = models.BooleanField(default=False)
+    buffer = models.FloatField(default=0)
+    collected_pixels = models.FileField(upload_to='clouds/trainingpixels', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    log = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
+    def write(self, data, status=None):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
+        self.save()
+
+    def unpack_collected_pixels(self):
+        data = numpy.load(self.collected_pixels)
+        # Convert categories to dict.
+        categories = {catkey: int(catval) for catkey, catval in data['categories']}
+        return data['X'], data['Y'], data['PID'], data['SID'], categories
+
+
+class TrainingPixelsPatch(models.Model):
+    """
+    Training pixels for one composite over a training layer sample set.
+    """
+    UNPROCESSED = 'Unprocessed'
+    PENDING = 'Pending'
+    PROCESSING = 'Processing'
+    FINISHED = 'Finished'
+    FAILED = 'Failed'
+    ST_STATUS_CHOICES = (
+        (UNPROCESSED, UNPROCESSED),
+        (PENDING, PENDING),
+        (PROCESSING, PROCESSING),
+        (FINISHED, FINISHED),
+        (FAILED, FAILED),
+    )
+    trainingpixels = models.ForeignKey(TrainingPixels, on_delete=models.CASCADE)
+    index_from = models.IntegerField()
+    index_to = models.IntegerField()
+    collected_pixels = models.FileField(upload_to='clouds/trainingpixels', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
+    log = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return '{} | {} | {}'.format(self.id, self.trainingpixels.name, self.status)
+
+    def write(self, data, status=None):
+        now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
+        self.log += now + str(data) + '\n'
+        if status:
+            self.status = status
+        self.save()
 
 
 class Classifier(models.Model):
@@ -107,6 +188,7 @@ class Classifier(models.Model):
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     collected_pixels = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
+    trainingpixels = models.ForeignKey(TrainingPixels, null=True, on_delete=models.SET_NULL)
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
     split_by_polygon = models.BooleanField(default=False, help_text='Reserve pixels at the polygon level, i.e. keep a percentage of training polygons as verification data.')
     split_random_seed = models.PositiveIntegerField(null=True, blank=True, help_text='Fix random seed for train and test split to make verification more comparable.')

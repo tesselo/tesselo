@@ -1,7 +1,8 @@
 from guardian.admin import GuardedModelAdmin
 
 from classify.models import (
-    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingSample
+    Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingPixels,
+    TrainingPixelsPatch, TrainingSample
 )
 from django import forms
 from django.contrib.gis import admin
@@ -98,8 +99,27 @@ class PredictedLayerChunkAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started predicting chunk.')
 
 
+class TrainingPixelsAdmin(admin.ModelAdmin):
+
+    actions = ['populate_trainingpixels', 'combine_trainingpixels_patches']
+
+    def populate_trainingpixels(self, request, queryset):
+        for tp in queryset:
+            tp.write('Scheduled pixel collection.', tp.PENDING)
+            ecs.populate_trainingpixels(tp.id)
+        self.message_user(request, 'Started populating pixels.')
+
+    def combine_trainingpixels_patches(self, request, queryset):
+        for tp in queryset:
+            tp.write('Scheduled pixel unpacking.', tp.PENDING)
+            ecs.combine_trainingpixels_patches(tp.id)
+        self.message_user(request, 'Started unpacking pixels.')
+
+
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
 admin.site.register(PredictedLayerChunk, PredictedLayerChunkAdmin)
+admin.site.register(TrainingPixels, TrainingPixelsAdmin)
+admin.site.register(TrainingPixelsPatch)
