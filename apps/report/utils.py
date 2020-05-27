@@ -2,6 +2,8 @@ from raster.valuecount import Aggregator
 
 from sentinel.utils import get_raster_tile
 
+VALUECOUNT_ROUNDING_DIGITS = 7
+
 
 class AggregatorEfficient(Aggregator):
     """
@@ -40,8 +42,8 @@ def populate_vc(vc):
         vc.stats_cumsum_t1 = agg._stats_t1
         vc.stats_cumsum_t2 = agg._stats_t2
 
-        # Convert values to string for storage in hstore
-        vc.value = {k: str(v) for k, v in aggregation_result.items()}
+        # Convert values to string for storage in hstore.
+        vc.value = {k: str(round(v, VALUECOUNT_ROUNDING_DIGITS)) for k, v in aggregation_result.items()}
 
         vc.status = vc.FINISHED
     except:

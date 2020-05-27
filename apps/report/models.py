@@ -74,6 +74,7 @@ class ReportAggregation(models.Model):
     """
 
     ZOOM = 14
+    VALUECOUNT_ROUNDING_DIGITS = 7
 
     formula = models.ForeignKey('formulary.Formula', on_delete=models.CASCADE, blank=True, null=True, help_text='Leave empty for predicted layers.')
     aggregationlayer = models.ForeignKey(AggregationLayer, on_delete=models.CASCADE)
@@ -165,7 +166,7 @@ class ReportAggregation(models.Model):
 
         # Compute percentage by value.
         valsum = sum([float(val) for key, val in self.valuecountresult.value.items()])
-        self.value_percentage = {key: float(val) / valsum for key, val in self.valuecountresult.value.items()}
+        self.value_percentage = {key: str(round(float(val) / valsum, self.VALUECOUNT_ROUNDING_DIGITS)) for key, val in self.valuecountresult.value.items()}
 
 
 @receiver(post_delete, sender=ReportAggregation, weak=False, dispatch_uid="remove_valuecount_before_delete")

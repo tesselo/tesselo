@@ -265,7 +265,7 @@ class AggregationViewTests(AggregationViewTestsBase):
         # Percentages have been calculated.
         key = next(iter(agg.value))
         valsum = sum([float(val) for key, val in agg.value.items()])
-        self.assertEqual(float(agg.value_percentage[key]), float(agg.value[key]) / valsum)
+        self.assertEqual(float(agg.value_percentage[key]), round(float(agg.value[key]) / valsum, 7))
 
     def test_percentage_covered(self):
         # Prepare data.
