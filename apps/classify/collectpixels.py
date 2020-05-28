@@ -99,7 +99,7 @@ def populate_trainingpixels(trainingpixels_id):
     tp.write('Pushed {} trainingpixel patch jobs.'.format(counter), TrainingPixels.PROCESSING)
     for patch in tp.trainingpixelspatch_set.all():
         patch.write('Scheduled patch.', TrainingPixelsPatch.PENDING)
-        ecs.populate_trainingpixels_patch(patch.id)
+        ecs.populate_trainingpixels_patch(patch.id, tp.needs_large_instance)
 
 
 def populate_trainingpixels_patch(trainingpixelspatch_id):

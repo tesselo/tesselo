@@ -42,7 +42,7 @@ def get_batch_job_base():
     }
 
 
-def run_ecs_command(command_input, vcpus=1, memory=1024, retry=3, queue='tesselo-{stage}', job='tesselo-{stage}', depends_on=None):
+def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo-{stage}', job='tesselo-{stage}', depends_on=None):
     '''
     Execute a Batch command.
     '''
@@ -192,8 +192,11 @@ def populate_trainingpixels(trainingpixels_id):
     return track_job('classify', 'trainingpixels', trainingpixels_id, job)
 
 
-def populate_trainingpixels_patch(trainingpixels_patch_id):
-    job = run_ecs_command(['populate_trainingpixels_patch', trainingpixels_patch_id])
+def populate_trainingpixels_patch(trainingpixels_patch_id, large_instance=False):
+    if large_instance:
+        job = run_ecs_command(['populate_trainingpixels_patch', trainingpixels_patch_id], retry=1, vcpus=1, memory=int(1024 * 7.25), queue='tesselo-{stage}-process-l2a')
+    else:
+        job = run_ecs_command(['populate_trainingpixels_patch', trainingpixels_patch_id])
     return track_job('classify', 'trainingpixelspatch', trainingpixels_patch_id, job)
 
 
@@ -201,5 +204,5 @@ def combine_trainingpixels_patches(trainingpixels_id):
     if TrainingPixels.objects.get(id=trainingpixels_id).needs_large_instance:
         job = run_ecs_command(['combine_trainingpixels_patches', trainingpixels_id], retry=1, vcpus=2, memory=int(1024 * 14.5), queue='tesselo-{stage}-process-l2a')
     else:
-        job = run_ecs_command(['combine_trainingpixels_patches', trainingpixels_id], retry=1)
+        job = run_ecs_command(['combine_trainingpixels_patches', trainingpixels_id], retry=1, vcpus=1, memory=int(1024 * 7.25), queue='tesselo-{stage}-process-l2a')
     return track_job('classify', 'classifier', trainingpixels_id, job)
