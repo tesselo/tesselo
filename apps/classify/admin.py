@@ -109,12 +109,6 @@ class TrainingPixelsAdmin(admin.ModelAdmin):
             ecs.populate_trainingpixels(tp.id)
         self.message_user(request, 'Started populating pixels.')
 
-    def combine_trainingpixels_patches(self, request, queryset):
-        for tp in queryset:
-            tp.write('Scheduled pixel unpacking.', tp.PENDING)
-            ecs.combine_trainingpixels_patches(tp.id)
-        self.message_user(request, 'Started unpacking pixels.')
-
 
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
