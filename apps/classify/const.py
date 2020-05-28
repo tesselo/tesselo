@@ -13,6 +13,10 @@ KERAS_MIN_ONE_LAYER_ERROR_MSG = 'Keras model incomplete, at least one layer is r
 KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG = 'Keras last layer is expected to be "Dense".'
 KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL = 'Keras Dense last layer has {} units, but traininlayer has {} categories.'
 
+TP_MSG_NON_KERAS = 'Trainingpixel data source is only valid for Keras models found non-keras algorithm instead.'
+TP_MSG_REGRESSOR = 'Trainingpixel data source is only valid for discrete models, found regressor algorithm instead.'
+TP_MSG_NOT_FINISHED = 'Found an unpopulated trainingpixels object, populate trainingpixels object before training.'
+
 CHUNK_SIZE = 100
 
 CLASSIFICATION_DATATYPE = 'uint8'

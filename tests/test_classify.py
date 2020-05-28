@@ -23,7 +23,8 @@ from tests.mock_functions import (
 
 from classify.const import (
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
-    KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, VALUE_CONFIG_ERROR_MSG
+    KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED,
+    TP_MSG_REGRESSOR, VALUE_CONFIG_ERROR_MSG
 )
 from classify.models import (
     Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingPixels, TrainingPixelsPatch,
@@ -147,7 +148,8 @@ class SentinelClassifierTest(TestCase):
             files += files
         return files
 
-    def test_training_pixels_collection(self):
+    def test_training_pixels_collection_and_classifier_training(self):
+        # Create trainingpixels object.
         tr = TrainingPixels.objects.create(
             name='abc',
             band_names='B03,B04',
@@ -157,8 +159,10 @@ class SentinelClassifierTest(TestCase):
         tr.composites.add(self.composite)
         tr.composites.add(self.composite2)
         tr.composites.add(self.composite3)
+        # Populate pixels.
         ecs.populate_trainingpixels(tr.id)
         tr.refresh_from_db()
+        # The pixels are as expected.
         self.assertEqual(tr.trainingpixelspatch_set.count(), 1)
         self.assertEqual(tr.trainingpixelspatch_set.first().status, TrainingPixelsPatch.FINISHED)
         self.assertEqual(tr.status, TrainingPixels.FINISHED)
@@ -168,6 +172,68 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(Y.shape, (196, ))
         self.assertEqual(PID.shape, (196, ))
         self.assertEqual(PID.shape, (196, ))
+        # Train a classifier based on trainingpixels.
+        self.clf.algorithm = Classifier.KERAS
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.trainingpixels = tr
+        model = Sequential()
+        model.add(GRU(32))
+        model.add(BatchNormalization())
+        model.add(Dense(3, activation='softmax'))
+        self.clf.keras_model_json = model.to_json()
+        self.clf.clf_args = '''{
+            "optimizer": "rmsprop",
+            "loss": "categorical_crossentropy",
+            "metrics": ["accuracy"],
+            "epochs": 3,
+            "batch_size": 50,
+            "verbose": 0
+        }'''
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        # Classifier training on pixels was successful.
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
+        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RNNRobustScaler))
+        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+
+    def test_training_pixels_collection_and_classifier_training_misconfiguration(self):
+        # Create trainingpixels object.
+        tr = TrainingPixels.objects.create(
+            name='abc',
+            band_names='B03,B04',
+            traininglayer=self.traininglayer,
+            buffer=0,
+        )
+        # Train a classifier based on trainingpixels.
+        self.clf.algorithm = Classifier.KERAS
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.trainingpixels = tr
+        self.clf.save()
+        # Pixels were not yet collected.
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, self.clf.FAILED)
+        self.assertIn(TP_MSG_NOT_FINISHED, self.clf.log)
+        # Algorithm is not keras.
+        self.clf.algorithm = Classifier.RF
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, self.clf.FAILED)
+        self.assertIn(TP_MSG_NON_KERAS, self.clf.log)
+        # Algorithm is a regressor.
+        self.clf.traininglayer.continuous = True
+        self.clf.traininglayer.save()
+        self.clf.algorithm = Classifier.KERAS_REGRESSOR
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, self.clf.FAILED)
+        self.assertIn(TP_MSG_REGRESSOR, self.clf.log)
 
     def test_training_pixels_collection_buffer(self):
         tr = TrainingPixels.objects.create(

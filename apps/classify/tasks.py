@@ -20,10 +20,11 @@ from classify.const import (
     CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG,
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
     KERAS_MIN_ONE_LAYER_ERROR_MSG, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG,
-    REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE, TRAINING_DATA_SPLIT_ERROR_MSG,
-    VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
+    REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED,
+    TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME,
+    ZOOM
 )
-from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk
+from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
 from classify.utils import RNNRobustScaler
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
@@ -335,7 +336,22 @@ def train_sentinel_classifier(classifier_id):
         classifier.classifieraccuracy.delete()
 
     # Check if pixels have already been collected.
-    if classifier.collected_pixels.name:
+    if classifier.trainingpixels_id:
+        # Sanity checks.
+        if not classifier.is_keras:
+            classifier.write(TP_MSG_NON_KERAS, classifier.FAILED)
+            return
+        if classifier.is_regressor:
+            classifier.write(TP_MSG_REGRESSOR, classifier.FAILED)
+            return
+        if classifier.trainingpixels.status != TrainingPixels.FINISHED:
+            classifier.write(TP_MSG_NOT_FINISHED, classifier.FAILED)
+            return
+        # Get pixels from trainingpixels object.
+        classifier.write('Found a trainingpixels object, loading from packed pixels.')
+        X, Y, PID, SID, categories = classifier.trainingpixels.unpack_collected_pixels()
+
+    elif classifier.collected_pixels.name:
         classifier.write('Found existing collected training data, loading from file.')
         loaded = numpy.load(classifier.collected_pixels)
         X = loaded['X']
