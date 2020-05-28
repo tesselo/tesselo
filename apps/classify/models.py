@@ -188,7 +188,7 @@ class Classifier(models.Model):
     trained = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     collected_pixels = models.FileField(upload_to='clouds/classifiers', blank=True, null=True)
     traininglayer = models.ForeignKey(TrainingLayer, blank=True, null=True, on_delete=models.SET_NULL)
-    trainingpixels = models.ForeignKey(TrainingPixels, null=True, on_delete=models.SET_NULL)
+    trainingpixels = models.ForeignKey(TrainingPixels, blank=True, null=True, on_delete=models.SET_NULL)
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
     split_by_polygon = models.BooleanField(default=False, help_text='Reserve pixels at the polygon level, i.e. keep a percentage of training polygons as verification data.')
     split_random_seed = models.PositiveIntegerField(null=True, blank=True, help_text='Fix random seed for train and test split to make verification more comparable.')
