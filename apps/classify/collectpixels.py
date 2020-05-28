@@ -163,7 +163,8 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
     patch.write('Successfully collected pixels, storing result.', TrainingPixelsPatch.FINISHED)
     # Push combination of patches into one file when all patches are done.
     if not TrainingPixelsPatch.objects.exclude(trainingpixels_id=patch.trainingpixels_id, status=TrainingPixelsPatch.FINISHED).exists():
-        patch.trainingpixels.write('Finished collecting all patches.', TrainingPixels.FINISHED)
+        patch.trainingpixels.write('Finished collecting all patches, scheduled combining them into one.', TrainingPixels.PENDING)
+        ecs.combine_trainingpixels_patches(patch.trainingpixels_id)
 
 
 def get_pixels(idx, src, all_touched=None):
