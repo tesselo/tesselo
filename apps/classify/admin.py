@@ -102,6 +102,7 @@ class PredictedLayerChunkAdmin(admin.ModelAdmin):
 class TrainingPixelsAdmin(admin.ModelAdmin):
 
     actions = ['populate_trainingpixels', 'combine_trainingpixels_patches']
+    raw_id_fields = ('traininglayer', 'sentineltile', 'composites', )
 
     def populate_trainingpixels(self, request, queryset):
         for tp in queryset:
