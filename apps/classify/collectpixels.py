@@ -24,7 +24,12 @@ Y_DTYPE = 'uint8'
 
 
 def combine_trainingpixels_patches(trainingpixels_id):
+    """
+    Combine all trainingpatches into one npz file and store in attribute.
+    """
     tp = TrainingPixels.objects.get(id=trainingpixels_id)
+    tp.write('Started combining trainingpixel patches.', TrainingPixels.PROCESSING)
+    # Prepare data containers.
     Xs = OrderedDict()
     Ys = OrderedDict()
     categories = {}
@@ -73,8 +78,13 @@ def combine_trainingpixels_patches(trainingpixels_id):
         name = 'trainingpixels-collected-pixels-{}.npz'.format(tp.id)
         tp.collected_pixels.save(name, File(fl))
 
+    tp.write('Finished pixel collection successfully.', TrainingPixels.FINISHED)
+
 
 def populate_trainingpixels(trainingpixels_id):
+    """
+    Create trainingpixel patches and push their collection tasks.
+    """
     # Get object.
     tp = TrainingPixels.objects.get(id=trainingpixels_id)
     nr_of_samples = tp.traininglayer.trainingsample_set.all().count()
@@ -93,11 +103,17 @@ def populate_trainingpixels(trainingpixels_id):
 
 
 def populate_trainingpixels_patch(trainingpixelspatch_id):
+    """
+    Collect pixels for one trainingpixels patch.
+    """
+    # Get patch instance and log processing status.
     patch = TrainingPixelsPatch.objects.get(id=trainingpixelspatch_id)
     patch.write('Collecting pixels.', TrainingPixelsPatch.PROCESSING)
+    # Prepare variables for re-use in loop.
     trainingpixels = patch.trainingpixels
     composites = trainingpixels.composites.all().order_by('min_date')
     band_names = trainingpixels.band_names.split(',')
+    # Prepare data containers.
     result = {}
     categories = {}
     for sample in trainingpixels.traininglayer.trainingsample_set.order_by('id').all()[patch.index_from:patch.index_to]:
@@ -145,12 +161,16 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
         name = 'trainingpixelspatch-collected-pixels-{}.npz'.format(patch.id)
         patch.collected_pixels.save(name, File(fl))
     patch.write('Successfully collected pixels, storing result.', TrainingPixelsPatch.FINISHED)
-    # Update parent status when all patches are done.
+    # Push combination of patches into one file when all patches are done.
     if not TrainingPixelsPatch.objects.exclude(trainingpixels_id=patch.trainingpixels_id, status=TrainingPixelsPatch.FINISHED).exists():
         patch.trainingpixels.write('Finished collecting all patches.', TrainingPixels.FINISHED)
 
 
 def get_pixels(idx, src, all_touched=None):
+    """
+    Collect pixels over an index range and either a rasterlayer ID or as a
+    rasterized geometry.
+    """
     hstack = []
     for tilex in range(idx[0], idx[2] + 1):
         vstack = []
@@ -164,6 +184,10 @@ def get_pixels(idx, src, all_touched=None):
 
 
 def prepare_sample_lookups(trainingpixels_id, sample, composites, look_back_steps, band_names):
+    """
+    Extract rasterlayer ids for all composites and all bands requested in the
+    collection task.
+    """
     # Check if all composites should be included in training (fixed end
     # date for all samples) or a flexible selection shall be used based on
     # the sample date stamp.
@@ -200,6 +224,9 @@ def prepare_sample_lookups(trainingpixels_id, sample, composites, look_back_step
 
 
 def rasterize_geom(geom, tilez, tilex, tiley, all_touched):
+    """
+    Rasterize a geometry over a tile.
+    """
     # Create a target raster for the rasterization.
     bounds = tile_bounds(tilex, tiley, tilez)
     rast = GDALRaster(
