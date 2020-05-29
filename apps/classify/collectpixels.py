@@ -21,6 +21,7 @@ NODATA = 0
 CATEGORIES_KEY = 'categories'
 PATCH_SIZE = 100
 Y_DTYPE = 'uint8'
+SID_DTYPE = 'uint32'
 
 
 def combine_trainingpixels_patches(trainingpixels_id):
@@ -62,7 +63,7 @@ def combine_trainingpixels_patches(trainingpixels_id):
     sample_ids = []
     for pk, val in Xs.items():
         Ys1D.append((numpy.ones(val.shape[0]) * Ys[pk]).astype(Y_DTYPE))
-        sample_ids.append((numpy.ones(val.shape[0]) * pk).astype(Y_DTYPE))
+        sample_ids.append((numpy.ones(val.shape[0]) * pk).astype(SID_DTYPE))
     # Stack Xs and Ys.
     X = numpy.vstack(Xs.values())
     Y = numpy.hstack(Ys1D)
