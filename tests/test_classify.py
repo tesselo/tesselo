@@ -2,7 +2,6 @@ import datetime
 import os
 import shutil
 import tempfile
-from unittest import skip
 from unittest.mock import patch
 
 import dateutil
@@ -619,18 +618,6 @@ class SentinelClassifierTest(TestCase):
         self.clf.refresh_from_db()
         self.assertEqual(self.clf.status, Classifier.FAILED)
         self.assertIn('Classifiers require discrete input datasets.', self.clf.log)
-
-    @skip('Cloud view is outdated.')
-    def test_cloud_view(self):
-        scene = SentinelTile.objects.filter(sentineltileband__isnull=False).first()
-        band = scene.sentineltileband_set.get(band='B02.jp2')
-        tile = band.layer.rastertile_set.first()
-        url = reverse('clouds', kwargs={
-            'z': tile.tilez, 'y': tile.tiley, 'x': tile.tilex,
-            'stile': scene.id, 'frmt': 'png'
-        })
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
 
     def test_classifier_report_and_list_views(self):
         # Train SVM classifier.
