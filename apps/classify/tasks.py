@@ -8,6 +8,7 @@ import h5py
 import numpy
 from keras.layers import Dense
 from keras.models import model_from_json
+from keras.utils import to_categorical
 from keras.wrappers.scikit_learn import KerasClassifier
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
@@ -17,7 +18,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 from classify.const import (
-    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG,
+    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG, KERAS_FIT_ARGS,
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
     KERAS_MIN_ONE_LAYER_ERROR_MSG, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG,
     REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED,
@@ -411,6 +412,7 @@ def train_sentinel_classifier(classifier_id):
         selector = numpy.random.random(len(Y)) >= classifier.splitfraction
 
     clf_args = classifier.clf_args_dict
+    fit_args = {}
 
     # Get the classifier class.
     if classifier.is_keras:
@@ -436,9 +438,13 @@ def train_sentinel_classifier(classifier_id):
         elif not classifier.is_regressor and clf.layers[-1].units != len(numpy.unique(Y)):
             classifier.write(KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL.format(clf.layers[-1].units, len(numpy.unique(Y))), Classifier.FAILED)
             return
-
         # Instantiate sklean wrapper for keras classifier.
-        clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **clf_args)
+        if classifier.wrap_keras_with_sklearn:
+            clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **clf_args)
+        else:
+            fit_args = {key: val for key, val in clf_args.items() if key in KERAS_FIT_ARGS}
+            compile_args = {key: val for key, val in clf_args.items() if key not in KERAS_FIT_ARGS}
+            clf.compile(**compile_args)
     else:
         # Instantiate sklearn classifier.
         clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]
@@ -453,32 +459,45 @@ def train_sentinel_classifier(classifier_id):
         scaler = RNNRobustScaler()
 
     # Create a pipeline with scaling and classification.
-    clf = Pipeline([
-        (PIPELINE_SCALER_NAME, scaler),
-        (PIPELINE_ESTIMATOR_NAME, clf),
-    ])
+    if not classifier.is_keras or classifier.wrap_keras_with_sklearn:
+        clf = Pipeline([
+            (PIPELINE_SCALER_NAME, scaler),
+            (PIPELINE_ESTIMATOR_NAME, clf),
+        ])
+
+    # Prepare training arrays.
+    x_train, y_train = X[selector], Y[selector]
+    # Keras classifiers want y to be a one-hot-encoding matrix. Each class is
+    # named after its column index in the matrix. This assumes class category
+    # values are sequential and start with 1.
+    if not classifier.is_regressor and classifier.is_keras and not classifier.wrap_keras_with_sklearn:
+        y_train = to_categorical(y_train - 1)
 
     # Fit the model.
     try:
-        clf.fit(X[selector], Y[selector])
+        clf.fit(x_train, y_train, **fit_args)
     except Exception as exc:
         classifier.write(FITTING_ERROR_MSG + ': ' + str(exc), classifier.FAILED)
         raise
 
     # Do Keras related logging.
     if classifier.is_keras:
+        if classifier.wrap_keras_with_sklearn:
+            keras_model = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model
+        else:
+            keras_model = clf
         # Get training accuracy history per epoch.
         hist_str = ''
-        hist = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.history
+        hist = keras_model.history.history
         epochs = len(hist['loss'])
         # Write Keras parameters to classifier log.
-        classifier.write('Keras parameters: {}'.format(clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.history.params))
+        classifier.write('Keras parameters: {}'.format(keras_model.history.params))
         # Write Keras model summary to classifier log.
         with io.StringIO() as fl:
-            clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.summary(print_fn=lambda x: fl.write(x + '\n'))
+            keras_model.summary(print_fn=lambda x: fl.write(x + '\n'))
             classifier.write('Keras summary:\n{}'.format(fl.getvalue()))
         # Write Keras training history to classifier log.
-        metric = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.metrics[0].name
+        metric = keras_model.metrics[0].name
         for i in range(epochs):
             hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist[metric][i])
         classifier.write('Keras history:\n{}'.format(hist_str))
@@ -503,6 +522,9 @@ def train_sentinel_classifier(classifier_id):
     else:
         # Predict validation pixels.
         validation_pixels = clf.predict(validation_pixels)
+        # Convert keras probability matrix to predicted class array.
+        if not isinstance(clf, Pipeline):
+            validation_pixels = numpy.argmax(validation_pixels, axis=1) + 1
         # Compute accuracy matrix and coefficients.
         acc.accuracy_matrix = confusion_matrix(control_pixels, validation_pixels).tolist()
         acc.cohen_kappa = cohen_kappa_score(control_pixels, validation_pixels)
@@ -514,18 +536,23 @@ def train_sentinel_classifier(classifier_id):
         name = 'classifier-{}.hdf5'.format(classifier.id)
         trained_io = io.BytesIO()
         trained = h5py.File(trained_io)
+        if classifier.wrap_keras_with_sklearn:
+            keras_model = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model
+        else:
+            keras_model = clf
         # Save the Keras model.
-        clf.named_steps[PIPELINE_ESTIMATOR_NAME].model.save(trained)
+        keras_model.save(trained)
         trained.flush()
-        # Unset the estimator to pickle the pipline.
-        clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = None
-        # Pickle the pipeline.
-        pipe = io.BytesIO(pickle.dumps(clf))
+        if classifier.wrap_keras_with_sklearn:
+            # Unset the estimator to pickle the pipline.
+            keras_model = None
+            # Pickle the pipeline.
+            pipe = io.BytesIO(pickle.dumps(clf))
 
         save_trained = io.BytesIO()
-
         with zipfile.ZipFile(save_trained, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr(ZIP_PIPELINE_NAME, pipe.getvalue())
+            if classifier.wrap_keras_with_sklearn:
+                zf.writestr(ZIP_PIPELINE_NAME, pipe.getvalue())
             zf.writestr(ZIP_ESTIMATOR_NAME, trained_io.getvalue())
     else:
         name = 'classifier-{}.pickle'.format(classifier.id)
@@ -665,7 +692,15 @@ def predict_sentinel_chunk(chunk_id):
         dtype = REGRESSION_DATATYPE if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE
         dtype_gdal = REGRESSION_DATATYPE_GDAL if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE_GDAL
         # Predict classes.
-        predicted = chunk.predictedlayer.classifier.clf.predict(data).astype(dtype)
+        predicted = chunk.predictedlayer.classifier.clf.predict(data)
+        # If the model is a Keras model and not a Sklearn Pipeline, the prediction
+        # is a probability matrix and needs to be converted to a predicted array.
+        # This also assumes 1-N indexing of classes in digital numbers (DN),
+        # i.e. classi DN are sequential and start with 1.
+        if not isinstance(chunk.predictedlayer.classifier.clf, Pipeline):
+            predicted = numpy.argmax(predicted, axis=1) + 1
+        # Convert to correct dtype.
+        predicted = predicted.astype(dtype)
         # Write predicted pixels into a tile.
         write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=dtype_gdal)
 

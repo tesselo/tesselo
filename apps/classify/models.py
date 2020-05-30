@@ -197,6 +197,7 @@ class Classifier(models.Model):
     composites = models.ManyToManyField(Composite, blank=True, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.', related_name='old_composite')
     sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
     clf_args = models.TextField(default='{}', blank=True, help_text='Keyword arguments passed to the classifier. This will be ignored if clf_args is not a valid json string.')
+    wrap_keras_with_sklearn = models.BooleanField(default=False, help_text='Wrap the keras models with a Sklearn Pipeline and RobustScaler. Ignored if not a Keras model.')
     keras_model_json = models.TextField(default='', blank=True, null=True, help_text='A Keras model definition string created by model.to_json().')
     needs_large_instance = models.BooleanField(default=False)
     training_all_touched = models.BooleanField(default=True, help_text='Sets the all_touched flag when rasterizing the training samples.')
@@ -215,9 +216,12 @@ class Classifier(models.Model):
                 from keras.models import load_model
                 import h5py
                 with zipfile.ZipFile(io.BytesIO(self.trained.read()), 'r') as zf:
-                    self._clf = pickle.loads(zf.read(ZIP_PIPELINE_NAME))
                     model = load_model(h5py.File(io.BytesIO(zf.read(ZIP_ESTIMATOR_NAME))))
-                    self._clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = model
+                    if self.wrap_keras_with_sklearn:
+                        self._clf = pickle.loads(zf.read(ZIP_PIPELINE_NAME))
+                        self._clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = model
+                    else:
+                        self._clf = model
             else:
                 self._clf = pickle.loads(self.trained.read())
         return self._clf

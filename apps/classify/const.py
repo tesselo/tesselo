@@ -32,3 +32,23 @@ PIPELINE_SCALER_NAME = 'scaler'
 
 ZIP_ESTIMATOR_NAME = 'estimator.hdf5'
 ZIP_PIPELINE_NAME = 'pipeline.pickle'
+
+KERAS_FIT_ARGS = [
+    'batch_size',
+    'epochs',
+    'verbose',
+    'callbacks',
+    'validation_split',
+    'validation_data',
+    'shuffle',
+    'class_weight',
+    'sample_weight',
+    'initial_epoch',
+    'steps_per_epoch',
+    'validation_steps',
+    'validation_batch_size',
+    'validation_freq',
+    'max_queue_size',
+    'workers',
+    'use_multiprocessing',
+]

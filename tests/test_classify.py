@@ -8,7 +8,7 @@ from unittest.mock import patch
 import dateutil
 import numpy
 from keras.layers import GRU, BatchNormalization, Dense, Dropout
-from keras.models import Sequential
+from keras.models import Model, Sequential
 from keras.wrappers.scikit_learn import KerasClassifier
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -176,6 +176,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.KERAS
         self.clf.status = self.clf.UNPROCESSED
         self.clf.trainingpixels = tr
+        self.clf.wrap_keras_with_sklearn = False
         model = Sequential()
         model.add(GRU(32))
         model.add(BatchNormalization())
@@ -194,9 +195,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.refresh_from_db()
         # Classifier training on pixels was successful.
         self.assertEqual(self.clf.status, self.clf.FINISHED)
-        self.assertTrue(isinstance(self.clf.clf, Pipeline))
-        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RNNRobustScaler))
-        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+        self.assertTrue(isinstance(self.clf.clf, Model))
 
     def test_training_pixels_collection_and_classifier_training_misconfiguration(self):
         # Create trainingpixels object.
@@ -208,6 +207,7 @@ class SentinelClassifierTest(TestCase):
         )
         # Train a classifier based on trainingpixels.
         self.clf.algorithm = Classifier.KERAS
+        self.clf.wrap_keras_with_sklearn = False
         self.clf.status = self.clf.UNPROCESSED
         self.clf.trainingpixels = tr
         self.clf.save()
@@ -404,6 +404,7 @@ class SentinelClassifierTest(TestCase):
 
     def test_keras_classifier(self):
         self.clf.algorithm = Classifier.KERAS
+        self.clf.wrap_keras_with_sklearn = False
         self.clf.status = self.clf.UNPROCESSED
         model = Sequential()
         model.add(Dense(20, activation='relu'))
@@ -423,9 +424,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
-        self.assertTrue(isinstance(self.clf.clf, Pipeline))
-        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
-        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+        self.assertTrue(isinstance(self.clf.clf, Model))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
         self.assertIn("Keras history:", self.clf.log)
@@ -450,6 +449,7 @@ class SentinelClassifierTest(TestCase):
         # Regressor setup.
         self.clf.algorithm = Classifier.KERAS_REGRESSOR
         self.clf.status = self.clf.UNPROCESSED
+        self.clf.wrap_keras_with_sklearn = False
         model = Sequential()
         model.add(Dense(20, activation='relu'))
         model.add(Dropout(0.5))
@@ -468,9 +468,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.save()
         train_sentinel_classifier(self.clf.id)
         self.clf = Classifier.objects.get(id=self.clf.id)
-        self.assertTrue(isinstance(self.clf.clf, Pipeline))
-        self.assertTrue(isinstance(self.clf.clf.steps[0][1], RobustScaler))
-        self.assertTrue(isinstance(self.clf.clf.steps[1][1], KerasClassifier))
+        self.assertTrue(isinstance(self.clf.clf, Model))
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertIn('Finished training algorithm', self.clf.log)
         self.assertIn("Keras history:", self.clf.log)
@@ -492,6 +490,7 @@ class SentinelClassifierTest(TestCase):
 
     def test_keras_classifier_time(self):
         self.clf.algorithm = Classifier.KERAS
+        self.clf.wrap_keras_with_sklearn = False
         self.clf.status = self.clf.UNPROCESSED
         # expected input data shape: (batch_size, timesteps, data_dim)
         model = Sequential()
@@ -535,6 +534,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.split_by_polygon = False
         self.clf.log = ''
         self.clf.status = self.clf.UNPROCESSED
+        self.clf.wrap_keras_with_sklearn = True
         self.clf.save()
 
         # Train classifier in full archive mode.
