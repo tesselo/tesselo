@@ -73,6 +73,7 @@ class TrainingPixels(models.Model):
     sentineltile = models.ForeignKey(SentinelTile, blank=True, null=True, on_delete=models.SET_NULL, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.')
     training_all_touched = models.BooleanField(default=True, help_text='Sets the all_touched flag when rasterizing the training samples.')
     needs_large_instance = models.BooleanField(default=False)
+    patch_size = models.IntegerField(default=100, help_text='Determines how many training sample geometries should be bundeled into a patch.')
     buffer = models.FloatField(default=0)
     collected_pixels = models.FileField(upload_to='clouds/trainingpixels', blank=True, null=True)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)

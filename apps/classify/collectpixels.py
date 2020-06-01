@@ -19,7 +19,6 @@ GEOM_NAME_TEMPLATE = 'Y_{}'
 PIXELS_NAME_TEMPLATE = 'X_{}'
 NODATA = 0
 CATEGORIES_KEY = 'categories'
-PATCH_SIZE = 100
 Y_DTYPE = 'uint8'
 SID_DTYPE = 'uint32'
 
@@ -90,11 +89,11 @@ def populate_trainingpixels(trainingpixels_id):
     tp = TrainingPixels.objects.get(id=trainingpixels_id)
     nr_of_samples = tp.traininglayer.trainingsample_set.all().count()
     counter = 0
-    for idx in range(0, nr_of_samples, PATCH_SIZE):
+    for idx in range(0, nr_of_samples, tp.patch_size):
         TrainingPixelsPatch.objects.get_or_create(
             trainingpixels=tp,
             index_from=idx,
-            index_to=min(idx + PATCH_SIZE, nr_of_samples),
+            index_to=min(idx + tp.patch_size, nr_of_samples),
         )
         counter += 1
     tp.write('Pushed {} trainingpixel patch jobs.'.format(counter), TrainingPixels.PROCESSING)
