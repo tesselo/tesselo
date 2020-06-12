@@ -64,7 +64,7 @@ class ClassifierViewSet(PermissionsModelViewSet):
         classifier = self.get_object()
 
         if not hasattr(classifier, 'classifieraccuracy'):
-            return HttpResponse('')
+            return HttpResponse('No classifier accuracy found. Has this algorithm finished training yet?')
         else:
             acc = classifier.classifieraccuracy
 
