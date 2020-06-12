@@ -70,6 +70,9 @@ def combine_trainingpixels_patches(trainingpixels_id):
     PID = numpy.arange(Y.shape[0]) + 1
     # Sample IDs.
     SID = numpy.hstack(sample_ids)
+    # Add categories to traininglayer.
+    tp.traininglayer.legend = categories
+    tp.traininglayer.save()
     # Convert categories dict to array (to avoid pickling objects).
     categories = numpy.array([numpy.array([key, val]) for key, val in categories.items()])
     # Store collected items.

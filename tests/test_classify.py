@@ -195,6 +195,11 @@ class SentinelClassifierTest(TestCase):
         # Classifier training on pixels was successful.
         self.assertEqual(self.clf.status, self.clf.FINISHED)
         self.assertTrue(isinstance(self.clf.clf, Model))
+        # Legend has been tracked.
+        self.assertDictEqual(
+            self.clf.traininglayer.legend,
+            {'Cloud': '1', 'Shadow': '2', 'Cloud free': '3'},
+        )
 
     def test_training_pixels_collection_and_classifier_training_misconfiguration(self):
         # Create trainingpixels object.
