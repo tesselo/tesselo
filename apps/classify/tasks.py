@@ -6,24 +6,24 @@ from tempfile import TemporaryFile
 
 import h5py
 import numpy
-from keras.layers import Dense
-from keras.models import model_from_json
-from keras.utils import to_categorical
-from keras.wrappers.scikit_learn import KerasClassifier
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import model_from_json
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 from classify.const import (
     CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG, KERAS_FIT_ARGS,
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
-    KERAS_MIN_ONE_LAYER_ERROR_MSG, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG,
-    REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED,
-    TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME,
-    ZOOM
+    KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
+    PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
+    TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG,
+    ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
 from classify.utils import RNNRobustScaler
@@ -473,6 +473,10 @@ def train_sentinel_classifier(classifier_id):
     if not classifier.is_regressor and classifier.is_keras and not classifier.wrap_keras_with_sklearn:
         y_train = to_categorical(y_train - 1)
 
+    # TF keras cant handle unit16.
+    if classifier.is_keras:
+        x_train = x_train.astype(KERAS_TRAIN_TYPE)
+
     # Fit the model.
     try:
         clf.fit(x_train, y_train, **fit_args)
@@ -512,6 +516,9 @@ def train_sentinel_classifier(classifier_id):
         validation_pixels = X[numpy.logical_not(selector)]
         control_pixels = Y[numpy.logical_not(selector)]
 
+    if classifier.is_keras:
+        validation_pixels = validation_pixels.astype(KERAS_TRAIN_TYPE)
+
     # Instanciate data container model.
     acc, created = ClassifierAccuracy.objects.get_or_create(classifier=classifier)
 
@@ -535,7 +542,7 @@ def train_sentinel_classifier(classifier_id):
     if classifier.is_keras:
         name = 'classifier-{}.hdf5'.format(classifier.id)
         trained_io = io.BytesIO()
-        trained = h5py.File(trained_io)
+        trained = h5py.File(trained_io, 'w')
         if classifier.wrap_keras_with_sklearn:
             keras_model = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model
         else:
@@ -545,7 +552,7 @@ def train_sentinel_classifier(classifier_id):
         trained.flush()
         if classifier.wrap_keras_with_sklearn:
             # Unset the estimator to pickle the pipline.
-            keras_model = None
+            clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = None
             # Pickle the pipeline.
             pipe = io.BytesIO(pickle.dumps(clf))
 

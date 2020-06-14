@@ -201,6 +201,7 @@ class Classifier(models.Model):
     wrap_keras_with_sklearn = models.BooleanField(default=False, help_text='Wrap the keras models with a Sklearn Pipeline and RobustScaler. Ignored if not a Keras model.')
     keras_model_json = models.TextField(default='', blank=True, null=True, help_text='A Keras model definition string created by model.to_json().')
     needs_large_instance = models.BooleanField(default=False)
+    needs_gpu_instance = models.BooleanField(default=False)
     training_all_touched = models.BooleanField(default=True, help_text='Sets the all_touched flag when rasterizing the training samples.')
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
@@ -214,10 +215,10 @@ class Classifier(models.Model):
     def clf(self):
         if self._clf is None:
             if self.is_keras:
-                from keras.models import load_model
+                from tensorflow.keras.models import load_model
                 import h5py
                 with zipfile.ZipFile(io.BytesIO(self.trained.read()), 'r') as zf:
-                    model = load_model(h5py.File(io.BytesIO(zf.read(ZIP_ESTIMATOR_NAME))))
+                    model = load_model(h5py.File(io.BytesIO(zf.read(ZIP_ESTIMATOR_NAME)), 'r'))
                     if self.wrap_keras_with_sklearn:
                         self._clf = pickle.loads(zf.read(ZIP_PIPELINE_NAME))
                         self._clf.named_steps[PIPELINE_ESTIMATOR_NAME].model = model

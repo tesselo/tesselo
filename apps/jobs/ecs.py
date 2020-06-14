@@ -33,7 +33,7 @@ def get_batch_job_base():
                 {'name': 'DB_PASSWORD', 'value': os.environ.get('DB_PASSWORD')},
                 {'name': 'DB_HOST', 'value': os.environ.get('DB_HOST')},
                 {'name': 'DB_NAME', 'value': os.environ.get('DB_NAME')},
-                {'name': 'ZAPPA', 'value': 'True'},
+                {'name': 'TESSELO_GPU', 'value': 'True'},
             ]
         },
         'retryStrategy': {
@@ -42,7 +42,7 @@ def get_batch_job_base():
     }
 
 
-def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo-{stage}', job='tesselo-{stage}', depends_on=None):
+def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo-{stage}', job='tesselo-{stage}', depends_on=None, gpus=0):
     '''
     Execute a Batch command.
     '''
@@ -69,6 +69,13 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo
         'vcpus': vcpus,
         'memory': memory,
     })
+    if gpus > 0:
+        command['containerOverrides']['resourceRequirements'] = [
+            {
+                "type": "GPU",
+                "value": str(gpus),
+            }
+        ]
 
     # Set stage dependent variables.
     dbname = os.environ.get('DB_NAME', '')
@@ -132,7 +139,10 @@ def composite_build_callback(compositebuild_id, initiate=False, rebuild=False):
 def train_sentinel_classifier(classifier_id):
     # Get large instance flag for this chunk.
     # Run ecs command with required instance size.
-    if Classifier.objects.get(id=classifier_id).needs_large_instance:
+    clf = Classifier.objects.get(id=classifier_id)
+    if clf.needs_gpu_instance:
+        job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1, vcpus=4, memory=int(1024 * 14.5), gpus=1, queue='tesselo-production-gpu')
+    elif clf.needs_large_instance:
         job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1, vcpus=2, memory=int(1024 * 14.5), queue='tesselo-{stage}-process-l2a')
     else:
         job = run_ecs_command(['train_sentinel_classifier', classifier_id], retry=1)

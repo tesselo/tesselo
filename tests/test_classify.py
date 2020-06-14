@@ -6,15 +6,15 @@ from unittest.mock import patch
 
 import dateutil
 import numpy
-from keras.layers import GRU, BatchNormalization, Dense, Dropout
-from keras.models import Model, Sequential
-from keras.wrappers.scikit_learn import KerasClassifier
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 from sklearn.svm import SVC, SVR, LinearSVC, LinearSVR
+from tensorflow.keras.layers import GRU, BatchNormalization, Dense, Dropout
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from tests.mock_functions import (
     client_get_object, iterator_search, patch_get_raster_tile, patch_process_l2a, patch_write_raster_tile,
     point_to_test_file
@@ -433,7 +433,7 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished training algorithm', self.clf.log)
         self.assertIn("Keras history:", self.clf.log)
         self.assertIn("Keras parameters:", self.clf.log)
-        self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
+        self.assertIn("{'verbose': 0, 'epochs': 10", self.clf.log)
         # Test prediction.
         pred = PredictedLayer.objects.create(
             classifier=self.clf,
@@ -477,7 +477,7 @@ class SentinelClassifierTest(TestCase):
         self.assertIn('Finished training algorithm', self.clf.log)
         self.assertIn("Keras history:", self.clf.log)
         self.assertIn("Keras parameters:", self.clf.log)
-        self.assertIn("{'batch_size': 5, 'epochs': 10", self.clf.log)
+        self.assertIn("{'verbose': 0, 'epochs': 10", self.clf.log)
         self.assertNotEqual(self.clf.classifieraccuracy.rsquared, 0)
 
         # Test prediction.

@@ -52,3 +52,5 @@ KERAS_FIT_ARGS = [
     'workers',
     'use_multiprocessing',
 ]
+
+KERAS_TRAIN_TYPE = 'float16'

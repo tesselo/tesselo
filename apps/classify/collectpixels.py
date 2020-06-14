@@ -64,7 +64,7 @@ def combine_trainingpixels_patches(trainingpixels_id):
         Ys1D.append((numpy.ones(val.shape[0]) * Ys[pk]).astype(Y_DTYPE))
         sample_ids.append((numpy.ones(val.shape[0]) * pk).astype(SID_DTYPE))
     # Stack Xs and Ys.
-    X = numpy.vstack(Xs.values())
+    X = numpy.vstack(list(Xs.values()))
     Y = numpy.hstack(Ys1D)
     # Pixel IDs.
     PID = numpy.arange(Y.shape[0]) + 1

@@ -1,6 +1,6 @@
 from raster_aggregation.models import ValueCountResult
 from raster_aggregation.tasks import aggregation_layer_parser
-from zappa.async import task
+from zappa.asynchronous import task
 
 
 def compute_single_value_count_result(valuecount_id):
