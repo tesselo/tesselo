@@ -284,6 +284,13 @@ class PredictedLayer(models.Model):
         (FINISHED, FINISHED),
         (FAILED, FAILED),
     )
+
+    SIEVE_CONNECTIVITY_4 = 4
+    SIEVE_CONNECTIVITY_8 = 8
+    SIEVE_CHOICES = (
+        (SIEVE_CONNECTIVITY_4, SIEVE_CONNECTIVITY_4),
+        (SIEVE_CONNECTIVITY_8, SIEVE_CONNECTIVITY_8),
+    )
     name = models.CharField(max_length=500, default='', blank=True)
     classifier = models.ForeignKey(Classifier, null=True, blank=True, on_delete=models.SET_NULL)
     sentineltile = models.ForeignKey(SentinelTile, null=True, blank=True, on_delete=models.SET_NULL)
@@ -295,6 +302,10 @@ class PredictedLayer(models.Model):
     legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
     min_date = models.DateField(null=True, blank=True, editable=False)
     max_date = models.DateField(null=True, blank=True, editable=False)
+
+    sieve_threshold = models.IntegerField(default=0)
+    sieve_connectivity = models.IntegerField(default=4, choices=SIEVE_CHOICES)
+    sieve_parent = models.ForeignKey('classify.PredictedLayer', blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         if self.name:

@@ -4,7 +4,8 @@ from classify.collectpixels import (
     combine_trainingpixels_patches, populate_trainingpixels, populate_trainingpixels_patch
 )
 from classify.tasks import (
-    build_predicted_pyramid, predict_sentinel_chunk, predict_sentinel_layer, train_sentinel_classifier
+    build_predicted_pyramid, predict_sentinel_chunk, predict_sentinel_layer, sieve_sentinel_chunk,
+    train_sentinel_classifier
 )
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -32,6 +33,7 @@ class Command(BaseCommand):
         'train_sentinel_classifier': train_sentinel_classifier,
         'predict_sentinel_layer': predict_sentinel_layer,
         'predict_sentinel_chunk': predict_sentinel_chunk,
+        'sieve_sentinel_chunk': sieve_sentinel_chunk,
         'build_predicted_pyramid': build_predicted_pyramid,
         'ingest_naip_manifest': ingest_naip_manifest,
         'push_scheduled_composite_builds': push_scheduled_composite_builds,

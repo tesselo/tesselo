@@ -23,7 +23,7 @@ from tests.mock_functions import (
 from classify.const import (
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
     KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED,
-    TP_MSG_REGRESSOR, VALUE_CONFIG_ERROR_MSG
+    TP_MSG_REGRESSOR, VALUE_CONFIG_ERROR_MSG, SIEVE_CONIFG_ERROR_MSG
 )
 from classify.models import (
     Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingPixels, TrainingPixelsPatch,
@@ -434,6 +434,8 @@ class SentinelClassifierTest(TestCase):
         self.assertIn("Keras history:", self.clf.log)
         self.assertIn("Keras parameters:", self.clf.log)
         self.assertIn("{'verbose': 0, 'epochs': 10", self.clf.log)
+        self.assertIn("List of physical devices available:", self.clf.log)
+        self.assertIn("device_type='CPU'", self.clf.log)
         # Test prediction.
         pred = PredictedLayer.objects.create(
             classifier=self.clf,
@@ -445,6 +447,8 @@ class SentinelClassifierTest(TestCase):
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
         self.assertTrue(len(files), 1)
+        # Check log for physical devices.
+
 
     def test_keras_regressor(self):
         # For regressor use cases, set the traininglayer to continuous.
@@ -492,17 +496,23 @@ class SentinelClassifierTest(TestCase):
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
         self.assertTrue(len(files), 1)
 
+        # Test sieving on regressor error.
+        sieve_layer = PredictedLayer.objects.create(
+            sieve_parent=pred,
+            sieve_threshold=5,
+        )
+        predict_sentinel_layer(sieve_layer.id)
+        sieve_layer.refresh_from_db()
+        self.assertEqual(sieve_layer.status, PredictedLayer.FAILED)
+        self.assertIn(SIEVE_CONIFG_ERROR_MSG, sieve_layer.log)
+
     def test_keras_classifier_time(self):
         self.clf.algorithm = Classifier.KERAS
         self.clf.wrap_keras_with_sklearn = False
         self.clf.status = self.clf.UNPROCESSED
-        # expected input data shape: (batch_size, timesteps, data_dim)
+        # Expected input data shape: (batch_size, timesteps, data_dim)
         model = Sequential()
-        model.add(GRU(32, return_sequences=True, return_state=False))  # returns a sequence of vectors of dimension 32
-        model.add(BatchNormalization())
-        model.add(GRU(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-        model.add(BatchNormalization())
-        model.add(GRU(32))  # return a single vector of dimension 32
+        model.add(GRU(32))
         model.add(BatchNormalization())
         model.add(Dense(3, activation='softmax'))
         self.clf.keras_model_json = model.to_json()
@@ -557,9 +567,23 @@ class SentinelClassifierTest(TestCase):
         )
         predict_sentinel_layer(pred.id)
         pred.refresh_from_db()
-
+        self.assertEqual(pred.status, PredictedLayer.FINISHED)
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
+        self.assertTrue(len(files), 1)
+
+        # Test sieving.
+        sieve_layer = PredictedLayer.objects.create(
+            aggregationlayer=self.agglayer,
+            sieve_parent=pred,
+            sieve_threshold=20,
+            sieve_connectivity=PredictedLayer.SIEVE_CONNECTIVITY_4,
+        )
+        predict_sentinel_layer(sieve_layer.id)
+        sieve_layer.refresh_from_db()
+        self.assertEqual(sieve_layer.status, PredictedLayer.FINISHED)
+        # Tiles have been created.
+        files = self._get_files('tiles/{}/14'.format(sieve_layer.rasterlayer_id))
         self.assertTrue(len(files), 1)
 
         # Test wrong configuration errors.

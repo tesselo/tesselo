@@ -159,6 +159,11 @@ def predict_sentinel_chunk(chunk_id):
     return track_job('classify', 'predictedlayerchunk', chunk_id, job)
 
 
+def sieve_sentinel_chunk(chunk_id):
+    job = run_ecs_command(['sieve_sentinel_chunk', chunk_id], retry=1)
+    return track_job('classify', 'predictedlayerchunk', chunk_id, job)
+
+
 def build_predicted_pyramid(predicted_layer_id):
     job = run_ecs_command(['build_predicted_pyramid', predicted_layer_id])
     return track_job('classify', 'predictedlayer', predicted_layer_id, job)

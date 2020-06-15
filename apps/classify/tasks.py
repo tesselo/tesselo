@@ -9,6 +9,7 @@ import numpy
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
+from rasterio.features import sieve
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
@@ -16,6 +17,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import model_from_json
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.config import list_physical_devices
 
 from classify.const import (
     CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG, KERAS_FIT_ARGS,
@@ -23,7 +25,7 @@ from classify.const import (
     KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
     PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
     TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG,
-    ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
+    ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM, SIEVE_CONIFG_ERROR_MSG, CLASSIFICATION_NODATA
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
 from classify.utils import RNNRobustScaler
@@ -394,6 +396,7 @@ def train_sentinel_classifier(classifier_id):
             classifier.collected_pixels.save(name, File(fl))
 
     classifier.write('Found {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(len(Y), X.shape))
+    classifier.write('List of physical devices available: {}'.format(list_physical_devices()))
 
     # Set fixed random seed if required.
     if classifier.split_random_seed is not None:
@@ -598,17 +601,22 @@ def predict_sentinel_layer(predicted_layer_id):
     """
     pred = PredictedLayer.objects.get(id=predicted_layer_id)
     pred.predictedlayerchunk_set.all().delete()
-    pred.write('Started predicting layer.', pred.PROCESSING)
-
-    # Check consistency of composite input with required lenght from classifier.
-    composite_count = pred.composites.count()
-    if composite_count > 1 and pred.classifier.look_back_steps > 0 and composite_count != pred.classifier.look_back_steps:
-        msg = 'Layer configuration error. Number of input composites is not consistent with classifier. Found {} composites, expected {}.'
-        pred.write(
-            msg.format(composite_count, pred.classifier.look_back_steps),
-            pred.FAILED,
-        )
-        return
+    if pred.sieve_threshold > 0:
+        if pred.sieve_parent.classifier.is_regressor:
+            pred.write(SIEVE_CONIFG_ERROR_MSG, pred.FAILED)
+            return
+        pred.write('Started sieving layer.', pred.PROCESSING)
+    else:
+        # Check consistency of composite input with required lenght from classifier.
+        composite_count = pred.composites.count()
+        if composite_count > 1 and pred.classifier.look_back_steps > 0 and composite_count != pred.classifier.look_back_steps:
+            msg = 'Layer configuration error. Number of input composites is not consistent with classifier. Found {} composites, expected {}.'
+            pred.write(
+                msg.format(composite_count, pred.classifier.look_back_steps),
+                pred.FAILED,
+            )
+            return
+        pred.write('Started predicting layer.', pred.PROCESSING)
 
     # Get tile range for compositeband or sentineltile for this prediction.
     tiles = get_prediction_index_range(pred)
@@ -624,7 +632,10 @@ def predict_sentinel_layer(predicted_layer_id):
                 to_index=counter,
                 status=PredictedLayerChunk.PENDING,
             )
-            ecs.predict_sentinel_chunk(chunk.id)
+            if pred.sieve_threshold > 0:
+                ecs.sieve_sentinel_chunk(chunk.id)
+            else:
+                ecs.predict_sentinel_chunk(chunk.id)
 
     # Push the remaining index range as well.
     rest = counter % CHUNK_SIZE
@@ -635,11 +646,14 @@ def predict_sentinel_layer(predicted_layer_id):
             to_index=counter,
             status=PredictedLayerChunk.PENDING,
         )
-        ecs.predict_sentinel_chunk(chunk.id)
+        if pred.sieve_threshold > 0:
+            ecs.sieve_sentinel_chunk(chunk.id)
+        else:
+            ecs.predict_sentinel_chunk(chunk.id)
 
     # Log how many chunks need to be processed.
     pred.refresh_from_db()
-    pred.write('Prediction will require {} chunks.'.format(pred.predictedlayerchunk_set.count()))
+    pred.write('Task will require {} chunks.'.format(pred.predictedlayerchunk_set.count()))
 
 
 def predict_sentinel_chunk(chunk_id):
@@ -721,6 +735,65 @@ def predict_sentinel_chunk(chunk_id):
         ecs.build_predicted_pyramid(chunk.predictedlayer.id)
 
 
+def sieve_sentinel_chunk(chunk_id):
+    """
+    Sieve a group of tiles.
+    """
+    # Get chunk.
+    chunk = PredictedLayerChunk.objects.get(id=chunk_id)
+    # Update chunk status.
+    chunk.status = PredictedLayerChunk.PROCESSING
+    chunk.save()
+    # Get global tile range.
+    tiles = list(get_prediction_index_range(chunk.predictedlayer))
+    # Prefetch all parent tiles for this chunk.
+    all_tiles = {}
+    for tilex, tiley, tilez in tiles[chunk.from_index:chunk.to_index]:
+        tile = get_raster_tile(chunk.predictedlayer.sieve_parent.rasterlayer_id, tilez=tilez, tilex=tilex, tiley=tiley, look_up=False)
+        if tile:
+            all_tiles[(tilex, tiley)] = tile.bands[0].data()
+    # Create blank array.
+    blank = numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE), CLASSIFICATION_DATATYPE)
+    # Sieve by constructing tile plus surrounding tiles.
+    for tilex, tiley, tilez in tiles[chunk.from_index:chunk.to_index]:
+        # Construct pixel area around center tile.
+        data = []
+        for i in [-1, 0, 1]:
+            column = []
+            for j in [-1, 0, 1]:
+                tile = all_tiles.get((tilex + i, tiley + j), blank)
+                column.append(tile)
+            data.append(numpy.vstack(column))
+        data = numpy.hstack(data)
+        # Construct mask for sieving.
+        mask = data != CLASSIFICATION_NODATA
+        # Sieve raster.
+        sieved = sieve(data, chunk.predictedlayer.sieve_threshold, mask=mask, connectivity=chunk.predictedlayer.sieve_connectivity)
+        # Extract center pixels.
+        result = sieved[WEB_MERCATOR_TILESIZE:(2 * WEB_MERCATOR_TILESIZE), WEB_MERCATOR_TILESIZE:(2 * WEB_MERCATOR_TILESIZE)]
+        # Convert to classification datatype.
+        result = result.astype(CLASSIFICATION_DATATYPE)
+        # Write tile.
+        write_raster_tile(
+            layer_id=chunk.predictedlayer.rasterlayer_id,
+            result=result,
+            tilez=tilez,
+            tilex=tilex,
+            tiley=tiley,
+            nodata_value=CLASSIFICATION_NODATA,
+            datatype=CLASSIFICATION_DATATYPE_GDAL,
+        )
+
+    # Log progress.
+    chunk.status = PredictedLayerChunk.FINISHED
+    chunk.save()
+
+    # If all chunks have completed, push pyramid build job.
+    if PredictedLayerChunk.objects.filter(predictedlayer=chunk.predictedlayer).exclude(status=PredictedLayerChunk.FINISHED).count() == 0:
+        chunk.predictedlayer.write('Finished layer sieving at full resolution')
+        ecs.build_predicted_pyramid(chunk.predictedlayer.id)
+
+
 def build_predicted_pyramid(predicted_layer_id):
     """
     Build an overview stack over a predicted layer.
@@ -730,8 +803,9 @@ def build_predicted_pyramid(predicted_layer_id):
     pred.write('Started building pyramid')
 
     # Determine numpy and GDAL datatypes.
-    dtype = REGRESSION_DATATYPE if pred.classifier.is_regressor else CLASSIFICATION_DATATYPE
-    dtype_gdal = REGRESSION_DATATYPE_GDAL if pred.classifier.is_regressor else CLASSIFICATION_DATATYPE_GDAL
+    is_regressor = pred.classifier.is_regressor if pred.classifier else pred.sieve_parent.classifier.is_regressor
+    dtype = REGRESSION_DATATYPE if is_regressor else CLASSIFICATION_DATATYPE
+    dtype_gdal = REGRESSION_DATATYPE_GDAL if is_regressor else CLASSIFICATION_DATATYPE_GDAL
 
     # Loop through the tiles in each zoom level, bottom up.
     for tilez in range(ZOOM - 1, -1, -1):
@@ -766,7 +840,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 tilez=tilez,
                 tilex=tilex,
                 tiley=tiley,
-                nodata_value=0,
+                nodata_value=CLASSIFICATION_NODATA,
                 datatype=dtype_gdal,
             )
 
