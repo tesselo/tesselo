@@ -447,6 +447,9 @@ def train_sentinel_classifier(classifier_id):
         else:
             fit_args = {key: val for key, val in clf_args.items() if key in KERAS_FIT_ARGS}
             compile_args = {key: val for key, val in clf_args.items() if key not in KERAS_FIT_ARGS}
+            # Make output mode one line per epoch during training.
+            if 'verbose' not in fit_args:
+                fit_args['verbose'] = 2
             clf.compile(**compile_args)
     else:
         # Instantiate sklearn classifier.
