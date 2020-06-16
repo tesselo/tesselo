@@ -1,6 +1,10 @@
+import math
+
 import numpy
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import RobustScaler
+from sklearn.utils import shuffle
+from tensorflow.keras.utils import Sequence
 
 
 class RNNRobustScaler(TransformerMixin):
@@ -41,3 +45,26 @@ class RNNRobustScaler(TransformerMixin):
         n_pixels = int(X.shape[0] / self._orig_timesteps)
         X = X.reshape(n_pixels, self._orig_timesteps, self._orig_features)
         return X
+
+
+class PixelSequence(Sequence):
+    """
+    A batch generator for fitting Keras models.
+    """
+    def __init__(self, x_set, y_set, batch_size, shuffle=True):
+        self.x, self.y = x_set, y_set
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.on_epoch_end()
+
+    def __len__(self):
+        return math.ceil(len(self.x) / self.batch_size)
+
+    def __getitem__(self, idx):
+        batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size]
+        batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
+        return batch_x, batch_y
+
+    def on_epoch_end(self):
+        if self.shuffle is True:
+            self.x, self.y = shuffle(self.x, self.y)

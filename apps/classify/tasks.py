@@ -13,22 +13,22 @@ from rasterio.features import sieve
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
+from tensorflow.config import list_physical_devices
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import model_from_json
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
-from tensorflow.config import list_physical_devices
 
 from classify.const import (
-    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, FITTING_ERROR_MSG, KERAS_FIT_ARGS,
-    KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
-    KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
-    PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
-    TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG,
-    ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM, SIEVE_CONIFG_ERROR_MSG, CLASSIFICATION_NODATA
+    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, CLASSIFICATION_NODATA, FITTING_ERROR_MSG,
+    KERAS_FIT_ARGS, KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG,
+    KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL, KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME,
+    PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE,
+    SENTINEL_PIXELTYPE, SIEVE_CONIFG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR,
+    TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
-from classify.utils import RNNRobustScaler
+from classify.utils import PixelSequence, RNNRobustScaler
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
@@ -491,12 +491,17 @@ def train_sentinel_classifier(classifier_id):
     # Keras classifiers want y to be a one-hot-encoding matrix. Each class is
     # named after its column index in the matrix. This assumes class category
     # values are sequential and start with 1.
+    pixel_generator = None
     if not classifier.is_regressor and classifier.is_keras and not classifier.wrap_keras_with_sklearn:
         y_train = to_categorical(y_train - 1)
+        pixel_generator = PixelSequence(x_train, y_train, fit_args.pop('batch_size', 100))
 
     # Fit the model.
     try:
-        clf.fit(x_train, y_train, **fit_args)
+        if pixel_generator is None:
+            clf.fit(x_train, y_train, **fit_args)
+        else:
+            clf.fit(pixel_generator, **fit_args)
     except Exception as exc:
         classifier.write(FITTING_ERROR_MSG + ': ' + str(exc), classifier.FAILED)
         raise
