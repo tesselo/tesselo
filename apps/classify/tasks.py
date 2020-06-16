@@ -471,17 +471,28 @@ def train_sentinel_classifier(classifier_id):
             (PIPELINE_ESTIMATOR_NAME, clf),
         ])
 
-    # Prepare training arrays.
-    x_train, y_train = X[selector], Y[selector]
+    # TF keras cant handle unit16.
+    if classifier.is_keras:
+        X = X.astype(KERAS_TRAIN_TYPE)
+
+    # Compute train and test arrays. If all available pixels were used for
+    #  training, compute accuracy with full dataset.
+    if classifier.splitfraction == 0:
+        x_train = x_test = X
+        y_train = y_test = Y
+    else:
+        x_train = X[selector]
+        y_train = Y[selector]
+        x_test = X[numpy.logical_not(selector)]
+        y_test = Y[numpy.logical_not(selector)]
+        # Remove originals to save memory.
+        del X, Y
+
     # Keras classifiers want y to be a one-hot-encoding matrix. Each class is
     # named after its column index in the matrix. This assumes class category
     # values are sequential and start with 1.
     if not classifier.is_regressor and classifier.is_keras and not classifier.wrap_keras_with_sklearn:
         y_train = to_categorical(y_train - 1)
-
-    # TF keras cant handle unit16.
-    if classifier.is_keras:
-        x_train = x_train.astype(KERAS_TRAIN_TYPE)
 
     # Fit the model.
     try:
@@ -512,36 +523,24 @@ def train_sentinel_classifier(classifier_id):
             hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist[metric][i])
         classifier.write('Keras history:\n{}'.format(hist_str))
 
-    # Compute validation arrays. If full arrays were used for training, the
-    # validation array is empty. In this case, compute accuracy agains full
-    # dataset.
-    if numpy.all(selector):
-        validation_pixels = X
-        control_pixels = Y
-    else:
-        validation_pixels = X[numpy.logical_not(selector)]
-        control_pixels = Y[numpy.logical_not(selector)]
-
-    if classifier.is_keras:
-        validation_pixels = validation_pixels.astype(KERAS_TRAIN_TYPE)
-
     # Instanciate data container model.
     acc, created = ClassifierAccuracy.objects.get_or_create(classifier=classifier)
 
+    # Predict on test pixels.
+    y_predicted = clf.predict(x_test)
+
+    # Compute statistics.
     if classifier.is_regressor:
         # Compute rsquared.
-        validation_pixels_predicted = clf.predict(validation_pixels)
-        acc.rsquared = r2_score(control_pixels, validation_pixels_predicted)
+        acc.rsquared = r2_score(y_test, y_predicted)
     else:
-        # Predict validation pixels.
-        validation_pixels = clf.predict(validation_pixels)
         # Convert keras probability matrix to predicted class array.
         if not isinstance(clf, Pipeline):
-            validation_pixels = numpy.argmax(validation_pixels, axis=1) + 1
+            y_predicted = numpy.argmax(y_predicted, axis=1) + 1
         # Compute accuracy matrix and coefficients.
-        acc.accuracy_matrix = confusion_matrix(control_pixels, validation_pixels).tolist()
-        acc.cohen_kappa = cohen_kappa_score(control_pixels, validation_pixels)
-        acc.accuracy_score = accuracy_score(control_pixels, validation_pixels)
+        acc.accuracy_matrix = confusion_matrix(y_test, y_predicted).tolist()
+        acc.cohen_kappa = cohen_kappa_score(y_test, y_predicted)
+        acc.accuracy_score = accuracy_score(y_test, y_predicted)
     acc.save()
 
     # Store result in classifier.
