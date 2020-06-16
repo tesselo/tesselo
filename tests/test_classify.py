@@ -447,8 +447,6 @@ class SentinelClassifierTest(TestCase):
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
         self.assertTrue(len(files), 1)
-        # Check log for physical devices.
-
 
     def test_keras_regressor(self):
         # For regressor use cases, set the traininglayer to continuous.
