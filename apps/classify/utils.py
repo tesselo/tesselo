@@ -51,8 +51,9 @@ class PixelSequence(Sequence):
     """
     A batch generator for fitting Keras models.
     """
-    def __init__(self, x_set, y_set, batch_size, shuffle=True):
-        self.x, self.y = x_set, y_set
+    def __init__(self, x_set, y_set=None, batch_size=32, shuffle=True):
+        self.x = x_set
+        self.y = y_set
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.on_epoch_end()
@@ -62,9 +63,12 @@ class PixelSequence(Sequence):
 
     def __getitem__(self, idx):
         batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size]
-        batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
-        return batch_x, batch_y
+        if self.y is None:
+            return batch_x
+        else:
+            batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
+            return batch_x, batch_y
 
     def on_epoch_end(self):
-        if self.shuffle is True:
+        if self.shuffle is True and self.y is not None:
             self.x, self.y = shuffle(self.x, self.y)

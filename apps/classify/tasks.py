@@ -491,17 +491,19 @@ def train_sentinel_classifier(classifier_id):
     # Keras classifiers want y to be a one-hot-encoding matrix. Each class is
     # named after its column index in the matrix. This assumes class category
     # values are sequential and start with 1.
-    pixel_generator = None
+    training_generator = None
+    testing_generator = None
     if not classifier.is_regressor and classifier.is_keras and not classifier.wrap_keras_with_sklearn:
         y_train = to_categorical(y_train - 1)
-        pixel_generator = PixelSequence(x_train, y_train, fit_args.pop('batch_size', 100))
+        training_generator = PixelSequence(x_train, y_train, fit_args.pop('batch_size', 100))
+        testing_generator = PixelSequence(x_test, batch_size=fit_args.pop('batch_size', 100))
 
     # Fit the model.
     try:
-        if pixel_generator is None:
+        if training_generator is None:
             clf.fit(x_train, y_train, **fit_args)
         else:
-            clf.fit(pixel_generator, **fit_args)
+            clf.fit(training_generator, **fit_args)
     except Exception as exc:
         classifier.write(FITTING_ERROR_MSG + ': ' + str(exc), classifier.FAILED)
         raise
@@ -532,7 +534,10 @@ def train_sentinel_classifier(classifier_id):
     acc, created = ClassifierAccuracy.objects.get_or_create(classifier=classifier)
 
     # Predict on test pixels.
-    y_predicted = clf.predict(x_test)
+    if testing_generator is None:
+        y_predicted = clf.predict(x_test)
+    else:
+        y_predicted = clf.predict(testing_generator)
 
     # Compute statistics.
     if classifier.is_regressor:
