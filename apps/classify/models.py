@@ -302,6 +302,7 @@ class PredictedLayer(models.Model):
     legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
     min_date = models.DateField(null=True, blank=True, editable=False)
     max_date = models.DateField(null=True, blank=True, editable=False)
+    chunk_size = models.IntegerField(default=100, help_text='Number of tiles to process per task. Reduce size for predictions with many composites.')
 
     sieve_threshold = models.IntegerField(default=0)
     sieve_connectivity = models.IntegerField(default=4, choices=SIEVE_CHOICES)

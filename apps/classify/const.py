@@ -19,8 +19,6 @@ TP_MSG_NOT_FINISHED = 'Found an unpopulated trainingpixels object, populate trai
 
 SIEVE_CONIFG_ERROR_MSG = 'Sieving is only allowed on discrete classifications. Found regressor type.'
 
-CHUNK_SIZE = 100
-
 CLASSIFICATION_DATATYPE = 'uint8'
 CLASSIFICATION_DATATYPE_GDAL = 1
 CLASSIFICATION_NODATA = 0

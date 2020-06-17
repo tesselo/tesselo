@@ -20,12 +20,12 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 from classify.const import (
-    CHUNK_SIZE, CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, CLASSIFICATION_NODATA, FITTING_ERROR_MSG,
-    KERAS_FIT_ARGS, KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG,
-    KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL, KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME,
-    PIPELINE_SCALER_NAME, PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE,
-    SENTINEL_PIXELTYPE, SIEVE_CONIFG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR,
-    TRAINING_DATA_SPLIT_ERROR_MSG, VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
+    CLASSIFICATION_DATATYPE, CLASSIFICATION_DATATYPE_GDAL, CLASSIFICATION_NODATA, FITTING_ERROR_MSG, KERAS_FIT_ARGS,
+    KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
+    KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
+    PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
+    SIEVE_CONIFG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG,
+    VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
 from classify.utils import PixelSequence, RNNRobustScaler
@@ -637,10 +637,10 @@ def predict_sentinel_layer(predicted_layer_id):
     counter = 0
     for tile_index in tiles:
         counter += 1
-        if counter % CHUNK_SIZE == 0:
+        if counter % pred.chunk_size == 0:
             chunk = PredictedLayerChunk.objects.create(
                 predictedlayer=pred,
-                from_index=counter - CHUNK_SIZE,
+                from_index=counter - pred.chunk_size,
                 to_index=counter,
                 status=PredictedLayerChunk.PENDING,
             )
@@ -650,7 +650,7 @@ def predict_sentinel_layer(predicted_layer_id):
                 ecs.predict_sentinel_chunk(chunk.id)
 
     # Push the remaining index range as well.
-    rest = counter % CHUNK_SIZE
+    rest = counter % pred.chunk_size
     if rest:
         chunk = PredictedLayerChunk.objects.create(
             predictedlayer=pred,
