@@ -39,8 +39,6 @@ logger = logging.getLogger('django')
 
 boto3.set_stream_logger('boto3', logging.ERROR)
 
-CHUNK_SIZE = 100
-
 
 def drive_sentinel_bucket_parser():
     for utm_zone in range(1, const.NUMBER_OF_UTM_ZONES + 1):
