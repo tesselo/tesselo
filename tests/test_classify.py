@@ -198,7 +198,7 @@ class SentinelClassifierTest(TestCase):
         # Legend has been tracked.
         self.assertDictEqual(
             self.clf.traininglayer.legend,
-            {'Cloud': '1', 'Shadow': '2', 'Cloud free': '3'},
+            {'1': 'Cloud', '2': 'Shadow', '3': 'Cloud free'},
         )
 
     def test_training_pixels_collection_and_classifier_training_misconfiguration(self):
