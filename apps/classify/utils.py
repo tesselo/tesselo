@@ -4,6 +4,7 @@ import numpy
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import RobustScaler
 from sklearn.utils import shuffle
+from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.utils import Sequence
 
 
@@ -72,3 +73,22 @@ class PixelSequence(Sequence):
     def on_epoch_end(self):
         if self.shuffle is True and self.y is not None:
             self.x, self.y = shuffle(self.x, self.y)
+
+
+class LogCallback(Callback):
+
+    def __init__(self, classifier, epochs):
+        super().__init__()
+        self.classifier = classifier
+        self.epochs = epochs
+
+    def on_epoch_end(self, epoch, logs):
+        # Construct log message.
+        msg = 'epoch: {:2d}/{}'.format(epoch + 1, self.epochs)
+        for key, val in logs.items():
+            if val > 10:
+                tmpl = ' - {}: {}'
+            else:
+                tmpl = ' - {}: {.4f}'
+            msg += tmpl.format(key, val)
+        self.classifier.write(msg)

@@ -28,7 +28,7 @@ from classify.const import (
     VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
-from classify.utils import PixelSequence, RNNRobustScaler
+from classify.utils import LogCallback, PixelSequence, RNNRobustScaler
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
@@ -445,12 +445,18 @@ def train_sentinel_classifier(classifier_id):
         if classifier.wrap_keras_with_sklearn:
             clf = KerasClassifier(get_keras_model, keras_model_json=classifier.keras_model_json, **clf_args)
         else:
-            fit_args = {key: val for key, val in clf_args.items() if key in KERAS_FIT_ARGS}
+            # Compile model.
             compile_args = {key: val for key, val in clf_args.items() if key not in KERAS_FIT_ARGS}
+            clf.compile(**compile_args)
+            # Construct fit args.
+            fit_args = {key: val for key, val in clf_args.items() if key in KERAS_FIT_ARGS}
             # Make output mode one line per epoch during training.
             if 'verbose' not in fit_args:
                 fit_args['verbose'] = 2
-            clf.compile(**compile_args)
+            if 'epochs' not in fit_args:
+                fit_args['epochs'] = 1
+            # Set log callback.
+            fit_args['callbacks'] = [LogCallback(classifier, fit_args['epochs'])]
     else:
         # Instantiate sklearn classifier.
         clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]
@@ -514,21 +520,12 @@ def train_sentinel_classifier(classifier_id):
             keras_model = clf.named_steps[PIPELINE_ESTIMATOR_NAME].model
         else:
             keras_model = clf
-        # Get training accuracy history per epoch.
-        hist_str = ''
-        hist = keras_model.history.history
-        epochs = len(hist['loss'])
         # Write Keras parameters to classifier log.
         classifier.write('Keras parameters: {}'.format(keras_model.history.params))
         # Write Keras model summary to classifier log.
         with io.StringIO() as fl:
             keras_model.summary(print_fn=lambda x: fl.write(x + '\n'))
             classifier.write('Keras summary:\n{}'.format(fl.getvalue()))
-        # Write Keras training history to classifier log.
-        metric = keras_model.metrics[0].name
-        for i in range(epochs):
-            hist_str += 'Epoch {}/{} - loss {:.4f} - acc {:.4f}\n'.format(i + 1, epochs, hist['loss'][i], hist[metric][i])
-        classifier.write('Keras history:\n{}'.format(hist_str))
 
     # Instanciate data container model.
     acc, created = ClassifierAccuracy.objects.get_or_create(classifier=classifier)
