@@ -84,11 +84,11 @@ class LogCallback(Callback):
 
     def on_epoch_end(self, epoch, logs):
         # Construct log message.
-        msg = 'epoch: {:2d}/{}'.format(epoch + 1, self.epochs)
+        msg = 'epoch: {}/{}'.format(epoch + 1, self.epochs)
         for key, val in logs.items():
             if val > 10:
                 tmpl = ' - {}: {}'
             else:
-                tmpl = ' - {}: {.4f}'
+                tmpl = ' - {}: {:.4f}'
             msg += tmpl.format(key, val)
         self.classifier.write(msg)
