@@ -536,14 +536,15 @@ def train_sentinel_classifier(classifier_id):
     else:
         y_predicted = clf.predict(testing_generator)
 
+    # Convert keras probability matrix to predicted class array.
+    if len(y_predicted.shape) > 1:
+        y_predicted = numpy.argmax(y_predicted, axis=1) + 1
+
     # Compute statistics.
     if classifier.is_regressor:
         # Compute rsquared.
         acc.rsquared = r2_score(y_test, y_predicted)
     else:
-        # Convert keras probability matrix to predicted class array.
-        if not isinstance(clf, Pipeline):
-            y_predicted = numpy.argmax(y_predicted, axis=1) + 1
         # Compute accuracy matrix and coefficients.
         acc.accuracy_matrix = confusion_matrix(y_test, y_predicted).tolist()
         acc.cohen_kappa = cohen_kappa_score(y_test, y_predicted)
