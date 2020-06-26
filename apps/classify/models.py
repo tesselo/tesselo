@@ -193,6 +193,7 @@ class Classifier(models.Model):
     splitfraction = models.FloatField(default=0, help_text='Fraction of pixels that should be reserved for validation.')
     split_by_polygon = models.BooleanField(default=False, help_text='Reserve pixels at the polygon level, i.e. keep a percentage of training polygons as verification data.')
     split_random_seed = models.PositiveIntegerField(null=True, blank=True, help_text='Fix random seed for train and test split to make verification more comparable.')
+    auto_class_weights = models.BooleanField(default=False, help_text='Automatically compute class weights and use as fit parameters in Keras.')
     look_back_steps = models.PositiveIntegerField(default=0, help_text='Number of composite steps back from sample date should be included in training and predicting data collection. Ignored if zero.')
     band_names = models.CharField(max_length=500, default='B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12', help_text='Comma-separated list of band names and layer ids. If an integer value is added, it is assumed to be a rasterlayer id that should be included in the export.')
     composites = models.ManyToManyField(Composite, blank=True, help_text='Is used as training data source if specified. If left blank, the original traininglayer pixels are used.', related_name='old_composite')

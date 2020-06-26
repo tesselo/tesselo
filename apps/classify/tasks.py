@@ -333,6 +333,13 @@ def train_sentinel_classifier(classifier_id):
         elif classifier.composites.count():
             method = 'all available composites'
         classifier.write('Started collecting training data with {} input method'.format(method), classifier.PROCESSING)
+    if classifier.auto_class_weights:
+        if not classifier.is_keras:
+            classifier.write('Classifiers auto class weights are only for keras models. Set "auto_class_weights" to False for non-keras models.', classifier.FAILED)
+            return
+        if classifier.is_regressor:
+            classifier.write('Classifiers auto class weights are only for classifications. Set "auto_class_weights" to False for regressors.', classifier.FAILED)
+            return
 
     # Remove current accuracy matrix.
     if hasattr(classifier, 'classifieraccuracy'):
@@ -466,6 +473,12 @@ def train_sentinel_classifier(classifier_id):
                 fit_args['epochs'] = 1
             # Set log callback.
             fit_args['callbacks'] = [LogCallback(classifier, fit_args['epochs'])]
+            # Compute class weights if required.
+            if classifier.auto_class_weights:
+                unique_values, uniue_counts = numpy.unique(Y, return_counts=True)
+                class_weight = {int(uniq - 1): float(count / len(Y)) for uniq, count in zip(unique_values, uniue_counts)}
+                fit_args['class_weight'] = class_weight
+                classifier.write('Class weight: {}'.format(class_weight))
     else:
         # Instantiate sklearn classifier.
         clf_module, clf_class_name = classifier.ALGORITHM_MODULES[classifier.algorithm]

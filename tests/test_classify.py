@@ -47,6 +47,7 @@ from sentinel.models import Composite, MGRSTile, SentinelTile
 @patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('classify.tasks.get_raster_tile', patch_get_raster_tile)
 @patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
+@patch('classify.collectpixels.get_raster_tile', patch_get_raster_tile)
 @patch('jobs.ecs.process_l2a', patch_process_l2a)
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
 class SentinelClassifierTest(TestCase):
@@ -125,14 +126,6 @@ class SentinelClassifierTest(TestCase):
                 )
                 counter += 1
 
-        cls.clf = Classifier.objects.create(
-            name='Clouds',
-            algorithm=Classifier.RF,
-            traininglayer=cls.traininglayer,
-            splitfraction=0.2,
-            training_all_touched=False,
-        )
-
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -146,6 +139,15 @@ class SentinelClassifierTest(TestCase):
         for root, subdirs, files in os.walk(os.path.join(settings.MEDIA_ROOT, path)):
             files += files
         return files
+
+    def setUp(self):
+        self.clf = Classifier.objects.create(
+            name='Clouds',
+            algorithm=Classifier.RF,
+            traininglayer=self.traininglayer,
+            splitfraction=0.2,
+            training_all_touched=False,
+        )
 
     def test_training_pixels_collection_and_classifier_training(self):
         # Create trainingpixels object.
@@ -410,6 +412,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.algorithm = Classifier.KERAS
         self.clf.wrap_keras_with_sklearn = False
         self.clf.status = self.clf.UNPROCESSED
+        self.clf.auto_class_weights = True
         model = Sequential()
         model.add(Dense(20, activation='relu'))
         model.add(Dropout(0.5))
@@ -435,6 +438,7 @@ class SentinelClassifierTest(TestCase):
         self.assertIn("{'verbose': 0, 'epochs': 10", self.clf.log)
         self.assertIn("List of physical devices available:", self.clf.log)
         self.assertIn("device_type='CPU'", self.clf.log)
+        self.assertIn("Class weight: {", self.clf.log)
         # Test prediction.
         pred = PredictedLayer.objects.create(
             classifier=self.clf,
