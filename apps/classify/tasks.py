@@ -395,6 +395,15 @@ def train_sentinel_classifier(classifier_id):
             name = 'classifier-collected-pixels-{}.npz'.format(classifier.id)
             classifier.collected_pixels.save(name, File(fl))
 
+    # Check consistency of Y values.
+    if classifier.is_keras:
+        uniques = numpy.unique(Y)
+        if not numpy.array_equal(uniques, numpy.arange(numpy.max(Y)) + 1):
+            msg = 'Bad Y value configuration. For Keras, class DN require to be a straight sequence from 1 to N wher N is number of classes, found {}.'.format(uniques)
+            classifier.write(msg, classifier.FAILED)
+            return
+
+    # Log classification setup.
     classifier.write('Found {} training sample pixels - fitting algorithm with tensor X of shape {}.'.format(len(Y), X.shape))
     classifier.write('List of physical devices available: {}'.format(list_physical_devices()))
 

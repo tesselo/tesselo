@@ -719,3 +719,28 @@ class SentinelClassifierTest(TestCase):
         pred.refresh_from_db()
         self.assertEqual(pred.min_date, stile_date)
         self.assertEqual(pred.max_date, stile_date)
+
+    def test_keras_classifier_wrong_class_digital_numbers(self):
+        self.clf.algorithm = Classifier.KERAS
+        self.clf.wrap_keras_with_sklearn = False
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.auto_class_weights = True
+        model = Sequential()
+        model.add(Dense(20, activation='relu'))
+        model.add(Dense(3, activation='softmax'))
+        self.clf.keras_model_json = model.to_json()
+        self.clf.clf_args = '''{
+            "optimizer": "adagrad",
+            "loss": "categorical_crossentropy",
+            "metrics": ["accuracy"],
+            "epochs": 10,
+            "batch_size": 5,
+            "verbose": 0
+        }'''
+        self.clf.save()
+        # Change DN for one class to a wrong configuration.
+        TrainingSample.objects.filter(value=2).update(value=23)
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        self.assertEqual(self.clf.status, Classifier.FAILED)
+        self.assertIn('Bad Y value configuration.', self.clf.log)
