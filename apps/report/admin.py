@@ -3,7 +3,7 @@ from raster_aggregation.models import AggregationLayer
 from classify.models import PredictedLayer
 from django.contrib.gis import admin
 from formulary.models import Formula
-from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
+from report.models import ReportAggregation, ReportAggregationLayerSrid, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports
 from sentinel.models import Composite
 
@@ -65,3 +65,4 @@ class ReportScheduleTaskAdmin(admin.ModelAdmin):
 admin.site.register(ReportSchedule, ReportScheduleAdmin)
 admin.site.register(ReportScheduleTask, ReportScheduleTaskAdmin)
 admin.site.register(ReportAggregation, ReportAggregationAdmin)
+admin.site.register(ReportAggregationLayerSrid)
