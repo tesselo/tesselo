@@ -3,7 +3,7 @@ import datetime
 from raster_aggregation.models import AggregationLayer
 
 from jobs import ecs
-from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
+from report.models import WEB_MERCATOR_SRID, ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.utils import populate_vc
 from sentinel.const import TILESCALE_10M
 
@@ -87,7 +87,7 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
     Run populate script for this report schedule.
     """
     lookup = {
-        'aggregationlayer_id': int(aggregationlayer_id)
+        'aggregationlayer_id': int(aggregationlayer_id),
     }
     # Try converting inputs to integer, if fails, the input was most likely a
     # "None" string. If data was provided, add it as query string for the report
@@ -117,6 +117,12 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
     # Get aggregation layer.
     aggregationlayer = AggregationLayer.objects.get(id=aggregationlayer_id)
 
+    # Choose srid to aggregate with.
+    if hasattr(aggregationlayer, 'reportaggregationlayersrid'):
+        srid = aggregationlayer.reportaggregationlayersrid.srid
+    else:
+        srid = WEB_MERCATOR_SRID
+
     # Initiate progress log.
     total_jobs = aggregationlayer.aggregationarea_set.all().count()
     task.write('Started aggregation task for {} areas.'.format(total_jobs), ReportScheduleTask.PROCESSING)
@@ -136,7 +142,7 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
         vc = rep.get_valuecount()
 
         # Update the aggregation values, with minimal DB interactions.
-        vc = populate_vc(vc)
+        vc = populate_vc(vc, srid)
 
         # Store valuecount link.
         rep.valuecountresult = vc

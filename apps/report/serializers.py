@@ -36,7 +36,7 @@ class ReportAggregationSerializer(PermissionsModelSerializer):
         fields = (
             'id', 'formula', 'aggregationlayer', 'aggregationarea', 'composite',
             'predictedlayer', 'name', 'geom', 'min_date', 'max_date', 'value',
-            'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq',
+            'min', 'max', 'avg', 'std', 'pcount', 'psum', 'psumsq', 'srid',
             'predictedlayer_rasterlayer', 'value_percentage', 'attributes',
         )
 

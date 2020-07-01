@@ -1,12 +1,15 @@
 import datetime
 
+from raster.tiles.const import WEB_MERCATOR_SRID
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
+from rasterio.crs import CRS
 
 from classify.models import PredictedLayer
 from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
+from report.const import ALLOWED_LINEAR_UNITS
 from sentinel.models import Composite
 
 
@@ -102,6 +105,8 @@ class ReportAggregation(models.Model):
 
     stats_percentage_covered = models.FloatField(editable=False, blank=True, null=True, help_text='Percentage of area covered by valid pixels.')
 
+    srid = models.IntegerField(editable=False, default=WEB_MERCATOR_SRID, help_text='SRID used for this aggregation.')
+
     def __str__(self):
         dat = '{}'.format(self.id)
         if hasattr(self, 'aggregationlayer') and self.aggregationlayer:
@@ -166,7 +171,8 @@ class ReportAggregation(models.Model):
 
         # Compute percentage by value.
         valsum = sum([float(val) for key, val in self.valuecountresult.value.items()])
-        self.value_percentage = {key: str(round(float(val) / valsum, self.VALUECOUNT_ROUNDING_DIGITS)) for key, val in self.valuecountresult.value.items()}
+        if valsum != 0:
+            self.value_percentage = {key: str(round(float(val) / valsum, self.VALUECOUNT_ROUNDING_DIGITS)) for key, val in self.valuecountresult.value.items()}
 
 
 @receiver(post_delete, sender=ReportAggregation, weak=False, dispatch_uid="remove_valuecount_before_delete")
@@ -186,3 +192,23 @@ def auto_set_valuecountresult_min_max_dates(sender, instance, **kwargs):
 
     instance.min_date = src_object.min_date
     instance.max_date = src_object.max_date
+
+
+class ReportAggregationLayerSrid(models.Model):
+    """
+    Tag an aggregationlayer with an SRID that will be used to compute the report
+    data.
+    """
+    aggregationlayer = models.OneToOneField(AggregationLayer, on_delete=models.CASCADE)
+    srid = models.IntegerField(help_text='Specify an SRID for computing all aggregations on this layer. The unit of the srid is required to be in meters.')
+
+    def __str__(self):
+        return '{} | {}'.format(self.aggregationlayer.name, self.srid)
+
+    def save(self, *args, **kwargs):
+        # Remove any non-alphanumeric characters from the key.
+        crs = CRS.from_epsg(self.srid)
+        units = crs.linear_units.lower()
+        if units not in ALLOWED_LINEAR_UNITS:
+            raise ValueError('Only meter or metre are allowed as linear units. Found "{}".'.format(units))
+        super().save(*args, **kwargs)

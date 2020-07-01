@@ -16,7 +16,7 @@ from django.core.files import File
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from formulary.models import Formula, PredictedLayerFormula
-from report.models import ReportAggregation, ReportSchedule, ReportScheduleTask
+from report.models import ReportAggregation, ReportAggregationLayerSrid, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports
 from report.utils import populate_vc
 from sentinel.models import Composite, MGRSTile, SentinelTile, SentinelTileBand
@@ -95,7 +95,7 @@ class AggregationViewTests(AggregationViewTestsBase):
             aggregationarea=self.aggarea,
         )
         vc = agg.get_valuecount()
-        vc = populate_vc(vc)
+        vc = populate_vc(vc, 3857)
         agg.valuecountresult = vc
         agg.copy_valuecount()
         agg.save()
@@ -120,7 +120,7 @@ class AggregationViewTests(AggregationViewTestsBase):
 
         )
         vc = agg.get_valuecount()
-        vc = populate_vc(vc)
+        vc = populate_vc(vc, 3857)
         agg.valuecountresult = vc
         agg.copy_valuecount()
         agg.save()
@@ -169,7 +169,7 @@ class AggregationViewTests(AggregationViewTestsBase):
             aggregationarea=self.aggarea,
         )
         vc = agg.get_valuecount()
-        vc = populate_vc(vc)
+        vc = populate_vc(vc, 3857)
         agg.valuecountresult = vc
         agg.copy_valuecount()
         agg.save()
@@ -239,6 +239,17 @@ class AggregationViewTests(AggregationViewTestsBase):
         push_reports('composite', self.composite.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
 
+    def test_report_schedule_populate_composite_custom_srid(self):
+        self._create_report_schedule()
+        ReportAggregationLayerSrid.objects.create(aggregationlayer=self.agglayer, srid=3410)
+        push_reports('composite', self.composite.id)
+        self.assertEqual(ReportAggregation.objects.count(), 2)
+
+    def test_report_agglayer_srid_not_meters_error(self):
+        msg = 'Only meter or metre are allowed as linear units. Found "unknown".'
+        with self.assertRaisesMessage(ValueError, msg):
+            ReportAggregationLayerSrid.objects.create(aggregationlayer=self.agglayer, srid=4326)
+
     def test_report_schedule_push_processing(self):
         self._create_report_schedule()
         # Create report task tracker with status processing.
@@ -280,7 +291,7 @@ class AggregationViewTests(AggregationViewTestsBase):
         push_reports('composite', self.composite.id)
         # Percentage cover is close to one (given a pixel resolution error).
         agg = ReportAggregation.objects.first()
-        self.assertAlmostEqual(agg.stats_percentage_covered, 1.00648246415756)
+        self.assertAlmostEqual(agg.stats_percentage_covered, 0.997374072402493)
 
     def test_percentage_covered_zero(self):
         # Push formula bounds out of range.
@@ -327,7 +338,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
 
             )
             vc = agg.get_valuecount()
-            vc = populate_vc(vc)
+            vc = populate_vc(vc, 3857)
             agg.valuecountresult = vc
             agg.copy_valuecount()
             agg.save()
