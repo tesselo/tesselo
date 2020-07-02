@@ -88,6 +88,10 @@ class AggregatorProjection(Aggregator):
             files = [stack.enter_context(dat.open()) for dat in all_result_data]
             src_data, src_transform = merge(files)
 
+        # Close all tiles.
+        for tile in all_result_data:
+            tile.close()
+
         # Create file from merged result.
         src_creation_args = {
             'driver': 'GTiff',

@@ -178,7 +178,7 @@ def push_scheduled_composite_builds():
 
 
 def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlayer_id):
-    return run_ecs_command(['populate_report', aggregationlayer_id, composite_id, formula_id, predictedlayer_id])
+    return run_ecs_command(['populate_report', aggregationlayer_id, composite_id, formula_id, predictedlayer_id], retry=1, vcpus=2, memory=int(1024 * 14.5), queue='tesselo-{stage}-process-l2a')
 
 
 def parse_aggregationlayer(pk):
