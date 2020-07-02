@@ -291,7 +291,7 @@ class AggregationViewTests(AggregationViewTestsBase):
         push_reports('composite', self.composite.id)
         # Percentage cover is close to one (given a pixel resolution error).
         agg = ReportAggregation.objects.first()
-        self.assertAlmostEqual(agg.stats_percentage_covered, 0.997374072402493)
+        self.assertAlmostEqual(agg.stats_percentage_covered, 1.00648246415756)
 
     def test_percentage_covered_zero(self):
         # Push formula bounds out of range.

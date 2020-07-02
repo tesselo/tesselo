@@ -21,6 +21,22 @@ from sentinel.utils import get_raster_tile
 VALUECOUNT_ROUNDING_DIGITS = 7
 
 
+class AggregatorProjectionSimple(Aggregator):
+
+    def __init__(self, *args, **kwargs):
+        # Get srid argument.
+        self.srid = kwargs.pop('srid', WEB_MERCATOR_SRID)
+        # Initiate class.
+        super().__init__(*args, **kwargs)
+
+    def get_raster_tile(self, layerid, zoom, tilex, tiley):
+        """
+        A patched aggregator function, using the direct S3 tile lookup approach.
+        This reduces load on DB dramatically.
+        """
+        return get_raster_tile(layerid, zoom, tilex, tiley)
+
+
 class AggregatorProjection(Aggregator):
 
     def __init__(self, *args, **kwargs):
@@ -259,7 +275,7 @@ def populate_vc(vc, srid):
 
     try:
         # Compute aggregate result.
-        agg = AggregatorProjection(
+        agg = AggregatorProjectionSimple(
             layer_dict=vc.layer_names,
             formula=vc.formula,
             zoom=vc.zoom,
