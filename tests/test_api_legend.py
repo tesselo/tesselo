@@ -94,10 +94,16 @@ class RasterLegendViewTests(TestCase):
 
         # Update expressions.
         data = {'entries': result['entries']}
-        data['entries'][0]['color'] = '#333333'
-        data['entries'][0]['expression'] = '3'
-        data['entries'][1]['color'] = '#444444'
-        data['entries'][1]['expression'] = '4'
+        if data['entries'][0]['semantics']['name'] == 'Forest':
+            data['entries'][0]['color'] = '#333333'
+            data['entries'][0]['expression'] = '3'
+            data['entries'][1]['color'] = '#444444'
+            data['entries'][1]['expression'] = '4'
+        else:
+            data['entries'][1]['color'] = '#333333'
+            data['entries'][1]['expression'] = '3'
+            data['entries'][0]['color'] = '#444444'
+            data['entries'][0]['expression'] = '4'
         response = self.client.patch(url, json.dumps(data), format='json', content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         result = json.loads(response.content.decode())
