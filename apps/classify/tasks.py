@@ -744,6 +744,9 @@ def predict_sentinel_chunk(chunk_id):
         # Determine numpy and GDAL datatypes.
         dtype = REGRESSION_DATATYPE if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE
         dtype_gdal = REGRESSION_DATATYPE_GDAL if chunk.predictedlayer.classifier.is_regressor else CLASSIFICATION_DATATYPE_GDAL
+        # TF keras cant handle unit16.
+        if chunk.predictedlayer.classifier.is_keras:
+            data = data.astype(KERAS_TRAIN_TYPE)
         # Predict classes.
         predicted = chunk.predictedlayer.classifier.clf.predict(data)
         # If the model is a Keras model and not a Sklearn Pipeline, the prediction
