@@ -2,7 +2,7 @@ import datetime
 
 from guardian.shortcuts import get_objects_for_user
 from raster.tiles.utils import tile_bounds, tile_scale
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.views import APIView
 
 from django.http import HttpResponse
@@ -83,8 +83,7 @@ class WMTSAPIView(APIView):
     # when an unauthenticated request is made. This is required by ArcMap for
     # the basic auth scheme to work.
     authentication_classes = [
-        BasicAuthentication, QueryKeyAuthentication,
-        ExpiringTokenAuthentication, SessionAuthentication,
+        QueryKeyAuthentication, ExpiringTokenAuthentication, SessionAuthentication,
     ]
 
     def get(self, request):
