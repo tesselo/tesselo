@@ -64,8 +64,8 @@ class AggregatorProjection(AggregatorProjectionSimple):
         if not self.tilerange:
             return
         algebra_parser = RasterAlgebraParser()
-        for tilex in range(self.tilerange[0], self.tilerange[2] + 1):
-            for tiley in range(self.tilerange[1], self.tilerange[3] + 1):
+        for tiley in range(self.tilerange[1], self.tilerange[3] + 1):
+            for tilex in range(self.tilerange[0], self.tilerange[2] + 1):
                 # Prepare a data dictionary with named tiles for algebra evaluation
                 data = {}
                 for name, layerid in self.layer_dict.items():
@@ -500,7 +500,7 @@ def warp_and_clip(creation_args, data, geom):
                     # Rasterize the geometry and use the mask on all bands.
                     geom_rasterized = rasterize(
                         [json.loads(geom.geojson)],
-                        out_shape=(dst.width, dst.height),
+                        out_shape=(dst.height, dst.width),
                         fill=dst.nodata,
                         transform=dst.transform,
                         all_touched=False,
@@ -510,4 +510,4 @@ def warp_and_clip(creation_args, data, geom):
                     # Convert the rasterized geometry into a boolean array.
                     geom_rasterized = geom_rasterized == 1
                     # Mask the destination raster using the rasterized geometry.
-                    return pixel_size_m2, dst.read(1)[geom_rasterized.T].ravel()
+                    return pixel_size_m2, dst.read(1)[geom_rasterized].ravel()
