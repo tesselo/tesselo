@@ -42,6 +42,7 @@ class TrainingSampleForm(forms.ModelForm):
 class TrainingSampleAdmin(admin.OSMGeoAdmin):
     map_template = 'classify/osm.html'
     raw_id_fields = ('composite', 'sentineltile', )
+    search_fields = ('date', 'category')
     form = TrainingSampleForm
 
 

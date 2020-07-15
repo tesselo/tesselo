@@ -280,18 +280,19 @@ class AggregationViewTests(AggregationViewTestsBase):
 
     def test_percentage_covered(self):
         # Prepare data.
+        ReportAggregation.objects.all().delete()
         AggregationArea.objects.all().delete()
         self.aggarea = AggregationArea.objects.create(
             name='Testarea',
             aggregationlayer=self.agglayer,
-            geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11847887 -458452, 11847887 -454252, 11843687 -454252, 11843687 -458452)))',
+            geom='SRID=3857;MultiPolygon(((-956855.41533996479120106 4889371.11169220320880413, -935733.89684526750352234 4890864.55239384807646275, -934453.80481528583914042 4901105.28863370139151812, -938507.42957689450122416 4911772.7222168818116188, -950028.25784672936424613 4918599.87971011735498905, -960055.64541491901036352 4917959.83369512669742107, -965816.0595498364418745 4906012.30808196403086185, -958775.5533849373459816 4903665.4726936649531126, -949388.21183173847384751 4908572.49214192759245634, -945334.58707012992817909 4909852.5841719089075923, -939574.1729352124966681 4904305.51870865561068058, -940640.91629353049211204 4897691.70988708361983299, -947254.72511510236654431 4895984.92051377426832914, -954935.27729499235283583 4895558.22317044716328382, -956855.41533996479120106 4889371.11169220320880413)))'
         )
         # Compute statistics.
         self._create_report_schedule()
         push_reports('composite', self.composite.id)
         # Percentage cover is close to one (given a pixel resolution error).
         agg = ReportAggregation.objects.first()
-        self.assertAlmostEqual(agg.stats_percentage_covered, 1.00648246415756)
+        self.assertAlmostEqual(agg.stats_percentage_covered, 1.000012866577283)
 
     def test_percentage_covered_zero(self):
         # Push formula bounds out of range.

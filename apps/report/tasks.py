@@ -5,7 +5,6 @@ from raster_aggregation.models import AggregationLayer
 from jobs import ecs
 from report.models import WEB_MERCATOR_SRID, ReportAggregation, ReportSchedule, ReportScheduleTask
 from report.utils import populate_vc
-from sentinel.const import TILESCALE_10M
 
 
 def push_reports(model, pk):
@@ -152,7 +151,7 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
         # Compute percentage covered.
         if rep.stats_cumsum_t0:
-            rep.stats_percentage_covered = (rep.stats_cumsum_t0 * TILESCALE_10M ** 2) / agg.geom.area
+            rep.stats_percentage_covered = (rep.stats_cumsum_t0 * vc.pixel_size_m2) / agg.geom.transform(srid, clone=True).area
         else:
             rep.stats_percentage_covered = 0
 
