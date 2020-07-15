@@ -54,6 +54,7 @@ class ReportAggregationAdmin(admin.ModelAdmin):
         'predictedlayer', 'valuecountresult', 'min_date', 'max_date', 'value',
         'value_percentage', 'stats_min', 'stats_max', 'stats_avg', 'stats_std',
         'stats_cumsum_t0', 'stats_cumsum_t1', 'stats_cumsum_t2', 'stats_percentage_covered',
+        'srid',
     )
 
 
