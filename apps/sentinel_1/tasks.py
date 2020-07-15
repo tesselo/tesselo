@@ -111,7 +111,7 @@ def ingest_s1_tile_from_prefix(tile_prefix, client=None, commit=True):
     try:
         tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
     except json.decoder.JSONDecodeError:
-        logger.error('Could not ingest S1 prefix "{}", TileInfo json file is malformed.'.format(tile_prefix, tileinfo_key))
+        logger.error('Could not ingest S1 prefix "{}", TileInfo json file is malformed.'.format(tile_prefix))
         return
 
     if 'footprint' in tileinfo:

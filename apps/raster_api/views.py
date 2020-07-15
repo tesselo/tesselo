@@ -640,12 +640,10 @@ class LambdaView(AlgebraView, RasterAPIView):
                 )
             else:
                 vsis3path = 'landsat-pds/{sensor}/{row}/{column}/{scene}/{scene}_{{band}}.TIF'.format(
-                    collection=self.kwargs.get('collection'),
                     sensor=self.kwargs.get('sensor'),
                     row=self.kwargs.get('row'),
                     column=self.kwargs.get('column'),
                     scene=self.kwargs.get('scene'),
-
                 )
         elif 'naip' in self.kwargs:
             vsis3path = 'aws-naip/{state}/{year}/{resolution}/{img_src}/{quadrangle}/{scene}.tif'.format(

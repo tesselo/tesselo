@@ -693,7 +693,6 @@ def download_l2a(tile):
             )
         dest = '/rasterwd/products/{tile_id}/{band}'.format(
             tile_id=tile.id,
-            resolution=resolution,
             band=band,
         )
         tile.write('Downloading file ' + band)
