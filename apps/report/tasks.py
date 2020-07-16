@@ -155,6 +155,9 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
         else:
             rep.stats_percentage_covered = 0
 
+        # Store srid used.
+        rep.srid = srid
+
         # Save data.
         rep.save()
 

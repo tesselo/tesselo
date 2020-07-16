@@ -244,6 +244,7 @@ class AggregationViewTests(AggregationViewTestsBase):
         ReportAggregationLayerSrid.objects.create(aggregationlayer=self.agglayer, srid=3410)
         push_reports('composite', self.composite.id)
         self.assertEqual(ReportAggregation.objects.count(), 2)
+        self.assertEqual(ReportAggregation.objects.first().srid, 3410)
 
     def test_report_agglayer_srid_not_meters_error(self):
         msg = 'Only meter or metre are allowed as linear units. Found "unknown".'
