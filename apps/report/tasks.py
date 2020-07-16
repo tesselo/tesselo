@@ -124,7 +124,7 @@ def populate_report(aggregationlayer_id, composite_id, formula_id, predictedlaye
 
     # Initiate progress log.
     total_jobs = aggregationlayer.aggregationarea_set.all().count()
-    task.write('Started aggregation task for {} areas.'.format(total_jobs), ReportScheduleTask.PROCESSING)
+    task.write('Started aggregation task for {} areas using SRID {}.'.format(total_jobs, srid), ReportScheduleTask.PROCESSING)
 
     # Loop through all aggregation areas for this layer.
     counter = 0
