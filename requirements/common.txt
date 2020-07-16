@@ -20,7 +20,7 @@ django-crispy-forms==1.9.0
 django-guardian==2.2.0
 django-cors-headers==3.2.1
 celery==4.4.2
-rasterio==1.1.5
+rasterio==1.1.4
 https://github.com/tesselo/Zappa/archive/allow_sns_not_owned.tar.gz
 https://github.com/geodesign/django-raster/archive/raster_file_field_jp2.tar.gz
 https://github.com/geodesign/django-raster-aggregation/archive/master.tar.gz
