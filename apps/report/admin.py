@@ -60,7 +60,7 @@ class ReportAggregationAdmin(admin.ModelAdmin):
 
 class ReportScheduleTaskAdmin(admin.ModelAdmin):
     list_filter = ('status', )
-    readonly_fields = ('aggregationlayer', 'formula', 'composite', 'predictedlayer', 'status', 'log', )
+    readonly_fields = ('aggregationlayer', 'formula', 'composite', 'predictedlayer', 'log', )
 
 
 admin.site.register(ReportSchedule, ReportScheduleAdmin)
