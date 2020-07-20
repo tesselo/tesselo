@@ -4,10 +4,12 @@ from math import ceil
 
 import numpy
 import rasterio
+from django.contrib.gis.gdal import OGRGeometry
 from raster.algebra.parser import FormulaParser, RasterAlgebraParser
 from raster.exceptions import RasterAggregationException
 from raster.models import Legend
 from raster.tiles.const import WEB_MERCATOR_SRID
+from raster.tiles.utils import tile_index_range
 from raster.valuecount import Aggregator
 from rasterio import Affine
 from rasterio.crs import CRS
@@ -15,29 +17,13 @@ from rasterio.features import bounds, rasterize
 from rasterio.io import MemoryFile
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
-from report.const import ALLOWED_LINEAR_UNITS
+from report.const import ALLOWED_LINEAR_UNITS, REPORT_ZOOM
 from sentinel.utils import get_raster_tile
 
 VALUECOUNT_ROUNDING_DIGITS = 7
 
 
-class AggregatorProjectionSimple(Aggregator):
-
-    def __init__(self, *args, **kwargs):
-        # Get srid argument.
-        self.srid = kwargs.pop('srid', WEB_MERCATOR_SRID)
-        # Initiate class.
-        super().__init__(*args, **kwargs)
-
-    def get_raster_tile(self, layerid, zoom, tilex, tiley):
-        """
-        A patched aggregator function, using the direct S3 tile lookup approach.
-        This reduces load on DB dramatically.
-        """
-        return get_raster_tile(layerid, zoom, tilex, tiley)
-
-
-class AggregatorProjection(AggregatorProjectionSimple):
+class AggregatorProjection(Aggregator):
 
     def __init__(self, *args, **kwargs):
         # Get srid argument.
@@ -46,13 +32,19 @@ class AggregatorProjection(AggregatorProjectionSimple):
         super().__init__(*args, **kwargs)
         # Project geom into requested srid.
         self.geom = self.geom.transform(self.srid, clone=True)
+        # Custom tile range.
+        bbox = OGRGeometry.from_bbox(self.geom.buffer(1000).extent)
+        bbox.srid = self.geom.srid
+        bbox.transform(WEB_MERCATOR_SRID)
+        self.tilerange = tile_index_range(bbox.extent, REPORT_ZOOM)
 
     def get_raster_tile(self, layerid, zoom, tilex, tiley):
         """
         A patched aggregator function, using the direct S3 tile lookup approach.
         This reduces load on DB dramatically.
         """
-        return get_raster_tile(layerid, zoom, tilex, tiley)
+        tile = get_raster_tile(layerid, zoom, tilex, tiley)
+        return tile
 
     def tiles(self):
         """
@@ -64,8 +56,8 @@ class AggregatorProjection(AggregatorProjectionSimple):
         if not self.tilerange:
             return
         algebra_parser = RasterAlgebraParser()
-        for tiley in range(self.tilerange[1], self.tilerange[3] + 1):
-            for tilex in range(self.tilerange[0], self.tilerange[2] + 1):
+        for tilex in range(self.tilerange[0], self.tilerange[2] + 1):
+            for tiley in range(self.tilerange[1], self.tilerange[3] + 1):
                 # Prepare a data dictionary with named tiles for algebra evaluation
                 data = {}
                 for name, layerid in self.layer_dict.items():
@@ -98,33 +90,36 @@ class AggregatorProjection(AggregatorProjectionSimple):
             raise RasterAggregationException('Units of dst crs need to be in meters, found {}.'.format(dst_crs.linear_units))
 
         # Combine all tiles into one big array.
-        row_length = 1 + (self.tilerange[3] - self.tilerange[1])
-        row = []
+        col_length = self.tilerange[2] - self.tilerange[0] + 1
+        col = []
+        origins = []
         for tilex, tiley, rst in self.tiles():
-            # Prepare affine transform to create rasterio raster.
-            if len(row) == 0:
-                transform = Affine(rst.scale.x, rst.skew.x, rst.origin.x, rst.skew.y, rst.scale.y, rst.origin.y)
-            # Get first band.
+            # Store origin.
+            origins.append(rst.origin)
+            # Get band.
             band = rst.bands[0]
-            # Add this tile to the row.
-            row.append(band.data())
-            # Handle end of row.
-            if len(row) == row_length:
-                # Stack row.
-                row = numpy.hstack(row)
+            # Add this tile to the col.
+            col.append(band.data())
+            # Handle end of col.
+            if len(col) == col_length:
+                # Prepare affine transform to create rasterio raster.
+                transform = Affine(rst.scale.x, rst.skew.x, min(dat.x for dat in origins), rst.skew.y, rst.scale.y, max(dat.y for dat in origins))
+                # Stack col.
+                col = numpy.vstack(col)
                 # Prepare the creation args for the new rasterio raster.
                 creation_args = {
                     'driver': 'GTiff',
                     'dtype': band.datatype(as_string=True).split('GDT_')[1].lower(),
                     'nodata': band.nodata_value,
-                    'width': row.shape[1],
-                    'height': row.shape[0],
+                    'width': col.shape[1],
+                    'height': col.shape[0],
                     'count': 1,
                     'crs': 'EPSG:{}'.format(rst.srid),
                     'transform': transform,
                 }
                 # Warp raster data and clip to geometry.
-                self.pixel_size_m2, result_data = warp_and_clip(creation_args, row, self.geom)
+                self.pixel_size_m2, result_data = warp_and_clip(creation_args, col, self.geom)
+
                 # For the resulting array, compute the statistics.
                 if self.grouping == 'discrete':
                     # Compute unique counts for discrete input data
@@ -175,19 +170,18 @@ class AggregatorProjection(AggregatorProjectionSimple):
                 results.update(Counter(values))
                 # Push statistics.
                 self._push_stats(result_data)
-                # Reset the row.
-                row = []
+                # Reset the col and origins.
+                col = []
+                origins = []
 
         # Transform pixel count to hectares.
         scaling_factor = 1
         if len(results):
             scaling_factor = self.pixel_size_m2 / 10000
-
         results = {
             str(int(k) if type(k) == numpy.float64 and int(k) == k else k):
             v * scaling_factor for k, v in results.items()
         }
-
         return results
 
     def _push_stats(self, data):
@@ -376,4 +370,8 @@ def warp_and_clip(creation_args, data, geom):
                     # Convert the rasterized geometry into a boolean array.
                     geom_rasterized = geom_rasterized == 1
                     # Mask the destination raster using the rasterized geometry.
-                    return pixel_size_m2, dst.read(1)[geom_rasterized].ravel()
+                    masked = dst.read(1)[geom_rasterized].ravel()
+                    # Remove nodata values.
+                    masked = masked[masked != dst.nodata]
+                    # Return result.
+                    return pixel_size_m2, masked
