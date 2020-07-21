@@ -237,19 +237,20 @@ def populate_training_matrix_time(classifier):
             try:
                 composite_after = composites.filter(min_date__gte=sample.date)[0]
             except IndexError:
-                classifier.write('Failed finding composites after sample date {}.'.format(sample.date), Classifier.FAILED)
-                raise
+                classifier.write('Skipping sample ID {}. Failed finding composites after sample date {}.'.format(sample.id, sample.date))
+                continue
             # Select the last N steps before the.
             if classifier.look_back_steps > 1:
                 composites_before = composites.order_by('-min_date').exclude(min_date__gte=sample.date)[:(classifier.look_back_steps - 1)]
                 if len(composites_before) != classifier.look_back_steps - 1:
-                    msg = 'Failed finding {} composites before sample date {}, only found {}.'.format(
+                    msg = 'Skipping sample ID {}. Failed finding {} composites before date {}, only found {} composites.'.format(
+                        sample.id,
                         classifier.look_back_steps - 1,
                         sample.date,
                         len(composites_before),
                     )
-                    classifier.write(msg, Classifier.FAILED)
-                    raise ValueError(msg)
+                    classifier.write(msg)
+                    continue
                 composites_before = reversed(list(composites_before))
             else:
                 composites_before = []
