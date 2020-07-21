@@ -125,6 +125,9 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
         categories[sample.category] = int(sample.value)
         # Prepare rasterlayer ids.
         rasterlayer_ids_lookups = prepare_sample_lookups(trainingpixels.id, sample, composites, trainingpixels.look_back_steps, band_names)
+        # Continue if no match has been found.
+        if not rasterlayer_ids_lookups:
+            continue
         # Get geometry in web mercator projection.
         geom = sample.geom.transform(3857, clone=True)
         # Compute tile range for this geom.
@@ -202,20 +205,21 @@ def prepare_sample_lookups(trainingpixels_id, sample, composites, look_back_step
             composite_after = composites.filter(min_date__gte=sample.date)[0]
         except IndexError:
             trainingpixels = TrainingPixels.objects.get(pk=trainingpixels_id)
-            trainingpixels.write('Failed finding composites after sample date {}.'.format(sample.date), trainingpixels.FAILED)
-            raise
+            trainingpixels.write('Skipping sample {}. No composites could be found after sample date {}.'.format(sample.id, sample.date))
+            return
         # Select the last N steps before the.
         if look_back_steps > 1:
             composites_before = composites.order_by('-min_date').exclude(min_date__gte=sample.date)[:(look_back_steps - 1)]
             if len(composites_before) != look_back_steps - 1:
-                msg = 'Failed finding {} composites before sample date {}, only found {}.'.format(
+                msg = 'Skipping sample {}. Failed finding {} composites before sample date {}, only found {}.'.format(
+                    sample.id,
                     look_back_steps - 1,
                     sample.date,
                     len(composites_before),
                 )
                 trainingpixels = TrainingPixels.objects.get(pk=trainingpixels_id)
-                trainingpixels.write(msg, trainingpixels.FAILED)
-                raise ValueError(msg)
+                trainingpixels.write(msg)
+                return
             composites_before = reversed(list(composites_before))
         else:
             composites_before = []
