@@ -199,7 +199,7 @@ def patch_get_raster_tile_range_100(layer_id, tilez, tilex, tiley, look_up=True)
     return patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=100)
 
 
-def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):
+def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=False):
     storage = DefaultStorage()
 
     # Convert data to file-like object and store.
