@@ -759,7 +759,15 @@ def predict_sentinel_chunk(chunk_id):
         # Convert to correct dtype.
         predicted = predicted.astype(dtype)
         # Write predicted pixels into a tile.
-        write_raster_tile(chunk.predictedlayer.rasterlayer_id, predicted, tilez, tilex, tiley, datatype=dtype_gdal)
+        write_raster_tile(
+            chunk.predictedlayer.rasterlayer_id,
+            predicted,
+            tilez,
+            tilex,
+            tiley,
+            datatype=dtype_gdal,
+            merge_with_existing=False,
+        )
 
     # Log progress, update chunks done count.
     chunk.status = PredictedLayerChunk.FINISHED
@@ -818,6 +826,7 @@ def sieve_sentinel_chunk(chunk_id):
             tiley=tiley,
             nodata_value=CLASSIFICATION_NODATA,
             datatype=CLASSIFICATION_DATATYPE_GDAL,
+            merge_with_existing=False,
         )
 
     # Log progress.

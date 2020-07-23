@@ -394,6 +394,7 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     tiley,
                     nodata_value=s1const.SENTINEL_1_NODATA_VALUE,
                     datatype=s1const.SENTINEL_1_DATA_TYPE,
+                    merge_with_existing=False,
                 )
 
             # Log progress.
@@ -447,6 +448,7 @@ def process_compositetile_s2(ctile, rasterlayer_lookup):
                 x,
                 y,
                 datatype=datatype,
+                merge_with_existing=False,
             )
 
         # Log progress.

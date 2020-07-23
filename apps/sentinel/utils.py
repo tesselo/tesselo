@@ -153,7 +153,7 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
         return tile
 
 
-def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2):
+def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=True):
     """
     Commit a rastertile into the DB and storage.
     """
@@ -183,20 +183,21 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     }
 
     # Try getting tile from S3.
-    tile = get_raster_tile(layer_id, tilez, tilex, tiley)
+    if merge_with_existing:
+        tile = get_raster_tile(layer_id, tilez, tilex, tiley)
 
-    if tile:
-        # Get current pixel array for this tile.
-        current = tile.bands[0].data().astype(result.dtype)
-        # Flatten the data if the input was flat.
-        if result.shape[0] == 65536:
-            current = current.ravel()
-        # Add values from current array to result for pixels
-        # where result is nodata. This ensures that areas
-        # not covered by this zone stay present in the upper
-        # pyramid levels, i.e. it unifies zone level pyramids.
-        result_nodata = result == nodata_value
-        result[result_nodata] = current[result_nodata]
+        if tile:
+            # Get current pixel array for this tile.
+            current = tile.bands[0].data().astype(result.dtype)
+            # Flatten the data if the input was flat.
+            if result.shape[0] == 65536:
+                current = current.ravel()
+            # Add values from current array to result for pixels
+            # where result is nodata. This ensures that areas
+            # not covered by this zone stay present in the upper
+            # pyramid levels, i.e. it unifies zone level pyramids.
+            result_nodata = result == nodata_value
+            result[result_nodata] = current[result_nodata]
 
     # Add result to target dictionary.
     result_dict['bands'][0]['data'] = result
