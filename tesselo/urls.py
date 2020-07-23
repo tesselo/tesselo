@@ -15,10 +15,10 @@ Including another URLconf
 """
 from rest_framework.documentation import include_docs_urls
 from rest_framework.permissions import IsAdminUser
+from tesselo.apiurls import apiurlpatterns
 
 from django.conf.urls import include, url
 from django.contrib.gis import admin
-from tesselo.apiurls import apiurlpatterns
 
 urlpatterns = [
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False, permission_classes=[IsAdminUser])),

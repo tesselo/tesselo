@@ -49,6 +49,7 @@ def get_naip_tile(tilez, tilex, tiley, source, year=None):
     Construct a naip tile from tms indices.
     """
     from raster_api.views import get_tile
+
     # Get tile coords and bounds.
     bounds = tile_bounds(tilex, tiley, tilez)
     scale = tile_scale(int(tilez))

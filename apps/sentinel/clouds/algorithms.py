@@ -242,6 +242,7 @@ class Clouds(object):
         sensitive infrared band. With a cutoff on band 11.
         """
         from sklearn.preprocessing import minmax_scale
+
         # Select minimum sum of thick cloud and cirrus cloud bands.
         index = minmax_scale(stack[const.BD1]) + minmax_scale(stack[const.BD10])
         index[(stack[const.BD11] < 900)] = 3

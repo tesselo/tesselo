@@ -216,8 +216,8 @@ class Classifier(models.Model):
     def clf(self):
         if self._clf is None:
             if self.is_keras:
-                from tensorflow.keras.models import load_model
                 import h5py
+                from tensorflow.keras.models import load_model
                 with zipfile.ZipFile(io.BytesIO(self.trained.read()), 'r') as zf:
                     model = load_model(h5py.File(io.BytesIO(zf.read(ZIP_ESTIMATOR_NAME)), 'r'))
                     if self.wrap_keras_with_sklearn:

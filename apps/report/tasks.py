@@ -11,9 +11,9 @@ def push_reports(model, pk):
     """
     Push report tasks.
     """
-    from sentinel.models import Composite
-    from formulary.models import Formula
     from classify.models import PredictedLayer
+    from formulary.models import Formula
+    from sentinel.models import Composite
 
     # Find schedules to push for the targt object.
     if model == 'composite':

@@ -4,7 +4,6 @@ from math import ceil
 
 import numpy
 import rasterio
-from django.contrib.gis.gdal import OGRGeometry
 from raster.algebra.parser import FormulaParser, RasterAlgebraParser
 from raster.exceptions import RasterAggregationException
 from raster.models import Legend
@@ -17,6 +16,7 @@ from rasterio.features import bounds, rasterize
 from rasterio.io import MemoryFile
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
+from django.contrib.gis.gdal import OGRGeometry
 from report.const import ALLOWED_LINEAR_UNITS, REPORT_ZOOM
 from sentinel.utils import get_raster_tile
 
