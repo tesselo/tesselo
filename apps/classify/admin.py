@@ -112,10 +112,14 @@ class TrainingPixelsAdmin(admin.ModelAdmin):
         self.message_user(request, 'Started populating pixels.')
 
 
+class TrainingPixelsChunkAdmin(admin.ModelAdmin):
+    list_filter = ('status', )
+
+
 admin.site.register(Classifier, ClassifierAdmin)
 admin.site.register(TrainingLayer, TrainingLayerAdmin)
 admin.site.register(TrainingSample, TrainingSampleAdmin)
 admin.site.register(PredictedLayer, PredictedLayerAdmin)
 admin.site.register(PredictedLayerChunk, PredictedLayerChunkAdmin)
 admin.site.register(TrainingPixels, TrainingPixelsAdmin)
-admin.site.register(TrainingPixelsPatch)
+admin.site.register(TrainingPixelsPatch, TrainingPixelsChunkAdmin)
