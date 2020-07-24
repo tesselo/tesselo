@@ -12,10 +12,9 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from django.conf import settings
 from django.contrib.gis.gdal import GDALRaster, SpatialReference
-from django.core.files.storage import DefaultStorage
+from django.core.files.storage import default_storage
 from sentinel import const
 
-storage = DefaultStorage()
 s3 = boto3.client('s3')
 
 
@@ -126,8 +125,8 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
                 continue
             tile = tile['Body']
         else:
-            if storage.exists(filename):
-                tile = storage.open(filename)
+            if default_storage.exists(filename):
+                tile = default_storage.open(filename)
             else:
                 continue
 
@@ -209,7 +208,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
         s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
     else:
-        tile = storage.save(filename)
+        tile = default_storage.save(filename)
 
 
 def populate_raster_metadata(raster):

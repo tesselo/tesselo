@@ -14,7 +14,7 @@ from classify.models import Classifier
 from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.files import File
-from django.core.files.storage import DefaultStorage
+from django.core.files.storage import default_storage
 from django.test import TestCase, override_settings
 from sentinel import const
 from sentinel.models import (
@@ -96,12 +96,10 @@ class SentinelBucketParserTest(TestCase):
         composite_build_callback(self.build.id, initiate=True, rebuild=True)
         band = SentinelTileBand.objects.filter(band=const.BD2).first()
         path = 'tiles/{}/14'.format(band.layer.id)
-        storage = DefaultStorage()
-        subpath = os.path.join(path, storage.listdir(path)[0][0])
+        subpath = os.path.join(path, default_storage.listdir(path)[0][0])
         # Files have been created (RasterTiles are not tracked on the DB level
         # anymore).
-        storage = DefaultStorage()
-        self.assertEqual(storage.listdir(subpath)[1], ['8372.tif'])
+        self.assertEqual(default_storage.listdir(subpath)[1], ['8372.tif'])
 
     def test_process_compositetile(self):
         sync_sentinel_bucket_utm_zone(1)
@@ -153,9 +151,8 @@ class SentinelBucketParserTest(TestCase):
             '8382.tif',
             '8383.tif',
         ]
-        storage = DefaultStorage()
         self.assertEqual(
-            sorted(storage.listdir(os.path.join(path, storage.listdir(path)[0][0]))[1]),
+            sorted(default_storage.listdir(os.path.join(path, default_storage.listdir(path)[0][0]))[1]),
             expected,
         )
         # Check that the S2 tiles have been created.
@@ -163,9 +160,8 @@ class SentinelBucketParserTest(TestCase):
         path = 'tiles/{}/14'.format(band.rasterlayer.id)
         # Composite raster tile files have been created (RasterTiles are not
         # tracked on the DB level anymore).
-        storage = DefaultStorage()
         self.assertEqual(
-            sorted(storage.listdir(os.path.join(path, storage.listdir(path)[0][0]))[1]),
+            sorted(default_storage.listdir(os.path.join(path, default_storage.listdir(path)[0][0]))[1]),
             expected,
         )
         # Run the classifier based version.

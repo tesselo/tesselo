@@ -15,7 +15,7 @@ from classify.const import (
 from classify.models import PredictedLayer
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
-from django.core.files.storage import DefaultStorage
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from sentinel import const
 from sentinel.models import SentinelTile, SentinelTileBand, SentinelTileSceneClass
@@ -200,8 +200,6 @@ def patch_get_raster_tile_range_100(layer_id, tilez, tilex, tiley, look_up=True)
 
 
 def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=False):
-    storage = DefaultStorage()
-
     # Convert data to file-like object and store.
     rst = GDALRaster({
         'width': WEB_MERCATOR_TILESIZE,
@@ -216,7 +214,7 @@ def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=
     })
     rst = io.BytesIO(rst.vsi_buffer)
     filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
-    storage.save(filename, rst)
+    default_storage.save(filename, rst)
 
 
 def patch_process_l2a(stile_id):
