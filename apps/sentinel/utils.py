@@ -89,7 +89,7 @@ def get_sentinel_tile_indices(sentineltile, zoom=const.ZOOM_LEVEL_10M):
             yield tilex, tiley, zoom
 
 
-def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
+def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True, format='tif'):
     """
     Bypass the database to fetch files using structured file name scheme. If the
     requested tile does not exists, higher level tiles are searched. If a higher
@@ -98,7 +98,7 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
     """
     # If asked for, add lower zoom levels as source candidates. Upper tiles are
     # then down-scaled to the higher zoom levels.
-    if look_up:
+    if look_up and format == 'tif':
         zoomrange = range(tilez, -1, -1)
     else:
         zoomrange = [tilez]
@@ -111,11 +111,12 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
 
         # Get object from s3 if exists. Otherwise continue looking "upwards" to
         # find higher level tiles.
-        filename = 'tiles/{}/{}/{}/{}.tif'.format(
+        filename = 'tiles/{}/{}/{}/{}.{}'.format(
             layer_id,
             zoom,
             int(tilex / multiplier),
             int(tiley / multiplier),
+            format,
         )
 
         if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
@@ -130,24 +131,31 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
             else:
                 continue
 
-        # Convert tile data into a GDALRaster.
-        tile = GDALRaster(tile.read())
+        if format == 'pbf':
+            # Unzip the pbf data.
+            #zbuf = io.BytesIO()
+            #with gzip.GzipFile(mode='rb', fileobj=tile) as zfile:
+            #    tile = zfile.read()##
+            return tile
+        else:
+            # Convert tile data into a GDALRaster.
+            tile = GDALRaster(tile.read())
 
-        # If the tile is a parent of the original, warp it to the
-        # original request tile.
-        if zoom < tilez:
-            # Compute bounds and scale of the requested tile.
-            bounds = tile_bounds(tilex, tiley, tilez)
-            tilescale = tile_scale(tilez)
+            # If the tile is a parent of the original, warp it to the
+            # original request tile.
+            if zoom < tilez:
+                # Compute bounds and scale of the requested tile.
+                bounds = tile_bounds(tilex, tiley, tilez)
+                tilescale = tile_scale(tilez)
 
-            # Warp parent tile to child tile in memory.
-            tile = tile.warp({
-                'driver': 'MEM',
-                'width': WEB_MERCATOR_TILESIZE,
-                'height': WEB_MERCATOR_TILESIZE,
-                'scale': [tilescale, -tilescale],
-                'origin': [bounds[0], bounds[3]],
-            })
+                # Warp parent tile to child tile in memory.
+                tile = tile.warp({
+                    'driver': 'MEM',
+                    'width': WEB_MERCATOR_TILESIZE,
+                    'height': WEB_MERCATOR_TILESIZE,
+                    'scale': [tilescale, -tilescale],
+                    'origin': [bounds[0], bounds[3]],
+                })
 
         return tile
 
@@ -208,7 +216,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
         s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
     else:
-        tile = default_storage.save(filename)
+        tile = default_storage.save(filename, dest)
 
 
 def populate_raster_metadata(raster):

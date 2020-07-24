@@ -1,7 +1,8 @@
 from rest_framework import routers
 
 from classify.views import (
-    ClassifierViewSet, PredictedLayerTileViewSet, PredictedLayerViewSet, TrainingLayerViewSet, TrainingSampleViewSet
+    ClassifierViewSet, PredictedLayerTileViewSet, PredictedLayerViewSet, PredictedVectorTilesView,
+    TrainingLayerViewSet, TrainingSampleViewSet
 )
 from django.conf.urls import include, url
 from django.views.decorators.csrf import csrf_exempt
@@ -111,6 +112,12 @@ router.register(
     r'predictedlayer/(?P<predictedlayer_id>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>png|jpg|tif)',
     PredictedLayerTileViewSet,
     basename='predictedlayer_tile'
+)
+
+router.register(
+    r'predictedlayer/vtiles/(?P<predictedlayer_id>[^/]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>json|pbf)',
+    PredictedVectorTilesView,
+    basename='vectortiles'
 )
 
 router.register(r'readonlytoken', ReadOnlyTokenViewSet, basename='readonlytoken')

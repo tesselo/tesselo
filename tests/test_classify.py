@@ -500,7 +500,7 @@ class SentinelClassifierTest(TestCase):
         # Test sieving on regressor error.
         sieve_layer = PredictedLayer.objects.create(
             sieve_parent=pred,
-            sieve_threshold=5,
+            sieve_threshold=50,
         )
         predict_sentinel_layer(sieve_layer.id)
         sieve_layer.refresh_from_db()
@@ -579,6 +579,7 @@ class SentinelClassifierTest(TestCase):
             sieve_parent=pred,
             sieve_threshold=20,
             sieve_connectivity=PredictedLayer.SIEVE_CONNECTIVITY_4,
+            vectortiles=True,
         )
         predict_sentinel_layer(sieve_layer.id)
         sieve_layer.refresh_from_db()

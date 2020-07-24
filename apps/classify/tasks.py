@@ -1,15 +1,20 @@
+import gzip
 import importlib
 import io
 import pickle
 import zipfile
 from tempfile import TemporaryFile
 
+import boto3
 import h5py
+import mapbox_vector_tile
 import numpy
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
-from rasterio.features import sieve
+from rasterio import Affine
+from rasterio.features import shapes, sieve
+from shapely.geometry import shape
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
@@ -25,17 +30,21 @@ from classify.const import (
     KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
     PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
     SIEVE_CONIFG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG,
-    VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
+    VALUE_CONFIG_ERROR_MSG, VECTORTILES_RESCALE_SIZE, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
 from classify.utils import LogCallback, PixelSequence, RNNRobustScaler
+from django.conf import settings
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
 from django.core.files import File
+from django.core.files.storage import default_storage
 from jobs import ecs
 from report.tasks import push_reports
 from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
+
+s3 = boto3.client('s3')
 
 
 def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
@@ -768,6 +777,54 @@ def predict_sentinel_chunk(chunk_id):
             datatype=dtype_gdal,
             merge_with_existing=False,
         )
+        # Produce vectorized version as well if requested.
+        if chunk.predictedlayer.vectortiles:
+            # Compute corresponding transform for the polygonization. The vector
+            # tiles need to be encoded on a range of [0, 4096). So the scale is
+            # the ratio of the tile size with 4096. The origin is the maximum
+            # plus the one pixel padding.
+            # Ref https://github.com/tilezen/mapbox-vector-tile#encoding
+            scale = VECTORTILES_RESCALE_SIZE / WEB_MERCATOR_TILESIZE
+            transform = Affine(scale, 0, -scale, 0, -scale, VECTORTILES_RESCALE_SIZE + scale)
+            # Pad data with one pixel in each direction (needed for vector tile edges).
+            valuemap = {int(key): val for key, val in chunk.predictedlayer.classifier.trainingpixels.traininglayer.legend.items()}
+            result = predicted
+            result = result.reshape((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE))
+            result = numpy.hstack((result[:, 0].reshape(result.shape[0], 1), result, result[-1, :].reshape(result.shape[0], 1)))
+            result = numpy.vstack((result[0, :].reshape(1, result.shape[1]), result, result[-1, :].reshape(1, result.shape[1])))
+            # Convert to geojson with WKT geometries.
+            features = []
+            for poly, value in shapes(result, transform=transform, connectivity=8):
+                json_feature = {
+                    "type": "Feature",
+                    "properties": {
+                        'class': valuemap[value],
+                        'value': value,
+                    },
+                    "geometry": shape(poly).wkt,
+                }
+                features.append(json_feature)
+            geojson = {
+                "type": "FeatureCollection",
+                "name": "EssentialLandCover",
+                "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::3857"}},
+                "features": features,
+            }
+            print(geojson)
+            # Convert to protobuffer.
+            vtile = mapbox_vector_tile.encode(geojson)
+            # Compress protobuffer.
+            zbuf = io.BytesIO()
+            with gzip.GzipFile(mode='wb', compresslevel=6, fileobj=zbuf) as zfile:
+                zfile.write(vtile)
+            zbuf.seek(0)
+            # Construct filename.
+            filename = 'tiles/{}/{}/{}/{}.pbf'.format(chunk.predictedlayer.rasterlayer_id, tilez, tilex, tiley)
+            # Upload merged tile to s3.
+            if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
+                s3.upload_fileobj(zbuf, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
+            else:
+                tile = default_storage.save(filename, zbuf)
 
     # Log progress, update chunks done count.
     chunk.status = PredictedLayerChunk.FINISHED

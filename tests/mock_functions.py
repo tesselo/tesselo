@@ -173,8 +173,17 @@ def patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=None, look_up=
         is_regressor = pred.classifier.is_regressor if pred.classifier else False
         dtype_numpy = REGRESSION_DATATYPE if is_regressor else CLASSIFICATION_DATATYPE
         dtype = REGRESSION_DATATYPE_GDAL if is_regressor else CLASSIFICATION_DATATYPE_GDAL
-        data_max = 500 if is_regressor else 4
-        data = numpy.random.random_integers(1, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype(dtype_numpy)
+        if is_regressor:
+            data = numpy.random.random_integers(1, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype(dtype_numpy)
+        else:
+            # Make an ordered stack with just four random columns.
+            data = numpy.hstack((
+                1 * numpy.ones((WEB_MERCATOR_TILESIZE, 64)),
+                2 * numpy.ones((WEB_MERCATOR_TILESIZE, 60)),
+                numpy.random.random_integers(1, 4, (WEB_MERCATOR_TILESIZE, 4)),
+                3 * numpy.ones((WEB_MERCATOR_TILESIZE, 64)),
+                4 * numpy.ones((WEB_MERCATOR_TILESIZE, 64)),
+            )).astype(dtype_numpy)
     else:
         # Sentinel-2 layers have Int16 data type.
         data = numpy.random.random_integers(1, data_max, (WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype('int16')

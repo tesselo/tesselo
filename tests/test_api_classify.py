@@ -1,7 +1,9 @@
 import json
+from unittest.mock import patch
 
 from raster_aggregation.models import AggregationLayer
 from rest_framework import status
+from tests.mock_functions import patch_get_raster_tile
 
 from classify.models import Classifier
 from django.contrib.auth.models import User
@@ -10,6 +12,7 @@ from django.urls import reverse
 from sentinel.models import Composite
 
 
+@patch('raster_api.views.get_raster_tile', patch_get_raster_tile)
 class RasterLegendViewTests(TestCase):
 
     def setUp(self):
@@ -62,3 +65,12 @@ class RasterLegendViewTests(TestCase):
         self.assertEqual(response['count'], 1)
         response = self.client.get(url + '?aggregationlayer={}'.format(agg.id + 1)).json()
         self.assertEqual(response, {'aggregationlayer': ['Select a valid choice. That choice is not one of the available choices.']})
+
+    def test_vector_tiles(self):
+        from classify.models import PredictedLayer
+        pred = PredictedLayer.objects.create(name='Banana stand')
+        url = reverse('vectortiles-list', kwargs={'predictedlayer_id': pred.id, 'z': 11, 'x': 1234, 'y': 1234, 'frmt': 'json'})
+        print(url)
+        response = self.client.get(url)
+        print(response.content)
+        print(response.json())

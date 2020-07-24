@@ -1,3 +1,7 @@
+import gzip
+import io
+
+import mapbox_vector_tile
 import numpy
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -13,7 +17,8 @@ from classify.serializers import (
 from django.http import HttpResponse
 from jobs import ecs
 from raster_api.permissions import ChangePermissionObjectPermission, IsReadOnly
-from raster_api.views import AlgebraAPIView, PermissionsModelViewSet
+from raster_api.views import AlgebraAPIView, PermissionsModelViewSet, RasterAPIView
+from sentinel.utils import get_raster_tile
 
 
 class TrainingLayerViewSet(PermissionsModelViewSet):
@@ -170,3 +175,34 @@ class PredictedLayerTileViewSet(AlgebraAPIView):
                 'from': (0, 0, 0),
                 'to': (255, 255, 255),
             }
+
+
+class PredictedVectorTilesView(RasterAPIView):
+
+    serializer_class = PredictedLayerSerializer
+
+    def list(self, request, predictedlayer_id, x, y, z, frmt, *args, **kwargs):
+        try:
+            # Get tile data.
+            pred = PredictedLayer.objects.get(pk=predictedlayer_id)
+            tile = get_raster_tile(pred.rasterlayer.id, int(z), int(x), int(y), look_up=False, format='pbf')
+            print('found')
+        except:
+            # If data could not be retrieved, return empty tile.
+            print('empty-' * 10)#
+            empty_tile = mapbox_vector_tile.encode({
+                "type": "FeatureCollection",
+                "name": "",
+                "features": [],
+            })
+            tile = io.BytesIO()
+            with gzip.GzipFile(mode='wb', compresslevel=6, fileobj=tile) as zfile:
+                zfile.write(empty_tile)
+            raise
+
+        tile = tile.read()
+        response = HttpResponse(tile)
+        response['Content-Encoding'] = 'gzip'
+        response['Content-Length'] = str(len(tile))
+        response['Content-Type'] = 'application/x-protobuf'
+        return response
