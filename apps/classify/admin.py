@@ -76,7 +76,10 @@ class ClassifierAdmin(GuardedModelAdmin):
 
 
 class PredictedLayerAdmin(GuardedModelAdmin):
-    raw_id_fields = ('sentineltile', 'rasterlayer', 'aggregationlayer', 'classifier', )
+    raw_id_fields = (
+        'sentineltile', 'rasterlayer', 'aggregationlayer', 'classifier',
+        'sieve_parent', 'legend', 'composites',
+    )
     actions = ['predict_layer', ]
     list_filter = ('status', )
     search_fields = ('name', 'classifier__name', )
