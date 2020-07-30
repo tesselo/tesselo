@@ -373,6 +373,9 @@ def process_compositetile_s1(ctile, rasterlayer_lookup):
                     # artifact pixels.
                     artifact_pixels = result[dvband] < s1const.DARK_SCENE_EDGE_THRESHOLD
                     result[dvband][artifact_pixels] = numpy.maximum.reduce([result[dvband], tile])[artifact_pixels]
+                # If no data is available, ignore this tile.
+                if any(val is None for val in result.values()):
+                    break
                 # Check if any nodata pixels are remaining, assuming that if one
                 # band is fully populated, the other one is as well. If fully
                 # populated, go to next tile.
