@@ -535,8 +535,10 @@ class CompositeBuild(models.Model):
         sentinel1tiles = self.composite.get_sentinel1tiles()
         # Calculate union of all aggregation areas in this layer.
         target_polygon = self.aggregationlayer.aggregationarea_set.aggregate(models.Union('geom'))['geom__union']
+        # Ensure that the target polygon is in the srid of the S1 footprints.
+        target_polygon.transform(Sentinel1Tile.footprint.field.srid)
         # Instantiate empty footprint union.
-        footprint_union = Polygon()
+        footprint_union = Polygon(srid=Sentinel1Tile.footprint.field.srid)
         # Build list of unique IDS for SentinelTiles that intersect with the
         # aggregation layer.
         for stile in sentinel1tiles.filter(footprint__intersects=target_polygon):
