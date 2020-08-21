@@ -269,5 +269,6 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
             traceback.format_exc(),
             status=parser.rasterlayer.parsestatus.FAILED
         )
+        raise
     finally:
         shutil.rmtree(parser.tmpdir)
