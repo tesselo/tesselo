@@ -262,7 +262,7 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
 
     # Create tile pyramid.
     try:
-        parser.create_tiles(list(range(zoom + 1)))
+        parser.create_tiles(list(reversed(range(zoom + 1))))
         parser.send_success_signal()
     except:
         parser.log(
