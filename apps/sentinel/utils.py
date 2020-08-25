@@ -237,7 +237,7 @@ def populate_raster_metadata(raster):
     raster.parsestatus.save()
 
 
-def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=True):
+def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=True, min_zoom=0):
     """
     Instead of uploading the reprojected tif, we could parse the rasters right
     here. This would allow to never store the full tif files, but is more
@@ -262,7 +262,7 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
 
     # Create tile pyramid.
     try:
-        parser.create_tiles(list(reversed(range(zoom + 1))))
+        parser.create_tiles(list(reversed(range(min_zoom, zoom + 1))))
         parser.send_success_signal()
     except:
         parser.log(
