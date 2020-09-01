@@ -301,7 +301,7 @@ def snap_terrain_correction(sentinel1tile_id):
             # Ingest this band.
             tile.write('Parsing band {}.'.format(band_key))
             try:
-                locally_parse_raster(os.path.dirname(output_band_path_parser), band.layer.id, output_band_path_parser, const.SENTINEL_1_ZOOM, min_zoom=1)
+                locally_parse_raster(tmpdir, band.layer.id, output_band_path_parser, const.SENTINEL_1_ZOOM, min_zoom=1)
             except:
                 tile.write('Failed processing band {}. {}'.format(band_key, traceback.format_exc()), Sentinel1Tile.FAILED)
                 raise
