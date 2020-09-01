@@ -37,4 +37,4 @@ PRODUCT_TYPE_GRD = 'GRD'
 
 # SNAP Graph processing tool.
 GPT_WORKDIR = '/data'
-GPT_TERRAIN_CORRECTION_CMD_TEMPLATE = 'gpt /code/apps/sentinel_1/graphs/snap_terrain_correction.xml -Pinput={input} -Poutput={output}'
+GPT_TERRAIN_CORRECTION_CMD_TEMPLATE = 'gpt /code/apps/sentinel_1/graphs/snap_terrain_correction.xml -x -c 6G -Pinput={input} -Poutput={output}'
