@@ -215,6 +215,10 @@ def snap_terrain_correction(sentinel1tile_id):
     )
     subprocess.run(cmd_s3download, shell=True, check=True)
 
+    # Run gpt config diag command. This logs the gpt config to the console, such
+    # as max memory, cache size, and number of cpus used.
+    subprocess.run(const.GPT_DIAG_CONFIG_OUTPUT_CMD, shell=True, check=True)
+
     # Apply graph.
     tile.write('Applying terrain correction graph.')
     gpt_output_path = os.path.join(tilewd, '{}_gpt_out.dim'.format(tile.product_name))
