@@ -82,7 +82,7 @@ class CompositeBuildAdmin(admin.ModelAdmin):
     model = CompositeBuild
     readonly_fields = ('sentineltiles', 'compositetiles', 'sentinel1tiles', )
     actions = ('run_composite_build', 'run_preflight')
-    list_filter = ('status', )
+    list_filter = ('status', 'include_sentinel_1', 'include_sentinel_2')
     search_fields = ('composite__name', 'aggregationlayer__name')
     raw_id_fields = ('composite', 'aggregationlayer', )
 

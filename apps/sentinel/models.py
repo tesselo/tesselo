@@ -461,7 +461,16 @@ class CompositeBuild(models.Model):
         ordering = ['composite__min_date', ]
 
     def __str__(self):
-        return '{} - {} - {}'.format(self.composite, self.aggregationlayer, self.status)
+        if self.include_sentinel_1 and self.include_sentinel_2:
+            dat = 'S1 & S2'
+        elif self.include_sentinel_1:
+            dat = 'S1'
+        elif self.include_sentinel_2:
+            dat = 'S2'
+        else:
+            dat = 'NoSat'
+
+        return '{} - {} - {} - {}'.format(self.composite.name, self.aggregationlayer.name, dat, self.status)
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
