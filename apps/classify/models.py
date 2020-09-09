@@ -80,7 +80,7 @@ class TrainingPixels(models.Model):
     log = models.TextField(blank=True, default='')
 
     def __str__(self):
-        return self.name
+        return '{} ({})'.format(self.name, self.status)
 
     def write(self, data, status=None):
         now = '[{0}] '.format(datetime.datetime.now().strftime('%Y-%m-%d %T'))
