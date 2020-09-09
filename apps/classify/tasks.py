@@ -36,6 +36,7 @@ from django.core.files import File
 from jobs import ecs
 from report.tasks import push_reports
 from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
+from sentinel_1.const import POLARIZATION_DV_BANDS
 
 
 def get_classifier_data(rasterlayer_ids, tilez, tilex, tiley):
@@ -68,6 +69,8 @@ def get_rasterlayer_ids(band_names, rasterlayer_lookup):
         elif band.lower().startswith('b'):
             # Otherwise get the band rasterlayer id from the rasterlayer lookup.
             rasterlayer_ids.append(rasterlayer_lookup.get(band + '.jp2'))
+        elif band.lower() in [dat.lower() for dat in POLARIZATION_DV_BANDS]:
+            rasterlayer_ids.append(rasterlayer_lookup.get(band))
         else:
             raise ValueError('Band names have to be similar to either B01 or RL23.')
 

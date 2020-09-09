@@ -153,7 +153,7 @@ class SentinelClassifierTest(TestCase):
         # Create trainingpixels object.
         tr = TrainingPixels.objects.create(
             name='abc',
-            band_names='B03,B04',
+            band_names='B03,B04,VH',
             traininglayer=self.traininglayer,
             buffer=0,
         )
@@ -169,7 +169,7 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(tr.status, TrainingPixels.FINISHED)
         X, Y, PID, SID, categories = tr.unpack_collected_pixels()
         self.assertDictEqual(categories, {'Cloud': 1, 'Shadow': 2, 'Cloud free': 3})
-        self.assertEqual(X.shape, (196, 3, 2))
+        self.assertEqual(X.shape, (196, 3, 3))
         self.assertEqual(Y.shape, (196, ))
         self.assertEqual(PID.shape, (196, ))
         self.assertEqual(PID.shape, (196, ))
