@@ -202,7 +202,6 @@ class Classifier(models.Model):
     wrap_keras_with_sklearn = models.BooleanField(default=False, help_text='Wrap the keras models with a Sklearn Pipeline and RobustScaler. Ignored if not a Keras model.')
     keras_model_json = models.TextField(default='', blank=True, null=True, help_text='A Keras model definition string created by model.to_json().')
     needs_large_instance = models.BooleanField(default=False)
-    needs_gpu_instance = models.BooleanField(default=False)
     training_all_touched = models.BooleanField(default=True, help_text='Sets the all_touched flag when rasterizing the training samples.')
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
