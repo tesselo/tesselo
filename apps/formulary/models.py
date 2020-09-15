@@ -59,6 +59,7 @@ class Formula(models.Model):
     max_val = models.FloatField(null=True, blank=True)
     breaks = models.IntegerField(default=5, null=True, blank=True)
     color_palette = models.CharField(max_length=50, choices=COLOR_CHOICES, null=True, blank=True)
+    discrete = models.BooleanField(default=False)
     # RGB settings.
     rgb = models.BooleanField(default=False, help_text='Choose RGB vs Formula mode. If true the layer is rendered as RGB, otherwise as raster algebra.')
     rgb_platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default=S2, help_text='Choose Platform for RGB interpretation.')

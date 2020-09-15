@@ -146,6 +146,12 @@ class ReportAggregation(models.Model):
         if hasattr(self, 'valuecountresult'):
             self.valuecountresult.delete()
 
+        # Choose grouping.
+        if (self.formula and self.formula.discrete) or self.predictedlayer_id:
+            grouping = 'discrete'
+        else:
+            grouping = 'continuous'
+
         # Setup new valuecount without storing it yet.
         return ValueCountResult(
             layer_names=layer_names,
@@ -155,7 +161,7 @@ class ReportAggregation(models.Model):
             zoom=self.ZOOM,
             aggregationarea=self.aggregationarea,
             units='acres',
-            grouping='discrete' if self.predictedlayer_id else 'continuous',
+            grouping=grouping,
         )
 
     def copy_valuecount(self):
