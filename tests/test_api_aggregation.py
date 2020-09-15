@@ -1,10 +1,9 @@
-from guardian.shortcuts import assign_perm
-from numpy.testing import assert_almost_equal
-from raster_aggregation.models import AggregationArea, AggregationLayer
-
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from guardian.shortcuts import assign_perm
+from numpy.testing import assert_almost_equal
+from raster_aggregation.models import AggregationArea, AggregationLayer
 
 
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)

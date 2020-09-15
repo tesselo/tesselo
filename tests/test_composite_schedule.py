@@ -1,10 +1,10 @@
 import datetime
 from unittest.mock import patch
 
-from raster_aggregation.models import AggregationLayer
-
 from django.test import TestCase
 from django.utils import timezone
+from raster_aggregation.models import AggregationLayer
+
 from sentinel.models import Composite, CompositeBuild, CompositeBuildSchedule
 from sentinel.tasks import push_scheduled_composite_builds
 

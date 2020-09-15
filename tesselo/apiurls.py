@@ -1,10 +1,10 @@
+from django.conf.urls import include, url
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import routers
 
 from classify.views import (
     ClassifierViewSet, PredictedLayerTileViewSet, PredictedLayerViewSet, TrainingLayerViewSet, TrainingSampleViewSet
 )
-from django.conf.urls import include, url
-from django.views.decorators.csrf import csrf_exempt
 from formulary.views import FormulaAlgebraAPIView, FormulaViewSet
 from jobs.views import BatchJobViewSet
 from raster_api.views import (

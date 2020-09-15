@@ -1,6 +1,6 @@
+from django.contrib.gis import admin
 from guardian.admin import GuardedModelAdmin
 
-from django.contrib.gis import admin
 from jobs import ecs
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBand, CompositeBuild, CompositeBuildSchedule, CompositeTile, MGRSTile,

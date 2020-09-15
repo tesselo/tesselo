@@ -1,14 +1,14 @@
 import datetime
 
+from django.contrib.postgres.fields import HStoreField
+from django.db import models
+from django.db.models.signals import post_delete, pre_save
+from django.dispatch import receiver
 from raster.tiles.const import WEB_MERCATOR_SRID
 from raster_aggregation.models import AggregationArea, AggregationLayer, ValueCountResult
 from rasterio.crs import CRS
 
 from classify.models import PredictedLayer
-from django.contrib.postgres.fields import HStoreField
-from django.db import models
-from django.db.models.signals import post_delete, pre_save
-from django.dispatch import receiver
 from report.const import ALLOWED_LINEAR_UNITS
 from sentinel.models import Composite
 

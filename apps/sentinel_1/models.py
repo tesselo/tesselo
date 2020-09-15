@@ -1,9 +1,9 @@
 import datetime
 
-from raster.models import RasterLayer
-
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import HStoreField
+from raster.models import RasterLayer
+
 from sentinel_1 import const
 
 

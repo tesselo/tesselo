@@ -1,8 +1,8 @@
 import numpy
+from django.contrib.gis.gdal import Envelope
 from PIL import Image
 from raster.tiles.utils import tile_bounds
 
-from django.contrib.gis.gdal import Envelope
 from sentinel.models import CompositeTile, SentinelTileBand, SentinelTileSceneClass
 from sentinel.utils import get_raster_tile
 

@@ -4,17 +4,17 @@ import tempfile
 from unittest.mock import patch
 
 import dateutil
+from django.contrib.auth.models import User
+from django.contrib.gis.gdal import GDALRaster
+from django.core.files import File
+from django.test import TestCase, override_settings
+from django.urls import reverse
 from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import patch_get_raster_tile_range_100
 
 from classify.models import PredictedLayer
-from django.contrib.auth.models import User
-from django.contrib.gis.gdal import GDALRaster
-from django.core.files import File
-from django.test import TestCase, override_settings
-from django.urls import reverse
 from formulary.models import Formula, PredictedLayerFormula
 from report.models import ReportAggregation, ReportAggregationLayerSrid, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports

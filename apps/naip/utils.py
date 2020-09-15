@@ -1,10 +1,10 @@
 from math import floor
 
 import numpy
+from django.contrib.gis.gdal import OGRGeometry
 from raster.tiles.const import WEB_MERCATOR_SRID
 from raster.tiles.utils import tile_bounds, tile_scale
 
-from django.contrib.gis.gdal import OGRGeometry
 from naip.models import NAIPQuadrangle
 
 # Quadrangles are 8 x 8 Squares of a 1x1 Lat/Lon box. The NAIP tiles are

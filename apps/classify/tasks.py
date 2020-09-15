@@ -6,6 +6,10 @@ from tempfile import TemporaryFile
 
 import h5py
 import numpy
+from django.contrib.gis.db.models import Extent
+from django.contrib.gis.gdal import GDALRaster
+from django.contrib.gis.geos import Polygon
+from django.core.files import File
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
@@ -29,10 +33,6 @@ from classify.const import (
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
 from classify.utils import LogCallback, PixelSequence, RNNRobustScaler
-from django.contrib.gis.db.models import Extent
-from django.contrib.gis.gdal import GDALRaster
-from django.contrib.gis.geos import Polygon
-from django.core.files import File
 from jobs import ecs
 from report.tasks import push_reports
 from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile

@@ -1,11 +1,11 @@
 import json
 
+from django.http import Http404
 from raster.models import RasterLayer
 from raster_aggregation.exceptions import MissingQueryParameter
 from raster_aggregation.models import AggregationLayer
 from rest_framework import permissions
 
-from django.http import Http404
 from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 
 

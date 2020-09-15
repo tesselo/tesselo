@@ -14,12 +14,12 @@ import boto3
 import dateutil
 import pytz
 import rasterio
+from django.contrib.gis.gdal import OGRGeometry
+from django.contrib.gis.geos import MultiPolygon
 from raster.models import RasterLayer
 from raster.tiles.const import WEB_MERCATOR_SRID
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
-from django.contrib.gis.gdal import OGRGeometry
-from django.contrib.gis.geos import MultiPolygon
 from sentinel.models import CompositeBuild
 from sentinel.tasks import composite_build_callback
 from sentinel.utils import locally_parse_raster

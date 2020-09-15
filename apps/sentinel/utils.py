@@ -5,14 +5,14 @@ import uuid
 
 import boto3
 import numpy
+from django.conf import settings
+from django.contrib.gis.gdal import GDALRaster, SpatialReference
+from django.core.files.storage import default_storage
 from raster.models import RasterLayerParseStatus
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
-from django.conf import settings
-from django.contrib.gis.gdal import GDALRaster, SpatialReference
-from django.core.files.storage import default_storage
 from sentinel import const
 
 s3 = boto3.client('s3')

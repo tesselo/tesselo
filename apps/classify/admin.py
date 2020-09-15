@@ -1,11 +1,11 @@
+from django import forms
+from django.contrib.gis import admin
 from guardian.admin import GuardedModelAdmin
 
 from classify.models import (
     Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingPixels,
     TrainingPixelsPatch, TrainingSample
 )
-from django import forms
-from django.contrib.gis import admin
 from jobs import ecs
 from sentinel import const
 from sentinel.models import CompositeBand, SentinelTileBand

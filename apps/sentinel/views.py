@@ -1,4 +1,6 @@
 import numpy
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from PIL import Image
 from raster.tiles.lookup import get_raster_tile
@@ -11,8 +13,6 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from django.http import Http404
-from django.shortcuts import get_object_or_404
 from jobs import ecs
 from raster_api.permissions import ChangePermissionObjectPermission, DependentObjectPermission
 from raster_api.views import IsReadOnly, PermissionsModelViewSet

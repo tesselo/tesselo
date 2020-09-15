@@ -1,6 +1,15 @@
 import io
 
 import boto3
+from django.conf import settings
+from django.contrib.auth.models import Group, User
+from django.contrib.gis.db.models import Extent
+from django.contrib.gis.gdal import GDALRaster
+from django.contrib.gis.geos import Polygon
+from django.db import IntegrityError
+from django.db.models import Q
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from guardian.shortcuts import assign_perm, remove_perm
 from raster.models import Legend, LegendEntry, LegendSemantics, RasterLayer
@@ -26,15 +35,6 @@ from rest_framework.serializers import Serializer
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from django.conf import settings
-from django.contrib.auth.models import Group, User
-from django.contrib.gis.db.models import Extent
-from django.contrib.gis.gdal import GDALRaster
-from django.contrib.gis.geos import Polygon
-from django.db import IntegrityError
-from django.db.models import Q
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
 from jobs import ecs
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile

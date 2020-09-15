@@ -1,13 +1,13 @@
 import json
 
+from django.contrib.auth.models import Group, User
+from django.test import TestCase
+from django.urls import reverse
 from guardian.shortcuts import assign_perm
 from raster.models import Legend, LegendEntry, LegendSemantics
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from django.contrib.auth.models import Group, User
-from django.test import TestCase
-from django.urls import reverse
 from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 from raster_api.models import ReadOnlyToken, TesseloUserAccount
 from raster_api.views import LegendEntryViewSet, LegendViewSet

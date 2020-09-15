@@ -5,16 +5,16 @@ import pickle
 import zipfile
 
 import numpy
-from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
-from raster.models import Legend, RasterLayer
-from raster_aggregation.models import AggregationLayer
-
-from classify.const import PIPELINE_ESTIMATOR_NAME, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db.models import Max, Min
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
+from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from raster.models import Legend, RasterLayer
+from raster_aggregation.models import AggregationLayer
+
+from classify.const import PIPELINE_ESTIMATOR_NAME, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME
 from sentinel.const import ZOOM_LEVEL_10M
 from sentinel.models import Composite, SentinelTile
 from sentinel.utils import populate_raster_metadata

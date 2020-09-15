@@ -1,7 +1,7 @@
+from django.contrib.gis import admin
 from raster_aggregation.models import AggregationLayer
 
 from classify.models import PredictedLayer
-from django.contrib.gis import admin
 from formulary.models import Formula
 from report.models import ReportAggregation, ReportAggregationLayerSrid, ReportSchedule, ReportScheduleTask
 from report.tasks import push_reports

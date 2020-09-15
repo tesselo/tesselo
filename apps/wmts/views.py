@@ -1,11 +1,11 @@
 import datetime
 
+from django.http import HttpResponse
 from guardian.shortcuts import get_objects_for_user
 from raster.tiles.utils import tile_bounds, tile_scale
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.views import APIView
 
-from django.http import HttpResponse
 from raster_api.authentication import ExpiringTokenAuthentication, QueryKeyAuthentication
 from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 

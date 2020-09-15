@@ -2,6 +2,8 @@ from collections import OrderedDict
 from tempfile import TemporaryFile
 
 import numpy
+from django.contrib.gis.gdal import GDALRaster
+from django.core.files import File
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
@@ -9,8 +11,6 @@ from raster.tiles.utils import tile_bounds, tile_index_range
 from classify.const import SCALE
 from classify.models import TrainingPixels, TrainingPixelsPatch
 from classify.tasks import get_rasterlayer_ids
-from django.contrib.gis.gdal import GDALRaster
-from django.core.files import File
 from jobs import ecs
 from sentinel.utils import get_raster_tile
 

@@ -11,17 +11,17 @@ import traceback
 import boto3
 import numpy
 from dateutil import parser
-from raster.models import RasterLayer
-from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
-from raster.tiles.utils import tile_bounds
-from raster_aggregation.models import AggregationArea
-
 from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
 from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from raster.models import RasterLayer
+from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
+from raster.tiles.utils import tile_bounds
+from raster_aggregation.models import AggregationArea
+
 from jobs import ecs
 from report.tasks import push_reports
 from sentinel import const

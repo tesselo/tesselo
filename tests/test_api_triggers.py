@@ -1,14 +1,14 @@
 
 from unittest.mock import patch
 
-from raster_aggregation.models import AggregationArea, AggregationLayer
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
-
-from classify.models import Classifier, PredictedLayer
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from raster_aggregation.models import AggregationArea, AggregationLayer
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+
+from classify.models import Classifier, PredictedLayer
 from sentinel.models import Composite, CompositeBuild
 
 

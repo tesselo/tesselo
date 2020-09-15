@@ -1,10 +1,10 @@
 import os
 
 import boto3
-
-from classify.models import Classifier, TrainingPixels
 from django.conf import settings
 from django.core.management import call_command
+
+from classify.models import Classifier, TrainingPixels
 from jobs.utils import track_job
 
 

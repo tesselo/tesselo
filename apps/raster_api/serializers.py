@@ -1,5 +1,8 @@
 import json
 
+from django.contrib.gis.db.models import Extent
+from django.contrib.gis.geos import Polygon
+from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm, get_perms
 from raster.models import (
     Legend, LegendEntry, LegendSemantics, RasterLayer, RasterLayerBandMetadata, RasterLayerMetadata,
@@ -13,9 +16,6 @@ from rest_framework.serializers import (
     CharField, FloatField, IntegerField, ModelField, ModelSerializer, Serializer, SerializerMethodField
 )
 
-from django.contrib.gis.db.models import Extent
-from django.contrib.gis.geos import Polygon
-from django.shortcuts import get_object_or_404
 from raster_api.models import ReadOnlyToken
 from sentinel.models import Composite, SentinelTileAggregationLayer
 

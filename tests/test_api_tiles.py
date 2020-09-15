@@ -1,17 +1,17 @@
 import io
 
 import numpy
+from django.contrib.auth.models import User
+from django.contrib.gis.gdal import GDALRaster
+from django.core.files import File
+from django.test import TestCase
+from django.urls import reverse
 from PIL import Image
 from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from rest_framework import status
 
 from classify.models import PredictedLayer
-from django.contrib.auth.models import User
-from django.contrib.gis.gdal import GDALRaster
-from django.core.files import File
-from django.test import TestCase
-from django.urls import reverse
 
 
 class TileViewsTests(TestCase):

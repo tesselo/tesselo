@@ -1,16 +1,16 @@
 import binascii
 import os
 
-from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
-from guardian.shortcuts import assign_perm, remove_perm
-from raster.models import Legend, LegendSemantics, RasterLayer
-from raster_aggregation.models import AggregationLayer
-
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import HStoreField
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
+from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from guardian.shortcuts import assign_perm, remove_perm
+from raster.models import Legend, LegendSemantics, RasterLayer
+from raster_aggregation.models import AggregationLayer
+
 from sentinel.models import Composite, CompositeBuild, SentinelTileAggregationLayer
 
 

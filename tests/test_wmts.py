@@ -1,10 +1,10 @@
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
 from guardian.shortcuts import assign_perm
 from rest_framework import status
 
 from classify.models import PredictedLayer
-from django.contrib.auth.models import User
-from django.test import TestCase
-from django.urls import reverse
 from formulary.models import Formula
 from raster_api.const import GET_QUERY_PARAMETER_AUTH_KEY
 from raster_api.models import ReadOnlyToken

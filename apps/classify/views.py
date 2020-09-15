@@ -1,4 +1,5 @@
 import numpy
+from django.http import HttpResponse
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +11,6 @@ from classify.permissions import RenderPredictedLayerPermission
 from classify.serializers import (
     ClassifierSerializer, PredictedLayerSerializer, TrainingLayerSerializer, TrainingSampleSerializer
 )
-from django.http import HttpResponse
 from jobs import ecs
 from raster_api.permissions import ChangePermissionObjectPermission, IsReadOnly
 from raster_api.views import AlgebraAPIView, PermissionsModelViewSet

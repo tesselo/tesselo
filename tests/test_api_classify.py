@@ -1,12 +1,12 @@
 import json
 
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
 from raster_aggregation.models import AggregationLayer
 from rest_framework import status
 
 from classify.models import Classifier
-from django.contrib.auth.models import User
-from django.test import TestCase
-from django.urls import reverse
 from sentinel.models import Composite
 
 

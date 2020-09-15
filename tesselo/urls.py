@@ -13,12 +13,11 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.conf.urls import include, url
+from django.contrib.gis import admin
 from rest_framework.documentation import include_docs_urls
 from rest_framework.permissions import IsAdminUser
 from tesselo.apiurls import apiurlpatterns
-
-from django.conf.urls import include, url
-from django.contrib.gis import admin
 
 urlpatterns = [
     url(r'^docs/', include_docs_urls(title='Tesselo API Docs', public=False, permission_classes=[IsAdminUser])),

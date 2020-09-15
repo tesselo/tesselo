@@ -1,10 +1,10 @@
-from rest_framework import status
-from rest_framework.authtoken.models import Token
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+
 from raster_api.models import TesseloUserAccount
 from raster_api.utils import expired
 

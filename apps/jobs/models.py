@@ -1,10 +1,10 @@
 import json
 
 import boto3
-
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models
+
 from jobs import const
 
 batch = boto3.client('batch', region_name=const.REGION_NAME)

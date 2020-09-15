@@ -1,9 +1,9 @@
 import os
 
-from PIL import Image, ImageDraw
-
 from django.conf import settings
 from django.utils import timezone
+from PIL import Image, ImageDraw
+
 from raster_api.const import EXPIRING_TOKEN_LIFESPAN
 
 

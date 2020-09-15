@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+
 from jobs.const import BATCH_JOB_ID_KEY
 from jobs.models import BatchJob
 

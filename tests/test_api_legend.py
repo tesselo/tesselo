@@ -1,12 +1,11 @@
 import json
 
-from guardian.shortcuts import assign_perm
-from raster.models import Legend, LegendSemantics, RasterLayer
-from rest_framework import status
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from guardian.shortcuts import assign_perm
+from raster.models import Legend, LegendSemantics, RasterLayer
+from rest_framework import status
 
 
 class RasterLegendViewTests(TestCase):

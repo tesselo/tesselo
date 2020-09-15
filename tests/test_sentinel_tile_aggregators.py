@@ -1,6 +1,6 @@
 import numpy
-
 from django.test import TestCase
+
 from sentinel.tasks import aggregate_tile, disaggregate_tile
 
 

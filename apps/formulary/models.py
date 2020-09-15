@@ -1,9 +1,9 @@
-from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
-
-from classify.models import PredictedLayer
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
+
+from classify.models import PredictedLayer
 from formulary import colorbrewer
 from report.tasks import push_reports
 

@@ -1,8 +1,8 @@
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from raster.const import IMG_ENHANCEMENTS
 from rest_framework.filters import SearchFilter
 
-from django.shortcuts import get_object_or_404
 from formulary.models import Formula
 from formulary.permissions import RenderFormulaPermission
 from formulary.serializers import FormulaSerializer

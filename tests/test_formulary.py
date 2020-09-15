@@ -1,5 +1,6 @@
-from classify.models import PredictedLayer
 from django.test import TestCase
+
+from classify.models import PredictedLayer
 from formulary.models import Formula, PredictedLayerFormula
 
 

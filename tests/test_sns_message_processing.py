@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
+from django.test import TestCase
 from raster_aggregation.models import AggregationArea, AggregationLayer
 
-from django.test import TestCase
 from sentinel.models import (
     Composite, CompositeBuild, CompositeBuildSchedule, MGRSTile, SentinelTile, SentinelTileAggregationLayer
 )

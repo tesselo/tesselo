@@ -4,6 +4,11 @@ import tempfile
 from unittest import skip
 from unittest.mock import patch
 
+from django.conf import settings
+from django.contrib.gis.gdal import OGRGeometry
+from django.core.files import File
+from django.core.files.storage import default_storage
+from django.test import TestCase, override_settings
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from tests.mock_functions import (
     client_get_object, iterator_search, patch_get_raster_tile, patch_process_l2a, patch_snap_terrain_correction,
@@ -11,11 +16,6 @@ from tests.mock_functions import (
 )
 
 from classify.models import Classifier
-from django.conf import settings
-from django.contrib.gis.gdal import OGRGeometry
-from django.core.files import File
-from django.core.files.storage import default_storage
-from django.test import TestCase, override_settings
 from sentinel import const
 from sentinel.models import (
     BucketParseLog, Composite, CompositeBuild, CompositeTile, MGRSTile, SentinelTile, SentinelTileBand

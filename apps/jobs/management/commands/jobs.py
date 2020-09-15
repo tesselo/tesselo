@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.management.base import BaseCommand
 from raster_aggregation.tasks import aggregation_layer_parser
 
 from classify.collectpixels import (
@@ -7,8 +9,6 @@ from classify.tasks import (
     build_predicted_pyramid, predict_sentinel_chunk, predict_sentinel_layer, sieve_sentinel_chunk,
     train_sentinel_classifier
 )
-from django.conf import settings
-from django.core.management.base import BaseCommand
 from naip.tasks import ingest_naip_manifest
 from report.tasks import populate_report
 from sentinel.tasks import (

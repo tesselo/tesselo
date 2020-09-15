@@ -6,6 +6,11 @@ from unittest.mock import patch
 
 import dateutil
 import numpy
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.contrib.gis.gdal import OGRGeometry
+from django.test import TestCase, override_settings
+from django.urls import reverse
 from raster_aggregation.models import AggregationArea, AggregationLayer
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
@@ -31,11 +36,6 @@ from classify.models import (
 )
 from classify.tasks import predict_sentinel_layer, train_sentinel_classifier
 from classify.utils import RNNRobustScaler
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.contrib.gis.gdal import OGRGeometry
-from django.test import TestCase, override_settings
-from django.urls import reverse
 from jobs import ecs
 from sentinel.models import Composite, MGRSTile, SentinelTile
 

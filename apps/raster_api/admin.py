@@ -1,3 +1,4 @@
+from django.contrib import admin
 from guardian.admin import GuardedModelAdmin
 from raster.admin import LegendAdmin, RasterLayerModelAdmin
 from raster.models import Legend, RasterLayer
@@ -5,7 +6,6 @@ from raster_aggregation.admin import ComputeActivityAggregatesModelAdmin
 from raster_aggregation.models import AggregationLayer
 from rest_framework.authtoken.admin import TokenAdmin
 
-from django.contrib import admin
 from raster_api.models import (
     PublicAggregationLayer, PublicLegend, PublicRasterLayer, ReadOnlyToken, TesseloUserAccount
 )
