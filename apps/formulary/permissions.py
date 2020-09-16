@@ -12,8 +12,10 @@ class RenderFormulaPermission(permissions.BasePermission):
         # Allow all users to see scenes, limit access to composites.
         if layer_type == 'scene':
             can_see_layer = True
-        else:
+        elif layer_type == 'composite':
             can_see_layer = request.user.has_perm('view_composite', view.layer)
+        else:
+            can_see_layer = True
 
         # Check formula permission.
         can_see_formula = request.user.has_perm('view_formula', view.formula)

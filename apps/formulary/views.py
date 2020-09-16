@@ -23,7 +23,7 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
 
     permission_classes = PermissionsModelViewSet.permission_classes + (RenderFormulaPermission, )
 
-    _rasterlayer_lookup = None
+    _rasterlayer_lookup = {}
     _layer = None
 
     @property

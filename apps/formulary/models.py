@@ -2,6 +2,7 @@ from django.contrib.gis.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from raster.models import Legend
 
 from classify.models import PredictedLayer
 from formulary import colorbrewer
@@ -60,6 +61,7 @@ class Formula(models.Model):
     breaks = models.IntegerField(default=5, null=True, blank=True)
     color_palette = models.CharField(max_length=50, choices=COLOR_CHOICES, null=True, blank=True)
     discrete = models.BooleanField(default=False)
+    legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
     # RGB settings.
     rgb = models.BooleanField(default=False, help_text='Choose RGB vs Formula mode. If true the layer is rendered as RGB, otherwise as raster algebra.')
     rgb_platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default=S2, help_text='Choose Platform for RGB interpretation.')
@@ -79,7 +81,9 @@ class Formula(models.Model):
         # Select color palette.
         palette = self.color_palette if self.color_palette else self.DEFAULT_COLOR
         # Create discrete or continuous colormap.
-        if self.breaks is not None and self.breaks > 0:
+        if self.legend:
+            return self.legend.colormap
+        elif self.breaks is not None and self.breaks > 0:
             # Compute nr of breaks (limit between 2 and 9 due to colorberwer).
             breaks = max(min(self.breaks, 9), 2)
             # Get color palette by name and number of breaks.
