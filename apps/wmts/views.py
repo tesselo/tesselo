@@ -109,22 +109,36 @@ class WMTSAPIView(APIView):
 
         # Construct wmts layer list from wmts layers.
         layer_list = ''
-        for composite in composites:
-            for formula in formulas:
+        for formula in formulas:
+            if formula.discrete:
                 # Generate formula tile url.
-                url = '{urlbase}formula/{formula_id}/{layer_type}/{layer_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}'.format(
+                url = '{urlbase}formula/{formula_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}'.format(
                     urlbase=urlbase,
                     formula_id=formula.id,
-                    layer_type='composite',
-                    layer_id=composite.id,
                     keyname=GET_QUERY_PARAMETER_AUTH_KEY,
                     keyval=key,
                 )
                 layer_list += TILE_LAYER_TEMPLATE.format(
-                    title='{} | {} - {}'.format(composite.name, formula.acronym, formula.name),
-                    identifier='tesselo_{}_{}'.format(composite.id, formula.id),
+                    title='{} - {}'.format(formula.acronym, formula.name),
+                    identifier='tesselo_form_{}'.format(formula.id),
                     url=url,
                 )
+            else:
+                for composite in composites:
+                    # Generate formula tile url.
+                    url = '{urlbase}formula/{formula_id}/{layer_type}/{layer_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}'.format(
+                        urlbase=urlbase,
+                        formula_id=formula.id,
+                        layer_type='composite',
+                        layer_id=composite.id,
+                        keyname=GET_QUERY_PARAMETER_AUTH_KEY,
+                        keyval=key,
+                    )
+                    layer_list += TILE_LAYER_TEMPLATE.format(
+                        title='{} | {} - {}'.format(composite.name, formula.acronym, formula.name),
+                        identifier='tesselo_{}_{}'.format(composite.id, formula.id),
+                        url=url,
+                    )
 
         for pred in predictedlayers:
             url = "{urlbase}predictedlayer/{predictedlayer}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}".format(
@@ -135,7 +149,7 @@ class WMTSAPIView(APIView):
             )
             layer_list += TILE_LAYER_TEMPLATE.format(
                 title=str(pred),
-                identifier='tesselo_{}'.format(pred.id),
+                identifier='tesselo_pred_{}'.format(pred.id),
                 url=url,
             )
 

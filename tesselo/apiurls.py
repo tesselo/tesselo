@@ -100,7 +100,12 @@ router.register(r'formula', FormulaViewSet, basename='formula')
 router.register(
     r'formula/(?P<formula_id>[0-9]+)/(?P<layer_type>scene|composite)/(?P<layer_id>[0-9]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>jpg|png|tif)',
     FormulaAlgebraAPIView,
-    basename='formula_algebra'
+    basename='formula_algebra',
+)
+router.register(
+    r'formula/(?P<formula_id>[0-9]+)/(?P<z>[0-9]+)/(?P<x>[0-9]+)/(?P<y>[0-9]+).(?P<frmt>jpg|png|tif)',
+    FormulaAlgebraAPIView,
+    basename='formula_algebra_without_composite',
 )
 
 router.register(r'traininglayer', TrainingLayerViewSet, basename='traininglayer')

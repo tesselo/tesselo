@@ -28,7 +28,7 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
 
     @property
     def layer(self):
-        if not self._layer:
+        if not self._layer and 'layer_type' in self.kwargs:
             if self.kwargs['layer_type'] == 'scene':
                 self._layer = get_object_or_404(SentinelTile, id=self.kwargs['layer_id'])
             else:
@@ -38,11 +38,14 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
 
     def get_ids(self):
         if not self._rasterlayer_lookup:
-            # Construct lookup and simplify keys to match formula syntax
-            # (B1 vs B01.jp2).
-            lookup = {
-                key.replace('.jp2', '').replace('0', ''): val for key, val in self.layer.rasterlayer_lookup.items()
-            }
+            # TODO: Rename the "discrete" field to be more legible.
+            if not self.formula.discrete:
+                # Construct lookup and simplify keys to match formula syntax
+                # (B1 vs B01.jp2).
+                lookup = {
+                    key.replace('.jp2', '').replace('0', ''): val for key, val in self.layer.rasterlayer_lookup.items()
+                }
+
             if self.formula.rgb:
                 # RGB mode expects a specific pattern for the band names.
                 if self.formula.rgb_platform == Formula.S1:
@@ -61,9 +64,10 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
                     }
                 else:
                     raise ValueError('Unknown RGB platform {}.'.format(self.formula.rgb_platform))
-            else:
+            elif not self.formula.discrete:
                 # Only keep bands that are present in formula.
                 self._rasterlayer_lookup = {key: val for key, val in lookup.items() if key in self.formula.formula}
+
             # Add predictelayer keys to lookup.
             for pred in self.formula.predictedlayerformula_set.all():
                 self._rasterlayer_lookup[pred.key] = pred.predictedlayer.rasterlayer_id
