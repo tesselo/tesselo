@@ -27,7 +27,7 @@ class TileViewsTests(TestCase):
             min_val=0,
             max_val=WEB_MERCATOR_TILESIZE ** 2,
         )
-        self.formula_discrete = Formula.objects.create(
+        self.formula_with_breaks = Formula.objects.create(
             name='Banana Yellow',
             formula='B4*B4',
             breaks=10,
@@ -97,7 +97,7 @@ class TileViewsTests(TestCase):
 
         self.client.login(username='michael', password='bananastand')
         assign_perm('view_formula', self.michael, self.formula_rgb)
-        assign_perm('view_formula', self.michael, self.formula_discrete)
+        assign_perm('view_formula', self.michael, self.formula_with_breaks)
         assign_perm('view_formula', self.michael, self.formula_continuous)
         assign_perm('view_formula', self.michael, self.formula_rgb_enhanced_alpha)
         assign_perm('view_composite', self.michael, self.composite)
@@ -115,9 +115,9 @@ class TileViewsTests(TestCase):
         self.assertEqual(img.shape, (256, 256, 4))
         self.assertEqual(img[1][253][1], 156)
 
-    def test_formula_tms_algebra_discrete(self):
+    def test_formula_tms_algebra_formula_with_breaks(self):
         url = reverse('formula_algebra-list', kwargs={
-            'formula_id': self.formula_discrete.id,
+            'formula_id': self.formula_with_breaks.id,
             'layer_type': 'composite',
             'layer_id': self.composite.id,
             'z': 11, 'x': 1234, 'y': 1234, 'frmt': 'png'
