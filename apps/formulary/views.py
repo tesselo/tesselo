@@ -45,7 +45,6 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
                 lookup = {
                     key.replace('.jp2', '').replace('0', ''): val for key, val in self.layer.rasterlayer_lookup.items()
                 }
-
             if self.formula.rgb:
                 # RGB mode expects a specific pattern for the band names.
                 if self.formula.rgb_platform == Formula.S1:
