@@ -435,12 +435,16 @@ def process_compositetile_s2(ctile, rasterlayer_lookup):
             # Exclude bad pixels.
             composite_data[exclude] = const.SENTINEL_NODATA_VALUE
 
-            # Determine datatype.
-            datatype = 1 if key == const.SCL else 2
+            # Ensure datatype.
+            if key == const.SCL:
+                datatype = 1
+                composite_data = composite_data.astype('uint8')
+            else:
+                datatype = 2
+                composite_data = composite_data.astype('uint16')
 
             # Update results dict with data, using a random name for the in
             # memory raster.
-
             write_raster_tile(
                 rasterlayer_lookup[key],
                 composite_data,
