@@ -143,7 +143,7 @@ class ReportAggregation(models.Model):
             raise ValueError('Specify Composite or PredictedLayer.')
 
         # Remove existing valuecounts.
-        if hasattr(self, 'valuecountresult'):
+        if hasattr(self, 'valuecountresult') and self.valuecountresult is not None:
             self.valuecountresult.delete()
 
         # Choose grouping.
