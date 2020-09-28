@@ -7,6 +7,7 @@ from raster.models import Legend
 from classify.models import PredictedLayer
 from formulary import colorbrewer
 from report.tasks import push_reports
+from sentinel.models import Composite
 
 
 class Formula(models.Model):
@@ -62,6 +63,7 @@ class Formula(models.Model):
     color_palette = models.CharField(max_length=50, choices=COLOR_CHOICES, null=True, blank=True)
     discrete = models.BooleanField(default=False)
     legend = models.ForeignKey(Legend, null=True, blank=True, on_delete=models.SET_NULL)
+    composite = models.ForeignKey(Composite, null=True, blank=True, on_delete=models.SET_NULL)
     # RGB settings.
     rgb = models.BooleanField(default=False, help_text='Choose RGB vs Formula mode. If true the layer is rendered as RGB, otherwise as raster algebra.')
     rgb_platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default=S2, help_text='Choose Platform for RGB interpretation.')

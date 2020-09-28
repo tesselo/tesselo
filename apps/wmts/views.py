@@ -123,22 +123,28 @@ class WMTSAPIView(APIView):
                     identifier='tesselo_form_{}'.format(formula.id),
                     url=url,
                 )
+            # Select only single composite if this formula has one specified.
+            if hasattr(formula, 'composite') and formula.composite is not None:
+                this_composites = [formula.composite]
             else:
-                for composite in composites:
-                    # Generate formula tile url.
-                    url = '{urlbase}formula/{formula_id}/{layer_type}/{layer_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}'.format(
-                        urlbase=urlbase,
-                        formula_id=formula.id,
-                        layer_type='composite',
-                        layer_id=composite.id,
-                        keyname=GET_QUERY_PARAMETER_AUTH_KEY,
-                        keyval=key,
-                    )
-                    layer_list += TILE_LAYER_TEMPLATE.format(
-                        title='{} | {} - {}'.format(composite.name, formula.acronym, formula.name),
-                        identifier='tesselo_{}_{}'.format(composite.id, formula.id),
-                        url=url,
-                    )
+                this_composites = composites
+
+            # Add composite and formula url endpoints to list.
+            for composite in this_composites:
+                # Generate formula tile url.
+                url = '{urlbase}formula/{formula_id}/{layer_type}/{layer_id}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}'.format(
+                    urlbase=urlbase,
+                    formula_id=formula.id,
+                    layer_type='composite',
+                    layer_id=composite.id,
+                    keyname=GET_QUERY_PARAMETER_AUTH_KEY,
+                    keyval=key,
+                )
+                layer_list += TILE_LAYER_TEMPLATE.format(
+                    title='{} | {} - {}'.format(composite.name, formula.acronym, formula.name),
+                    identifier='tesselo_{}_{}'.format(composite.id, formula.id),
+                    url=url,
+                )
 
         for pred in predictedlayers:
             url = "{urlbase}predictedlayer/{predictedlayer}/{{TileMatrix}}/{{TileCol}}/{{TileRow}}.png?{keyname}={keyval}".format(

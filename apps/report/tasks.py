@@ -59,9 +59,15 @@ def push_reports(model, pk):
         # Ignore composites that are in the future.
         for composite in composites.filter(min_date__lte=datetime.datetime.now().date()):
             for formula in formulas:
-                combos.append((agg, composite, formula, None))
+                if not hasattr(formula, 'composite') or formula.composite is None:
+                    combos.append((agg, composite, formula, None))
+        # Add aggregations for predicted layers.
         for pred in predictedlayers:
             combos.append((agg, None, None, pred))
+        # Add aggregations for formulas with a single composite specified.
+        for formula in formulas:
+            if hasattr(formula, 'composite') and formula.composite is not None:
+                combos.append((agg, formula.composite, formula, None))
 
     # Push each combination as an async task.
     for combo in combos:

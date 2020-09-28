@@ -8,5 +8,5 @@ class FormulaSerializer(PermissionsModelSerializer):
         model = Formula
         fields = (
             'id', 'name', 'acronym', 'description', 'formula', 'min_val', 'max_val', 'breaks',
-            'color_palette',
+            'color_palette', 'composite', 'discrete',
         )
