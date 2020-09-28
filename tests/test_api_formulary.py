@@ -1,5 +1,5 @@
 import io
-from unittest import skip
+import uuid
 
 import numpy
 from django.contrib.auth.models import User
@@ -18,7 +18,7 @@ from formulary.models import Formula, PredictedLayerFormula
 from sentinel.models import Composite
 
 
-class TileViewsTests(TestCase):
+class TileViewsTestsBase(TestCase):
 
     def setUp(self):
         self.formula_continuous = Formula.objects.create(
@@ -91,17 +91,20 @@ class TileViewsTests(TestCase):
             )
 
         self.michael = User.objects.create_user(
-            username='michael',
-            email='michael@bluth.com',
+            username='michael{}'.format(uuid.uuid4()),
+            email='michael{}@bluth.com'.format(uuid.uuid4()),
             password='bananastand',
         )
 
-        self.client.login(username='michael', password='bananastand')
+        self.client.login(username=self.michael.username, password='bananastand')
         assign_perm('view_formula', self.michael, self.formula_rgb)
         assign_perm('view_formula', self.michael, self.formula_with_breaks)
         assign_perm('view_formula', self.michael, self.formula_continuous)
         assign_perm('view_formula', self.michael, self.formula_rgb_enhanced_alpha)
         assign_perm('view_composite', self.michael, self.composite)
+
+
+class TileViewsTests1(TileViewsTestsBase):
 
     def test_formula_tms_algebra_continuous(self):
         url = reverse('formula_algebra-list', kwargs={
@@ -189,12 +192,14 @@ class TileViewsTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    @skip('This test interacts with the others and the RGB tests fail. Runs ok individually.')
+
+class TileViewsTestsTier2(TileViewsTestsBase):
+
     def test_formula_tms_predictedlayer(self):
         # Create and populated predictedlayer.
         predictedlayer = PredictedLayer.objects.create()
         tile_rst = GDALRaster({
-            'name': '/vsimem/testtile_pred.tif',
+            'name': '/vsimem/testtile_pred_tms_predlayer.tif',
             'driver': 'tif',
             'srid': WEB_MERCATOR_SRID,
             'width': WEB_MERCATOR_TILESIZE,
@@ -263,12 +268,11 @@ class TileViewsTests(TestCase):
         self.assertEqual(img[1][253][1], 255)
         self.assertEqual(img[1][253][0], 0)
 
-    @skip('This test interacts with the others and the RGB tests fail. Runs ok individually.')
     def test_formula_tms_predictedlayer_discrete(self):
         # Create and populated predictedlayer.
-        predictedlayer = PredictedLayer.objects.create()
+        predictedlayer = PredictedLayer.objects.create(name='abc')
         tile_rst = GDALRaster({
-            'name': '/vsimem/testtile_pred.tif',
+            'name': '/vsimem/testtile_pred_tms_discrete.tif',
             'driver': 'tif',
             'srid': WEB_MERCATOR_SRID,
             'width': WEB_MERCATOR_TILESIZE,
@@ -278,14 +282,14 @@ class TileViewsTests(TestCase):
             'datatype': 1,
             'bands': [{'nodata_value': 0, 'data': range(WEB_MERCATOR_TILESIZE ** 2)}],
         })
-        tile_rst = File(io.BytesIO(tile_rst.vsi_buffer), name='tile_pred.tif')
-        RasterTile.objects.create(
-            rasterlayer=predictedlayer.rasterlayer,
-            rast=tile_rst,
-            tilex=1234,
-            tiley=1234,
-            tilez=11,
-        )
+        with File(io.BytesIO(tile_rst.vsi_buffer), name='{}.tif'.format(uuid.uuid4())) as fl:
+            RasterTile.objects.create(
+                rasterlayer=predictedlayer.rasterlayer,
+                rast=fl,
+                tilex=1234,
+                tiley=1234,
+                tilez=11,
+            )
         # Using only predicted layer (discrete).
         legend = Legend.objects.create(title='Shades of yellow')
         semantics = LegendSemantics.objects.create(name='Banana yellow')
