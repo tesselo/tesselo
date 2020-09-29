@@ -1,12 +1,10 @@
 import datetime
 import os
-import shutil
 import tempfile
 from unittest.mock import patch
 
 import dateutil
 import numpy
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import OGRGeometry
 from django.test import TestCase, override_settings
@@ -39,6 +37,8 @@ from classify.utils import RNNRobustScaler
 from jobs import ecs
 from sentinel.models import Composite, MGRSTile, SentinelTile
 
+MEDIA_ROOT = tempfile.mkdtemp()
+
 
 @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
 @patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
@@ -49,7 +49,7 @@ from sentinel.models import Composite, MGRSTile, SentinelTile
 @patch('classify.tasks.write_raster_tile', patch_write_raster_tile)
 @patch('classify.collectpixels.get_raster_tile', patch_get_raster_tile)
 @patch('jobs.ecs.process_l2a', patch_process_l2a)
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True, MEDIA_ROOT=MEDIA_ROOT)
 class SentinelClassifierTest(TestCase):
 
     @classmethod
@@ -70,8 +70,6 @@ class SentinelClassifierTest(TestCase):
         ]
         for mock in mocks:
             mock.start()
-
-        settings.MEDIA_ROOT = tempfile.mkdtemp()
 
         bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
         bbox = OGRGeometry.from_bbox(bbox)
@@ -126,17 +124,9 @@ class SentinelClassifierTest(TestCase):
                 )
                 counter += 1
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        try:
-            shutil.rmtree(settings.MEDIA_ROOT)
-        except:
-            pass
-
     def _get_files(self, path):
         files = []
-        for root, subdirs, files in os.walk(os.path.join(settings.MEDIA_ROOT, path)):
+        for root, subdirs, files in os.walk(os.path.join(MEDIA_ROOT, path)):
             files += files
         return files
 

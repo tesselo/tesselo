@@ -1,10 +1,8 @@
 import os
-import shutil
 import tempfile
 from unittest import skip
 from unittest.mock import patch
 
-from django.conf import settings
 from django.contrib.gis.gdal import OGRGeometry
 from django.core.files import File
 from django.core.files.storage import default_storage
@@ -27,6 +25,8 @@ from sentinel.tasks import (
 from sentinel_1 import const as s1const
 from sentinel_1.models import Sentinel1Tile
 
+MEDIA_ROOT = tempfile.mkdtemp()
+
 
 @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
 @patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
@@ -35,7 +35,7 @@ from sentinel_1.models import Sentinel1Tile
 @patch('raster.tiles.parser.urlretrieve', point_to_test_file)
 @patch('jobs.ecs.process_l2a', patch_process_l2a)
 @patch('jobs.ecs.snap_terrain_correction', patch_snap_terrain_correction)
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True)
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True, MEDIA_ROOT=MEDIA_ROOT)
 class SentinelBucketParserTest(TestCase):
 
     def setUp(self):
@@ -74,11 +74,6 @@ class SentinelBucketParserTest(TestCase):
             include_sentinel_1=False,
             include_sentinel_2=True,
         )
-
-        settings.MEDIA_ROOT = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(settings.MEDIA_ROOT)
 
     def test_sentinelbuild_set_sentineltiles(self):
         sync_sentinel_bucket_utm_zone(1)
