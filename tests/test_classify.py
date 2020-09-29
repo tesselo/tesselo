@@ -246,6 +246,24 @@ class SentinelClassifierTest(TestCase):
         X, Y, PID, SID, categories = tr.unpack_collected_pixels()
         self.assertEqual(X.shape, (2625, 3, 4))
 
+    def test_training_pixels_collection_2D(self):
+        self.traininglayer.continuous = True
+        self.traininglayer.save()
+        tr = TrainingPixels.objects.create(
+            name='abc',
+            band_names='B03,B04,B08,B09',
+            traininglayer=self.traininglayer,
+            buffer=0,
+            flatten=False,
+        )
+        tr.composites.add(self.composite)
+        tr.composites.add(self.composite2)
+        tr.composites.add(self.composite3)
+        ecs.populate_trainingpixels(tr.id)
+        tr.refresh_from_db()
+        data = tr.unpack_collected_pixels()
+        self.assertEqual(len(data), 30)
+
     def test_classifier_training(self):
         # SVM
         self.clf.algorithm = Classifier.SVM

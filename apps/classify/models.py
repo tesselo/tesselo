@@ -75,6 +75,7 @@ class TrainingPixels(models.Model):
     needs_large_instance = models.BooleanField(default=False)
     patch_size = models.IntegerField(default=100, help_text='Determines how many training sample geometries should be bundeled into a patch.')
     buffer = models.FloatField(default=0)
+    flatten = models.BooleanField(default=True)
     collected_pixels = models.FileField(upload_to='clouds/trainingpixels', blank=True, null=True)
     status = models.CharField(max_length=20, choices=ST_STATUS_CHOICES, default=UNPROCESSED)
     log = models.TextField(blank=True, default='')
@@ -91,9 +92,12 @@ class TrainingPixels(models.Model):
 
     def unpack_collected_pixels(self):
         data = numpy.load(self.collected_pixels)
-        # Convert categories to dict.
-        categories = {catkey: int(catval) for catkey, catval in data['categories']}
-        return data['X'], data['Y'], data['PID'], data['SID'], categories
+        if self.flatten:
+            # Convert categories to dict.
+            categories = {catkey: int(catval) for catkey, catval in data['categories']}
+            return data['X'], data['Y'], data['PID'], data['SID'], categories
+        else:
+            return data
 
 
 class TrainingPixelsPatch(models.Model):

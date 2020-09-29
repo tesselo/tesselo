@@ -25,10 +25,44 @@ SID_DTYPE = 'uint32'
 
 def combine_trainingpixels_patches(trainingpixels_id):
     """
-    Combine all trainingpatches into one npz file and store in attribute.
+    Choose if trainingpixels collection is 1D or 2D based.
     """
     tp = TrainingPixels.objects.get(id=trainingpixels_id)
     tp.write('Started combining trainingpixel patches.', TrainingPixels.PROCESSING)
+
+    if tp.flatten:
+        tp = combine_trainingpixels_patches_flatten(tp)
+    else:
+        tp = combine_trainingpixels_patches_2d(tp)
+
+    tp.write('Finished pixel collection successfully.', TrainingPixels.FINISHED)
+
+
+def combine_trainingpixels_patches_2d(tp):
+    """
+    Combine all trainingpatches into one npz file keeping 2D structure.
+    """
+    # Prepare data containers.
+    all_data = {}
+    for patch in tp.trainingpixelspatch_set.all():
+        patch_data = numpy.load(patch.collected_pixels)
+        for key, val in patch_data.items():
+            key_with_id = '{}_{}'.format(key, patch.id)
+            all_data[key_with_id] = val
+    # Store collected items.
+    with TemporaryFile() as fl:
+        numpy.savez_compressed(fl, **all_data)
+        name = 'trainingpixels-collected-pixels-{}.npz'.format(tp.id)
+        tp.collected_pixels.save(name, File(fl))
+
+    return tp
+
+
+def combine_trainingpixels_patches_flatten(tp):
+    """
+    Combine all trainingpatches into one npz file where pixels are flattened
+    so that 2D structure is lost.
+    """
     # Prepare data containers.
     Xs = OrderedDict()
     Ys = OrderedDict()
@@ -82,7 +116,7 @@ def combine_trainingpixels_patches(trainingpixels_id):
         name = 'trainingpixels-collected-pixels-{}.npz'.format(tp.id)
         tp.collected_pixels.save(name, File(fl))
 
-    tp.write('Finished pixel collection successfully.', TrainingPixels.FINISHED)
+    return tp
 
 
 def populate_trainingpixels(trainingpixels_id):
@@ -122,7 +156,8 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
     categories = {}
     for sample in trainingpixels.traininglayer.trainingsample_set.order_by('id').all()[patch.index_from:patch.index_to]:
         # Track categories.
-        categories[sample.category] = int(sample.value)
+        if not trainingpixels.traininglayer.continuous:
+            categories[sample.category] = int(sample.value)
         # Prepare rasterlayer ids.
         rasterlayer_ids_lookups = prepare_sample_lookups(trainingpixels.id, sample, composites, trainingpixels.look_back_steps, band_names)
         # Continue if no match has been found.
@@ -160,7 +195,8 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
             patch_result.append(numpy.array(composite_pixels))
         result[PIXELS_NAME_TEMPLATE.format(sample.id)] = numpy.array(patch_result)
     # Track categories present.
-    result[CATEGORIES_KEY] = numpy.array([numpy.array([key, val]) for key, val in categories.items()])
+    if not trainingpixels.traininglayer.continuous:
+        result[CATEGORIES_KEY] = numpy.array([numpy.array([key, val]) for key, val in categories.items()])
     # Store collected pixels.
     patch.write('Successfully collected pixels, storing result.', TrainingPixelsPatch.PROCESSING)
     with TemporaryFile() as fl:
