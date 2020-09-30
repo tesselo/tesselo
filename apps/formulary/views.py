@@ -29,13 +29,15 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
     @property
     def layer(self):
         if not self._layer:
-            if 'layer_type' in self.kwargs:
+            # Get single composite if specified.
+            if hasattr(self.formula, 'composite') and self.formula.composite:
+                self._layer = self.formula.composite
+            elif 'layer_type' in self.kwargs:
+                # Get scene or composite ID from url.
                 if self.kwargs['layer_type'] == 'scene':
                     self._layer = get_object_or_404(SentinelTile, id=self.kwargs['layer_id'])
                 else:
                     self._layer = get_object_or_404(Composite, id=self.kwargs['layer_id'])
-            elif hasattr(self.formula, 'composite') and self.formula.composite:
-                self._layer = self.formula.composite
             else:
                 raise ValueError('Could not determine layer.')
 
