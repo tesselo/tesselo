@@ -20,6 +20,7 @@ PIXELS_NAME_TEMPLATE = 'X_{}'
 NODATA = 0
 CATEGORIES_KEY = 'categories'
 Y_DTYPE = 'uint8'
+Y_DTYPE_CONTINUOUS = 'float32'
 SID_DTYPE = 'uint32'
 
 
@@ -91,11 +92,13 @@ def combine_trainingpixels_patches_flatten(tp):
                 # Only keep the class number by id, the shape of the training
                 # will be lost but is not (yet) of interest.
                 Ys[pk] = numpy.unique(val[val > 0])
+    # Select datatype for Y.
+    y_dtype = Y_DTYPE_CONTINUOUS if tp.traininglayer.continuous else Y_DTYPE
     # Construct training pixel level 1D data arrays.
     Ys1D = []
     sample_ids = []
     for pk, val in Xs.items():
-        Ys1D.append((numpy.ones(val.shape[0]) * Ys[pk]).astype(Y_DTYPE))
+        Ys1D.append((numpy.ones(val.shape[0]) * Ys[pk]).astype(y_dtype))
         sample_ids.append((numpy.ones(val.shape[0]) * pk).astype(SID_DTYPE))
     # Stack Xs and Ys.
     X = numpy.vstack(list(Xs.values()))
@@ -151,6 +154,8 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
     trainingpixels = patch.trainingpixels
     composites = trainingpixels.composites.all().order_by('min_date')
     band_names = trainingpixels.band_names.split(',')
+    # Select datatype for Y.
+    y_dtype = Y_DTYPE_CONTINUOUS if trainingpixels.traininglayer.continuous else Y_DTYPE
     # Prepare data containers.
     result = {}
     categories = {}
@@ -174,11 +179,11 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
         else:
             idx = tile_index_range(geom.extent, ZOOM)
         # Rasterize geom and set pixel values to class value.
-        geom_pixels = get_pixels(idx, geom, trainingpixels.training_all_touched).astype(Y_DTYPE)
-        geom_pixels = (sample.value * geom_pixels).astype(Y_DTYPE)
+        geom_pixels = get_pixels(idx, geom, trainingpixels.training_all_touched).astype(y_dtype)
+        geom_pixels = (sample.value * geom_pixels).astype(y_dtype)
         # Compute clipping mask.
         if trainingpixels.buffer:
-            geom_buffered_pixels = get_pixels(idx, geom_buffered, trainingpixels.training_all_touched).astype(Y_DTYPE)
+            geom_buffered_pixels = get_pixels(idx, geom_buffered, trainingpixels.training_all_touched).astype(y_dtype)
             geom_mask = geom_buffered_pixels == 0
         else:
             geom_mask = geom_pixels == 0
