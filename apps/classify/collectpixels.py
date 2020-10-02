@@ -190,15 +190,24 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
         result[GEOM_NAME_TEMPLATE.format(sample.id)] = geom_pixels
         # Get pixels.
         patch_result = []
+        ignore_sample = False
         for rasterlayer_ids in rasterlayer_ids_lookups:
+            if ignore_sample:
+                break
             composite_pixels = []
             for rasterlayer_id in rasterlayer_ids:
                 band_pixels = get_pixels(idx, rasterlayer_id)
+                if band_pixels is None:
+                    ignore_sample = True
+                    break
                 # Clip band to geometry to reduce compressed data size.
                 band_pixels[geom_mask] = NODATA
                 composite_pixels.append(band_pixels)
             patch_result.append(numpy.array(composite_pixels))
-        result[PIXELS_NAME_TEMPLATE.format(sample.id)] = numpy.array(patch_result)
+        # Add this sample pixel stack to result dictionary, if there was data
+        # for this sample.
+        if not ignore_sample:
+            result[PIXELS_NAME_TEMPLATE.format(sample.id)] = numpy.array(patch_result)
     # Track categories present.
     if not trainingpixels.traininglayer.continuous:
         result[CATEGORIES_KEY] = numpy.array([numpy.array([key, val]) for key, val in categories.items()])
@@ -225,7 +234,11 @@ def get_pixels(idx, src, all_touched=None):
         vstack = []
         for tiley in range(idx[1], idx[3] + 1):
             if isinstance(src, int):
-                vstack.append(get_raster_tile(src, ZOOM, tilex, tiley).bands[0].data())
+                tile = get_raster_tile(src, ZOOM, tilex, tiley)
+                # Abort pixel collection if tile could not be found.
+                if not tile:
+                    return
+                vstack.append(tile.bands[0].data())
             else:
                 vstack.append(rasterize_geom(src, ZOOM, tilex, tiley, all_touched))
         hstack.append(numpy.vstack(vstack))
