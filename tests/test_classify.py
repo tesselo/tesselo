@@ -25,8 +25,8 @@ from tests.mock_functions import (
 
 from classify.const import (
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
-    KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, SIEVE_CONIFG_ERROR_MSG, TP_MSG_NON_KERAS,
-    TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, VALUE_CONFIG_ERROR_MSG
+    KERAS_MIN_ONE_LAYER_ERROR_MSG, PREDICTION_CONFIG_ERROR_MSG, SIEVE_CONIFG_ERROR_MSG, TP_MSG_NOT_FINISHED,
+    TP_MSG_REGRESSOR, VALUE_CONFIG_ERROR_MSG
 )
 from classify.models import (
     Classifier, PredictedLayer, PredictedLayerChunk, TrainingLayer, TrainingPixels, TrainingPixelsPatch,
@@ -192,6 +192,20 @@ class SentinelClassifierTest(TestCase):
             self.clf.traininglayer.legend,
             {'1': 'Cloud', '2': 'Shadow', '3': 'Cloud free'},
         )
+        # Use sklearn classifier.
+        self.clf.algorithm = Classifier.RF
+        self.clf.status = self.clf.UNPROCESSED
+        self.clf.trainingpixels = tr
+        self.clf.keras_model_json = ''
+        self.clf.clf_args = {}
+        self.clf.trained.delete()
+        self.clf._clf = None
+        self.clf.save()
+        train_sentinel_classifier(self.clf.id)
+        self.clf.refresh_from_db()
+        # Classifier training on pixels was successful.
+        self.assertEqual(self.clf.status, self.clf.FINISHED)
+        self.assertTrue(isinstance(self.clf.clf, Pipeline))
 
     def test_training_pixels_collection_and_classifier_training_misconfiguration(self):
         # Create trainingpixels object.
@@ -212,14 +226,6 @@ class SentinelClassifierTest(TestCase):
         self.clf.refresh_from_db()
         self.assertEqual(self.clf.status, self.clf.FAILED)
         self.assertIn(TP_MSG_NOT_FINISHED, self.clf.log)
-        # Algorithm is not keras.
-        self.clf.algorithm = Classifier.RF
-        self.clf.status = self.clf.UNPROCESSED
-        self.clf.save()
-        train_sentinel_classifier(self.clf.id)
-        self.clf.refresh_from_db()
-        self.assertEqual(self.clf.status, self.clf.FAILED)
-        self.assertIn(TP_MSG_NON_KERAS, self.clf.log)
         # Algorithm is a regressor.
         self.clf.traininglayer.continuous = True
         self.clf.traininglayer.save()

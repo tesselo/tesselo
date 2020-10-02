@@ -28,7 +28,7 @@ from classify.const import (
     KERAS_JSON_MALFORMED_ERROR_MSG, KERAS_LAST_LAYER_NOT_DENSE_ERROR_MSG, KERAS_LAST_LAYER_UNITS_ERROR_MSG_TMPL,
     KERAS_MIN_ONE_LAYER_ERROR_MSG, KERAS_TRAIN_TYPE, PIPELINE_ESTIMATOR_NAME, PIPELINE_SCALER_NAME,
     PREDICTION_CONFIG_ERROR_MSG, REGRESSION_DATATYPE, REGRESSION_DATATYPE_GDAL, SCALE, SENTINEL_PIXELTYPE,
-    SIEVE_CONIFG_ERROR_MSG, TP_MSG_NON_KERAS, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG,
+    SIEVE_CONIFG_ERROR_MSG, TP_MSG_NOT_FINISHED, TP_MSG_REGRESSOR, TRAINING_DATA_SPLIT_ERROR_MSG,
     VALUE_CONFIG_ERROR_MSG, ZIP_ESTIMATOR_NAME, ZIP_PIPELINE_NAME, ZOOM
 )
 from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, PredictedLayerChunk, TrainingPixels
@@ -352,9 +352,6 @@ def train_sentinel_classifier(classifier_id):
     # Check if pixels have already been collected.
     if classifier.trainingpixels_id:
         # Sanity checks.
-        if not classifier.is_keras:
-            classifier.write(TP_MSG_NON_KERAS, classifier.FAILED)
-            return
         if classifier.is_regressor:
             classifier.write(TP_MSG_REGRESSOR, classifier.FAILED)
             return
@@ -364,7 +361,9 @@ def train_sentinel_classifier(classifier_id):
         # Get pixels from trainingpixels object.
         classifier.write('Found a trainingpixels object, loading from packed pixels.')
         X, Y, PID, SID, categories = classifier.trainingpixels.unpack_collected_pixels()
-
+        # Flatten the time dimension for non-keras models.
+        if not classifier.is_keras and len(X.shape) == 3:
+            X = X.reshape((X.shape[0], X.shape[1] * X.shape[2]))
     elif classifier.collected_pixels.name:
         classifier.write('Found existing collected training data, loading from file.')
         loaded = numpy.load(classifier.collected_pixels)
