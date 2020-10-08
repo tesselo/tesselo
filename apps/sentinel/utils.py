@@ -131,7 +131,10 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
                 continue
 
         # Convert tile data into a GDALRaster.
-        tile = GDALRaster(tile.read())
+        try:
+            tile = GDALRaster(tile.read())
+        except:
+            continue
 
         # If the tile is a parent of the original, warp it to the
         # original request tile.
