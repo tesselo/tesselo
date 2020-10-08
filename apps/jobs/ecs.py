@@ -154,7 +154,7 @@ def predict_sentinel_layer(predicted_layer_id):
 
 
 def predict_sentinel_chunk(chunk_id):
-    job = run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1, vcpus=2, memory=int(1024 * 3.6))
+    job = run_ecs_command(['predict_sentinel_chunk', chunk_id], retry=1, vcpus=2, memory=int(1024 * 3.2))
     return track_job('classify', 'predictedlayerchunk', chunk_id, job)
 
 
