@@ -44,6 +44,7 @@ class TrainingSample(models.Model):
     value = models.FloatField()
     date = models.DateField(null=True, blank=True)
     traininglayer = models.ForeignKey(TrainingLayer, on_delete=models.CASCADE)
+    attributes = HStoreField(default=dict)
 
     def __str__(self):
         return '{0} - {1}'.format(self.category, self.composite if self.composite else self.sentineltile)

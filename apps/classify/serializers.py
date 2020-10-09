@@ -22,7 +22,7 @@ class TrainingSampleSerializer(ModelSerializer):
         model = TrainingSample
         fields = (
             'id', 'sentineltile', 'composite', 'geom', 'category', 'value',
-            'traininglayer', 'date',
+            'traininglayer', 'date', 'attributes',
         )
 
 
