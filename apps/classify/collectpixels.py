@@ -180,13 +180,15 @@ def populate_trainingpixels_patch(trainingpixelspatch_id):
             idx = tile_index_range(geom.extent, ZOOM)
         # Rasterize geom and set pixel values to class value.
         geom_pixels = get_pixels(idx, geom, trainingpixels.training_all_touched).astype(y_dtype)
-        geom_pixels = (sample.value * geom_pixels).astype(y_dtype)
         # Compute clipping mask.
         if trainingpixels.buffer:
             geom_buffered_pixels = get_pixels(idx, geom_buffered, trainingpixels.training_all_touched).astype(y_dtype)
             geom_mask = geom_buffered_pixels == 0
         else:
             geom_mask = geom_pixels == 0
+        # Set Y geom pixels to sample value.
+        geom_pixels = (sample.value * geom_pixels).astype(y_dtype)
+        # Store Y pixels.
         result[GEOM_NAME_TEMPLATE.format(sample.id)] = geom_pixels
         # Get pixels.
         patch_result = []
