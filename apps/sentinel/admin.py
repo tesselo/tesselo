@@ -117,6 +117,10 @@ class CompositeBandAdmin(admin.ModelAdmin):
     raw_id_fields = ('rasterlayer', 'composite', )
 
 
+class CompositeBuildScheduleAdmin(admin.ModelAdmin):
+    raw_id_fields = ('compositebuilds', )
+
+
 admin.site.register(BucketParseLog, BucketParseLogModelAdmin)
 admin.site.register(SentinelTileBand, SentinelTileBandAdmin)
 admin.site.register(SentinelTile, SentinelTileAdmin)
@@ -124,7 +128,7 @@ admin.site.register(MGRSTile, MGRSTileAdmin)
 admin.site.register(CompositeBand, CompositeBandAdmin)
 admin.site.register(CompositeTile, CompositeTileAdmin)
 admin.site.register(CompositeBuild, CompositeBuildAdmin)
-admin.site.register(CompositeBuildSchedule)
+admin.site.register(CompositeBuildSchedule, CompositeBuildScheduleAdmin)
 admin.site.register(Composite, CompositeAdmin)
 admin.site.register(SentinelTileAggregationLayer, SentinelTileAggregationLayerAdmin)
 admin.site.register(SentinelTileSceneClass, SentinelTileSceneClassAdmin)
