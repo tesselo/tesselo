@@ -1,7 +1,7 @@
 Tesselo
 =======
 
-Copyright (c) 2017 Daniel Wiesmann
+Copyright (c) 2021 Space Mosaic Lda
 
 Docker
 ------
