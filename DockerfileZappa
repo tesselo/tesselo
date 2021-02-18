@@ -1,4 +1,4 @@
-FROM 595064993071.dkr.ecr.eu-west-1.amazonaws.com/lambci/lambda:build-python3.6
+FROM 595064993071.dkr.ecr.eu-west-1.amazonaws.com/lambci/lambda:build-python3.8
 
 WORKDIR /code
 ENTRYPOINT ["/entrypoint.sh"]
