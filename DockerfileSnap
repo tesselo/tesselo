@@ -1,4 +1,4 @@
-from tesselo-worker
+FROM tesselo-worker
 
 # Download snap installer version 7.0 and install.
 RUN curl -O http://step.esa.int/downloads/7.0/installers/esa-snap_sentinel_unix_7_0.sh && \
