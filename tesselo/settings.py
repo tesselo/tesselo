@@ -284,7 +284,7 @@ if not DEBUG:
         },
         'handlers': {
             'console': {
-                'level': 'DEBUG',
+                'level': 'WARNING',
                 'class': 'logging.StreamHandler',
                 'formatter': 'verbose'
             }
@@ -292,7 +292,7 @@ if not DEBUG:
         'loggers': {
             'django': {
                 'handlers': ['console'],
-                'level': 'DEBUG',
+                'level': 'WARNING',
                 'propagate': True,
             },
         },

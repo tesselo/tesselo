@@ -18,7 +18,7 @@
     "domain": "devapi.tesselo.com",
     "slim_handler": true,
     "memory_size": 768,
-    "log_level": "DEBUG",
+    "log_level": "WARNING",
     "keep_warm": true,
     "num_retained_versions": 10
   },
