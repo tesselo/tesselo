@@ -1,6 +1,15 @@
+import json
+import os
+import uuid
+
+import numpy
+from django.contrib.gis.gdal.raster.const import VSI_FILESYSTEM_BASE_PATH
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from raster.const import IMG_ENHANCEMENTS
+from raster.algebra.parser import RasterAlgebraParser
+from raster.const import IMG_ENHANCEMENTS, IMG_FORMATS
+from raster.utils import band_data_to_image, pixel_value_from_point
 from rest_framework.filters import SearchFilter
 
 from formulary.models import Formula
@@ -112,3 +121,51 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
         # Scaling only in RGB mode.
         if self.formula.rgb:
             return self.formula.rgb_scale_min, self.formula.rgb_scale_max
+
+    def get_algebra(self, data, formula):
+        """
+        Patched directly from django-raster.
+        """
+        parser = RasterAlgebraParser()
+
+        # Evaluate raster algebra expression.
+        result = parser.evaluate_raster_algebra(data, formula)
+
+        # For pixel value requests, return result as json.
+        if self.is_pixel_request:
+            xcoord = float(self.kwargs.get('xcoord'))
+            ycoord = float(self.kwargs.get('ycoord'))
+            val = pixel_value_from_point(result, [xcoord, ycoord])
+            return HttpResponse(
+                json.dumps({'x': xcoord, 'y': ycoord, 'value': val}),
+                content_type='application/json',
+            )
+
+        # For tif requests, skip colormap and return georeferenced tif file.
+        if self.kwargs.get('frmt') == 'tif':
+            vsi_path = os.path.join(VSI_FILESYSTEM_BASE_PATH, str(uuid.uuid4()))
+            rast = result.warp({
+                'name': vsi_path,
+                'driver': 'tif',
+                'compress': 'DEFLATE',
+            })
+            content_type = IMG_FORMATS['tif'][1]
+            return HttpResponse(rast.vsi_buffer, content_type)
+
+        # Get array from algebra result
+        if result.bands[0].nodata_value is None:
+            result = result.bands[0].data()
+        else:
+            result = numpy.ma.masked_values(
+                result.bands[0].data(),
+                result.bands[0].nodata_value,
+            )
+
+        # Get colormap.
+        colormap = self.get_colormap()
+
+        # Render tile using the legend data
+        img, stats = band_data_to_image(result, colormap)
+
+        # Return rendered image
+        return self.write_img_to_response(img, stats)
