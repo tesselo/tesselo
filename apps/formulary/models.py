@@ -1,12 +1,11 @@
 from django.contrib.gis.db import models
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from raster.models import Legend
 
 from classify.models import PredictedLayer
 from formulary import colorbrewer
-from report.tasks import push_reports
 from sentinel.models import Composite
 
 
@@ -152,25 +151,6 @@ class PublicFormula(models.Model):
         return '{0} | {1}'.format(self.formula, 'public' if self.public else 'private')
 
 
-@receiver(pre_save, sender=Formula, weak=False, dispatch_uid="check_formula_change_for_reporting")
-def check_change_on_formula(sender, instance, **kwargs):
-    if instance.id is None:
-        instance._push_reports = True
-    else:
-        previous = Formula.objects.get(id=instance.id)
-
-        previous_formula = previous.formula.replace(' ', '').replace('\n', '').replace('\r', '')
-        instance_formula = instance.formula.replace(' ', '').replace('\n', '').replace('\r', '')
-
-        previous_range = (previous.min_val, previous.max_val)
-        instance_range = (instance.min_val, instance.max_val)
-
-        if previous_formula != instance_formula or previous_range != instance_range:
-            instance._push_reports = True
-        else:
-            instance._push_reports = False
-
-
 @receiver(post_save, sender=Formula, weak=False, dispatch_uid="create_formula_public_object")
 def create_formula_public_object(sender, instance, created, **kwargs):
     """
@@ -178,6 +158,3 @@ def create_formula_public_object(sender, instance, created, **kwargs):
     """
     if created:
         PublicFormula.objects.create(formula=instance)
-
-    if instance._push_reports:
-        push_reports('formula', instance.id)
