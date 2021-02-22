@@ -15,8 +15,6 @@ from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
 
 from sentinel import const
 
-s3 = boto3.client('s3')
-
 
 def aggregate_tile(tile, target_dtype=None, discrete=False):
     """
@@ -119,6 +117,7 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
         )
 
         if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
+            s3 = boto3.client('s3')
             try:
                 tile = s3.get_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME_MEDIA, Key=filename)
             except s3.exceptions.NoSuchKey:
@@ -209,6 +208,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     dest = io.BytesIO(dest.vsi_buffer)
     # Upload merged tile to s3.
     if hasattr(settings, 'AWS_STORAGE_BUCKET_NAME_MEDIA') and settings.AWS_STORAGE_BUCKET_NAME_MEDIA is not None:
+        s3 = boto3.client('s3')
         s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
     else:
         tile = default_storage.save(filename)
