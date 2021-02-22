@@ -4,8 +4,8 @@ coreapi==2.3.3
 Markdown==3.2.1
 Pygments==2.6.1
 requests==2.23.0
-boto3==1.14.0
-botocore==1.17.0
+boto3==1.17.12
+botocore==1.20.12
 Pillow==7.1.2
 numpy==1.18.4
 ephem==3.7.7.1
