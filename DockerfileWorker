@@ -24,7 +24,8 @@ WORKDIR /code
 # http://step.esa.int/main/third-party-plugins-2/sen2cor/
 ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_ACCESS_KEY_ID
-RUN aws s3 cp s3://sen2cor-source/Sen2Cor-2.4.0-Linux64.run . &&\
+RUN pip install -U awscli &&\
+  aws s3 cp s3://sen2cor-source/Sen2Cor-2.4.0-Linux64.run . &&\
   chmod +x ./Sen2Cor-2.4.0-Linux64.run &&\
   ./Sen2Cor-2.4.0-Linux64.run --target /Sen2Cor-2.4.0-Linux64 &&\
   rm ./Sen2Cor-2.4.0-Linux64.run
