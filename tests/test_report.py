@@ -346,7 +346,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             aggarea = AggregationArea.objects.create(
                 name='Testarea {}'.format(i),
                 aggregationlayer=self.agglayer,
-                geom='SRID=3857;MULTIPOLYGON (((11843687 -458452, 11843887 -458452, 11843887 -458252, 11843687 -458252, 11843687 -458452)))',
+                geom='SRID=3857;MULTIPOLYGON (((11843687.1234567890 -458452.1234567890, 11843887.1234567890 -458452.1234567890, 11843887.1234567890 -458252.1234567890, 11843687.1234567890 -458252.1234567890, 11843687.1234567890 -458452.1234567890)))',
             )
             agg = ReportAggregation(
                 formula=self.formula,
@@ -401,9 +401,21 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         response = self.client.get(url + '&ordering=-aggregationarea__name,min_date')
         result = response.json()
         self.assertEqual(result['count'], 5)
-        result = [dat['id'] for dat in result['results']]
         expected = list(ReportAggregation.objects.all().order_by('-aggregationarea__name', 'min_date').values_list('id', flat=True))
-        self.assertEqual(result, expected)
+        self.assertEqual([dat['id'] for dat in result['results']], expected)
+
+        # Check geometry serialization.
+        expected = {
+            'type': 'MultiPolygon',
+            'coordinates': [[[
+                [106.393652, -4.114804],
+                [106.395448, -4.114804],
+                [106.395448, -4.113012],
+                [106.393652, -4.113012],
+                [106.393652, -4.114804],
+            ]]],
+        }
+        self.assertEqual(result['results'][0]['geom'], expected)
 
         # Test default sorting.
         response = self.client.get(url)

@@ -180,6 +180,10 @@ class ReportAggregation(models.Model):
         if valsum != 0:
             self.value_percentage = {key: str(round(float(val) / valsum, self.VALUECOUNT_ROUNDING_DIGITS)) for key, val in self.valuecountresult.value.items()}
 
+    @property
+    def geom_4326(self):
+        return self.aggregationarea.geom_simplified.transform(4326, clone=True)
+
 
 @receiver(post_delete, sender=ReportAggregation, weak=False, dispatch_uid="remove_valuecount_before_delete")
 def check_change_on_formula(sender, instance, **kwargs):
