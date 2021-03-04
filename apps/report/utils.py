@@ -90,7 +90,7 @@ class AggregatorProjection(Aggregator):
             raise RasterAggregationException('Units of dst crs need to be in meters, found {}.'.format(dst_crs.linear_units))
 
         # Combine all tiles into one big array.
-        col_length = self.tilerange[2] - self.tilerange[0] + 1
+        col_length = self.tilerange[3] - self.tilerange[1] + 1
         col = []
         origins = []
         for tilex, tiley, rst in self.tiles():
