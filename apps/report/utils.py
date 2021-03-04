@@ -33,7 +33,7 @@ class AggregatorProjection(Aggregator):
         # Project geom into requested srid.
         self.geom = self.geom.transform(self.srid, clone=True)
         # Custom tile range.
-        bbox = OGRGeometry.from_bbox(self.geom.buffer(1000).extent)
+        bbox = OGRGeometry.from_bbox(self.geom.buffer(50).extent)
         bbox.srid = self.geom.srid
         bbox.transform(WEB_MERCATOR_SRID)
         self.tilerange = tile_index_range(bbox.extent, REPORT_ZOOM)
