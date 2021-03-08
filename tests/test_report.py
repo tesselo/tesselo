@@ -111,7 +111,7 @@ class AggregationViewTests(AggregationViewTestsBase):
             }
         )
         self.assertEqual(agg.valuecountresult.grouping, 'continuous')
-        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertDictEqual(agg.value, {key: float(val) for key, val in agg.valuecountresult.value.items()})
         self.assertEqual(agg.stats_avg, agg.valuecountresult.stats_avg)
 
     def test_create_aggregator_predicted(self):
@@ -134,7 +134,7 @@ class AggregationViewTests(AggregationViewTestsBase):
             }
         )
         self.assertEqual(agg.valuecountresult.grouping, 'discrete')
-        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertDictEqual(agg.value, {key: float(val) for key, val in agg.valuecountresult.value.items()})
         self.assertEqual(agg.stats_avg, agg.valuecountresult.stats_avg)
 
     def test_create_aggregator_predicted_formula(self):
@@ -188,7 +188,7 @@ class AggregationViewTests(AggregationViewTestsBase):
             agg.valuecountresult.formula,
             self.formula.formula,
         )
-        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertDictEqual(agg.value, {key: float(val) for key, val in agg.valuecountresult.value.items()})
         self.assertEqual(agg.stats_avg, agg.valuecountresult.stats_avg)
 
     def test_report_schedule_formula_change(self):
@@ -278,11 +278,11 @@ class AggregationViewTests(AggregationViewTestsBase):
         self.assertTrue(agg.stats_max > 0)
         # Values have been copied correctly from valuecounts to aggreports.
         self.assertEqual(agg.stats_min, agg.valuecountresult.stats_min)
-        self.assertDictEqual(agg.value, agg.valuecountresult.value)
+        self.assertDictEqual(agg.value, {key: float(val) for key, val in agg.valuecountresult.value.items()})
         # Percentages have been calculated.
         key = next(iter(agg.value))
         valsum = sum([float(val) for key, val in agg.value.items()])
-        self.assertEqual(float(agg.value_percentage[key]), round(float(agg.value[key]) / valsum, 7))
+        self.assertEqual(agg.value_percentage[key], agg.value[key] / valsum)
 
     def test_total_area_and_percentage_covered(self):
         # Prepare data.
@@ -378,7 +378,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
 
         # Prepare url.
         url = reverse('reportaggregation-list')
-        url += '?aggregationlayer={}'.format(self.agglayer.id)
+        url += f"?aggregationlayer={self.agglayer.id}&predictedlayer={self.predictedlayer.id}&ordering={{ordering}}&page=1&page_size=12"
 
         # Prepare ordering queries.
         agg = ReportAggregation.objects.first()
@@ -394,7 +394,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             expected = list(ReportAggregation.objects.all().order_by(ordering).values_list('id', flat=True))
 
             # Query api and compile resulting order.
-            response = self.client.get(url + '&ordering={}'.format(ordering))
+            response = self.client.get(url.format(ordering=ordering))
             result = response.json()
             self.assertEqual(result['count'], 5)
             result = [dat['id'] for dat in result['results']]
@@ -403,7 +403,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             self.assertEqual(result, expected)
 
             # Invert query order.
-            response = self.client.get(url + '&ordering=-{}'.format(ordering))
+            response = self.client.get(url.format(ordering='-' + ordering))
             result = response.json()
             self.assertEqual(result['count'], 5)
             result = [dat['id'] for dat in result['results']]

@@ -1,6 +1,6 @@
 import datetime
 
-from django.contrib.postgres.fields import HStoreField
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
@@ -91,8 +91,8 @@ class ReportAggregation(models.Model):
     min_date = models.DateField(null=True, blank=True, editable=False, db_index=True)
     max_date = models.DateField(null=True, blank=True, editable=False, db_index=True)
 
-    value = HStoreField(default=dict, db_index=True)
-    value_percentage = HStoreField(default=dict, db_index=True)
+    value = JSONField(default=dict, db_index=True)
+    value_percentage = JSONField(default=dict, db_index=True)
 
     stats_min = models.FloatField(editable=False, blank=True, null=True, db_index=True)
     stats_max = models.FloatField(editable=False, blank=True, null=True, db_index=True)
@@ -166,7 +166,7 @@ class ReportAggregation(models.Model):
 
     def copy_valuecount(self):
         # Copy the data to the ReportAggregation.
-        self.value = self.valuecountresult.value
+        self.value = {key: float(value) for key, value in self.valuecountresult.value.items()}
         self.stats_min = self.valuecountresult.stats_min
         self.stats_max = self.valuecountresult.stats_max
         self.stats_avg = self.valuecountresult.stats_avg
@@ -178,7 +178,7 @@ class ReportAggregation(models.Model):
         # Compute percentage by value.
         valsum = sum([float(val) for key, val in self.valuecountresult.value.items()])
         if valsum != 0:
-            self.value_percentage = {key: str(round(float(val) / valsum, self.VALUECOUNT_ROUNDING_DIGITS)) for key, val in self.valuecountresult.value.items()}
+            self.value_percentage = {key: float(val) / valsum for key, val in self.valuecountresult.value.items()}
 
     @property
     def geom_4326(self):
