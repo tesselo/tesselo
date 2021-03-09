@@ -1,3 +1,4 @@
+from django.db.models.expressions import RawSQL
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
@@ -54,14 +55,15 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
         # Match requested ordering with allowed ordering strings.
         normal_orderings = [dat for dat in ordering if dat in self.normal_ordering_fields]
         json_orderings = [dat for dat in ordering if any(dat.startswith(jdat) for jdat in self.json_ordering_fields)]
-        orderings = normal_orderings + json_orderings
-        # For json ordering, remove items that do not contain the json ordering value.
-        for jdat in json_orderings:
-            key = jdat.split('__')[1]
-            qs = qs.filter(value__has_key=key)
         # Apply ordering filters.
-        if len(orderings):
-            qs = qs.order_by(*orderings)
+        if len(json_orderings):
+            # Only use first ordering, the others are obsolete on a float field.
+            key, val = json_orderings[0].split('__')
+            qs = qs.order_by(RawSQL(key.lstrip('-') + "->>%s", (val,)))
+            if key.startswith('-'):
+                qs = qs.reverse()
+        elif len(normal_orderings):
+            qs = qs.order_by(*normal_orderings)
         else:
             qs = qs.order_by('aggregationarea__name', 'min_date')
 

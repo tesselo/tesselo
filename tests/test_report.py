@@ -7,6 +7,7 @@ import dateutil
 from django.contrib.auth.models import User
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
+from django.db.models.expressions import RawSQL
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from raster.models import RasterLayer, RasterTile
@@ -357,7 +358,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
     def test_api_ordering(self):
         # Prepare data.
         ReportAggregation.objects.all().delete()
-        for i in range(5):
+        for i in range(6):
             aggarea = AggregationArea.objects.create(
                 name='Testarea {}'.format(i),
                 aggregationlayer=self.agglayer,
@@ -376,6 +377,10 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             agg.copy_valuecount()
             agg.save()
 
+        # Make one item with null data.
+        agg.value = {}
+        agg.save()
+
         # Prepare url.
         url = reverse('reportaggregation-list')
         url += f"?aggregationlayer={self.agglayer.id}&predictedlayer={self.predictedlayer.id}&ordering={{ordering}}&page=1&page_size=12"
@@ -391,12 +396,13 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
 
         for ordering in orderings:
             # Compute expected order of ID list.
-            expected = list(ReportAggregation.objects.all().order_by(ordering).values_list('id', flat=True))
+            key, val = ordering.split('__')
+            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->>%s", (val,))).values_list('id', flat=True))
 
             # Query api and compile resulting order.
             response = self.client.get(url.format(ordering=ordering))
             result = response.json()
-            self.assertEqual(result['count'], 5)
+            self.assertEqual(result['count'], 6)
             result = [dat['id'] for dat in result['results']]
 
             # Order is as expected.
@@ -405,17 +411,17 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             # Invert query order.
             response = self.client.get(url.format(ordering='-' + ordering))
             result = response.json()
-            self.assertEqual(result['count'], 5)
+            self.assertEqual(result['count'], 6)
             result = [dat['id'] for dat in result['results']]
 
             # Order is as expected.
-            expected = list(ReportAggregation.objects.all().order_by('-' + ordering).values_list('id', flat=True))
+            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->>%s", (val,))).reverse().values_list('id', flat=True))
             self.assertEqual(result, expected)
 
         # Query api with double filter argument.
         response = self.client.get(url + '&ordering=-aggregationarea__name,min_date')
         result = response.json()
-        self.assertEqual(result['count'], 5)
+        self.assertEqual(result['count'], 6)
         expected = list(ReportAggregation.objects.all().order_by('-aggregationarea__name', 'min_date').values_list('id', flat=True))
         self.assertEqual([dat['id'] for dat in result['results']], expected)
 
@@ -435,7 +441,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         # Test default sorting.
         response = self.client.get(url)
         result = response.json()
-        self.assertEqual(result['count'], 5)
+        self.assertEqual(result['count'], 6)
         expected = list(ReportAggregation.objects.all().order_by('aggregationarea__name', 'min_date').values_list('id', flat=True))
         result = [dat['id'] for dat in result['results']]
         self.assertEqual(result, expected)
