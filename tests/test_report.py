@@ -397,7 +397,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         for ordering in orderings:
             # Compute expected order of ID list.
             key, val = ordering.split('__')
-            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->>%s", (val,))).values_list('id', flat=True))
+            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->%s", (val,))).values_list('id', flat=True))
 
             # Query api and compile resulting order.
             response = self.client.get(url.format(ordering=ordering))
@@ -415,7 +415,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
             result = [dat['id'] for dat in result['results']]
 
             # Order is as expected.
-            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->>%s", (val,))).reverse().values_list('id', flat=True))
+            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->%s", (val,))).reverse().values_list('id', flat=True))
             self.assertEqual(result, expected)
 
         # Query api with double filter argument.

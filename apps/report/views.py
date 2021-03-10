@@ -59,7 +59,7 @@ class ReportAggregationViewSet(ReadOnlyModelViewSet):
         if len(json_orderings):
             # Only use first ordering, the others are obsolete on a float field.
             key, val = json_orderings[0].split('__')
-            qs = qs.order_by(RawSQL(key.lstrip('-') + "->>%s", (val,)))
+            qs = qs.order_by(RawSQL(key.lstrip('-') + "->%s", (val,)))
             if key.startswith('-'):
                 qs = qs.reverse()
         elif len(normal_orderings):
