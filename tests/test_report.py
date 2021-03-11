@@ -379,6 +379,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
 
         # Make one item with null data.
         agg.value = {}
+        agg.value_percentage = {}
         agg.save()
 
         # Prepare url.
@@ -386,7 +387,7 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         url += f"?aggregationlayer={self.agglayer.id}&predictedlayer={self.predictedlayer.id}&ordering={{ordering}}&page=1&page_size=12"
 
         # Prepare ordering queries.
-        agg = ReportAggregation.objects.first()
+        agg = ReportAggregation.objects.exclude(value__isnull=True).first()
         max_key = max(agg.value.items(), key=operator.itemgetter(1))[0]
         max_key_percentage = max(agg.value_percentage.items(), key=operator.itemgetter(1))[0]
         orderings = [
@@ -397,30 +398,39 @@ class AggregationViewTestsApi(AggregationViewTestsBase):
         for ordering in orderings:
             # Compute expected order of ID list.
             key, val = ordering.split('__')
-            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->%s", (val,))).values_list('id', flat=True))
+            ordering_query = RawSQL(key + "->%s", (val,)).desc(nulls_last=True)
+            expected = list(ReportAggregation.objects.order_by(ordering_query).values_list('id', flat=True))
 
             # Query api and compile resulting order.
             response = self.client.get(url.format(ordering=ordering))
             result = response.json()
+            # Count is accurate.
             self.assertEqual(result['count'], 6)
-            result = [dat['id'] for dat in result['results']]
-
+            # Nulls are last.
+            self.assertEqual(result['results'][-1]['value'], {})
             # Order is as expected.
+            max_val = max([dat['value'][str(max_key)] for dat in result['results'] if str(max_key) in dat['value']])
+            self.assertEqual(result['results'][0]['value'][max_key], max_val)
+            result = [dat['id'] for dat in result['results']]
             self.assertEqual(result, expected)
 
-            # Invert query order.
+            # Ascending query order.
             response = self.client.get(url.format(ordering='-' + ordering))
             result = response.json()
+            # Count is accurate
             self.assertEqual(result['count'], 6)
-            result = [dat['id'] for dat in result['results']]
-
+            # Nulls are first.
+            self.assertEqual(result['results'][0]['value'], {})
             # Order is as expected.
-            expected = list(ReportAggregation.objects.all().order_by(RawSQL(key + "->%s", (val,))).reverse().values_list('id', flat=True))
+            result = [dat['id'] for dat in result['results']]
+            ordering_query = RawSQL(key + "->%s", (val,)).asc(nulls_first=True)
+            expected = list(ReportAggregation.objects.order_by(ordering_query).values_list('id', flat=True))
             self.assertEqual(result, expected)
 
         # Query api with double filter argument.
         response = self.client.get(url + '&ordering=-aggregationarea__name,min_date')
         result = response.json()
+        # Count is as expected.
         self.assertEqual(result['count'], 6)
         expected = list(ReportAggregation.objects.all().order_by('-aggregationarea__name', 'min_date').values_list('id', flat=True))
         self.assertEqual([dat['id'] for dat in result['results']], expected)
