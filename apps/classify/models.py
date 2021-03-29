@@ -313,6 +313,8 @@ class PredictedLayer(models.Model):
     sieve_connectivity = models.IntegerField(default=4, choices=SIEVE_CHOICES)
     sieve_parent = models.ForeignKey('classify.PredictedLayer', blank=True, null=True, on_delete=models.SET_NULL)
 
+    store_class_probabilities = models.BooleanField(default=False)
+
     def __str__(self):
         if self.name:
             return '{} | {}'.format(self.name, self.status)

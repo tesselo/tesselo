@@ -756,10 +756,18 @@ def predict_sentinel_chunk(chunk_id):
         # is a probability matrix and needs to be converted to a predicted array.
         # This also assumes 1-N indexing of classes in digital numbers (DN),
         # i.e. classi DN are sequential and start with 1.
-        if not isinstance(chunk.predictedlayer.classifier.clf, Pipeline):
-            predicted = numpy.argmax(predicted, axis=1) + 1
-        # Convert to correct dtype.
-        predicted = predicted.astype(dtype)
+        nr_of_bands = 1
+        if not isinstance(chunk.predictedlayer.classifier.clf, Pipeline) and not chunk.predictedlayer.classifier.is_regressor:
+            if chunk.predictedlayer.store_class_probabilities:
+                # Store the predicted probabilities separate bands.
+                predicted = [numpy.ascontiguousarray(255 * probability, dtype=dtype) for probability in predicted.swapaxes(0, 1)]
+                # Specify the number of bands to write as number of classes.
+                nr_of_bands = len(predicted)
+            else:
+                # Convert predicted into category index numbers.
+                predicted = numpy.argmax(predicted, axis=1) + 1
+                # Enforce correct dtype.
+                predicted = predicted.astype(dtype)
         # Write predicted pixels into a tile.
         write_raster_tile(
             chunk.predictedlayer.rasterlayer_id,
@@ -769,6 +777,7 @@ def predict_sentinel_chunk(chunk_id):
             tiley,
             datatype=dtype_gdal,
             merge_with_existing=False,
+            nr_of_bands=nr_of_bands,
         )
 
     # Log progress, update chunks done count.

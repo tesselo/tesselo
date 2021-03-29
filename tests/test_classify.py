@@ -1,4 +1,5 @@
 import datetime
+import glob
 import os
 import tempfile
 from unittest.mock import patch
@@ -6,7 +7,7 @@ from unittest.mock import patch
 import dateutil
 import numpy
 from django.contrib.auth.models import User
-from django.contrib.gis.gdal import OGRGeometry
+from django.contrib.gis.gdal import GDALRaster, OGRGeometry
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from raster_aggregation.models import AggregationArea, AggregationLayer
@@ -125,10 +126,10 @@ class SentinelClassifierTest(TestCase):
                 counter += 1
 
     def _get_files(self, path):
-        files = []
+        files_list = []
         for root, subdirs, files in os.walk(os.path.join(MEDIA_ROOT, path)):
-            files += files
-        return files
+            files_list += files
+        return files_list
 
     def setUp(self):
         self.clf = Classifier.objects.create(
@@ -411,7 +412,7 @@ class SentinelClassifierTest(TestCase):
         pred.refresh_from_db()
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
-        self.assertTrue(len(files), 1)
+        self.assertEqual(len(files), 1)
         # Pyramid has been built.
         self.assertTrue(pred.predictedlayerchunk_set.count() > 0)
         self.assertEqual(
@@ -463,7 +464,24 @@ class SentinelClassifierTest(TestCase):
         pred.refresh_from_db()
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
-        self.assertTrue(len(files), 1)
+        self.assertEqual(len(files), 1)
+        # Test probabilities output.
+        pred = PredictedLayer.objects.create(
+            classifier=self.clf,
+            aggregationlayer=self.agglayer,
+            store_class_probabilities=True,
+        )
+        pred.composites.add(self.composite)
+        predict_sentinel_layer(pred.id)
+        pred.refresh_from_db()
+        self.assertEqual(pred.status, PredictedLayer.FINISHED)
+        # Tiles have been created.
+        files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
+        self.assertEqual(len(files), 1)
+        rst = os.path.join(MEDIA_ROOT, f'tiles/{pred.rasterlayer_id}/14/{files[0]}')
+        rst = GDALRaster(glob.glob(os.path.join(MEDIA_ROOT, f'tiles/{pred.rasterlayer_id}/14/**/*.tif'))[0])
+        self.assertEqual(len(rst.bands), 3)
+        self.assertEqual(rst.bands[0].data().dtype, 'uint8')
 
     def test_keras_regressor(self):
         # For regressor use cases, set the traininglayer to continuous.
@@ -509,7 +527,7 @@ class SentinelClassifierTest(TestCase):
         pred.refresh_from_db()
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
-        self.assertTrue(len(files), 1)
+        self.assertEqual(len(files), 1)
 
         # Test sieving on regressor error.
         sieve_layer = PredictedLayer.objects.create(
@@ -585,7 +603,7 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(pred.status, PredictedLayer.FINISHED)
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(pred.rasterlayer_id))
-        self.assertTrue(len(files), 1)
+        self.assertEqual(len(files), 1)
 
         # Test sieving.
         sieve_layer = PredictedLayer.objects.create(
@@ -599,7 +617,7 @@ class SentinelClassifierTest(TestCase):
         self.assertEqual(sieve_layer.status, PredictedLayer.FINISHED)
         # Tiles have been created.
         files = self._get_files('tiles/{}/14'.format(sieve_layer.rasterlayer_id))
-        self.assertTrue(len(files), 1)
+        self.assertEqual(len(files), 1)
 
         # Test wrong configuration errors.
         self.clf.keras_model_json = '{"this": "is not a keras model json"}'

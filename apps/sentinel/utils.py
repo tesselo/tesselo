@@ -154,7 +154,7 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
         return tile
 
 
-def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=True):
+def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=True, nr_of_bands=1):
     """
     Commit a rastertile into the DB and storage.
     """
@@ -176,7 +176,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         'scale': [scale, -scale],
         'srid': WEB_MERCATOR_SRID,
         'datatype': datatype,
-        'bands': [{'nodata_value': nodata_value, }],
+        'bands': [{'nodata_value': nodata_value, }] * nr_of_bands,
         'papsz_options': {
             'compress': 'deflate',
             'predictor': 2,
@@ -201,7 +201,12 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
             result[result_nodata] = current[result_nodata]
 
     # Add result to target dictionary.
-    result_dict['bands'][0]['data'] = result
+    if nr_of_bands > 1:
+        for index in range(nr_of_bands):
+            result_dict['bands'][index]['data'] = result[index]
+    else:
+        result_dict['bands'][0]['data'] = result
+
     # Instanciate GDALRaster.
     dest = GDALRaster(result_dict)
     # Convert GDALRaster to file-like object.
@@ -211,7 +216,7 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         s3 = boto3.client('s3')
         s3.upload_fileobj(dest, settings.AWS_STORAGE_BUCKET_NAME_MEDIA, filename)
     else:
-        tile = default_storage.save(filename)
+        default_storage.save(filename)
 
 
 def populate_raster_metadata(raster):

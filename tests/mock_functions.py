@@ -1,5 +1,6 @@
 import io
 import os
+import uuid
 
 import botocore
 import botocore.session
@@ -7,7 +8,6 @@ import numpy
 from botocore.stub import Stubber
 from django.contrib.gis.gdal import GDALRaster
 from django.core.files import File
-from django.core.files.storage import default_storage
 from django.utils import timezone
 from raster.models import RasterLayer, RasterTile
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
@@ -199,9 +199,11 @@ def patch_get_raster_tile_range_100(layer_id, tilez, tilex, tiley, look_up=True)
     return patch_get_raster_tile(layer_id, tilez, tilex, tiley, data_max=100)
 
 
-def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=False):
+def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.SENTINEL_NODATA_VALUE, datatype=2, merge_with_existing=False, nr_of_bands=1):
     # Convert data to file-like object and store.
-    rst = GDALRaster({
+    result_dict = {
+        'name': '/vsimem/{}'.format(uuid.uuid4()),
+        'driver': 'tiff',
         'width': WEB_MERCATOR_TILESIZE,
         'height': WEB_MERCATOR_TILESIZE,
         'origin': (11843687, -458452),
@@ -209,12 +211,27 @@ def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=
         'srid': WEB_MERCATOR_SRID,
         'datatype': datatype,
         'bands': [
-            {'nodata_value': 0, 'data': result},
-        ],
-    })
-    rst = io.BytesIO(rst.vsi_buffer)
-    filename = 'tiles/{}/{}/{}/{}.tif'.format(layer_id, tilez, tilex, tiley)
-    default_storage.save(filename, rst)
+            {'nodata_value': 0, 'data': None},
+        ] * nr_of_bands,
+    }
+    # Add result to target dictionary.
+    if nr_of_bands > 1:
+        for index in range(nr_of_bands):
+            result_dict['bands'][index]['data'] = result[index]
+    else:
+        result_dict['bands'][0]['data'] = result
+    # Convert to raster.
+    rst = GDALRaster(result_dict)
+    # Convert to file.
+    dest = File(io.BytesIO(rst.vsi_buffer), name='tile.tif')
+    # Write raster tile.
+    RasterTile.objects.create(
+        rasterlayer_id=layer_id,
+        tilex=tilex,
+        tiley=tiley,
+        tilez=tilez,
+        rast=dest,
+    )
 
 
 def patch_process_l2a(stile_id):
