@@ -35,6 +35,7 @@ from classify.models import Classifier, ClassifierAccuracy, PredictedLayer, Pred
 from classify.utils import LogCallback, PixelSequence, RNNRobustScaler
 from jobs import ecs
 from report.tasks import push_reports
+from sentinel.const import SENTINEL_NODATA_VALUE
 from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
 from sentinel_1.const import POLARIZATION_DV_BANDS
 
@@ -757,12 +758,14 @@ def predict_sentinel_chunk(chunk_id):
         # This also assumes 1-N indexing of classes in digital numbers (DN),
         # i.e. classi DN are sequential and start with 1.
         nr_of_bands = 1
+        nodata_value = SENTINEL_NODATA_VALUE
         if not isinstance(chunk.predictedlayer.classifier.clf, Pipeline) and not chunk.predictedlayer.classifier.is_regressor:
             if chunk.predictedlayer.store_class_probabilities:
                 # Store the predicted probabilities separate bands.
                 predicted = [numpy.ascontiguousarray(255 * probability, dtype=dtype) for probability in predicted.swapaxes(0, 1)]
                 # Specify the number of bands to write as number of classes.
                 nr_of_bands = len(predicted)
+                nodata_value = None
             else:
                 # Convert predicted into category index numbers.
                 predicted = numpy.argmax(predicted, axis=1) + 1
@@ -775,6 +778,7 @@ def predict_sentinel_chunk(chunk_id):
             tilez,
             tilex,
             tiley,
+            nodata_value=nodata_value,
             datatype=dtype_gdal,
             merge_with_existing=False,
             nr_of_bands=nr_of_bands,

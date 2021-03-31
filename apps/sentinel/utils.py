@@ -176,7 +176,6 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
         'scale': [scale, -scale],
         'srid': WEB_MERCATOR_SRID,
         'datatype': datatype,
-        'bands': [{'nodata_value': nodata_value, }] * nr_of_bands,
         'papsz_options': {
             'compress': 'deflate',
             'predictor': 2,
@@ -203,9 +202,9 @@ def write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=const.
     # Add result to target dictionary.
     if nr_of_bands > 1:
         for index in range(nr_of_bands):
-            result_dict['bands'][index]['data'] = result[index]
+            result_dict['bands'] = [{'nodata_value': None, 'data': result[index]} for index in range(nr_of_bands)]
     else:
-        result_dict['bands'][0]['data'] = result
+        result_dict['bands'] = [{'nodata_value': nodata_value, 'data': result}]
 
     # Instanciate GDALRaster.
     dest = GDALRaster(result_dict)

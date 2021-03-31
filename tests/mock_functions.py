@@ -210,16 +210,13 @@ def patch_write_raster_tile(layer_id, result, tilez, tilex, tiley, nodata_value=
         'scale': [10, -10],
         'srid': WEB_MERCATOR_SRID,
         'datatype': datatype,
-        'bands': [
-            {'nodata_value': 0, 'data': None},
-        ] * nr_of_bands,
     }
     # Add result to target dictionary.
     if nr_of_bands > 1:
         for index in range(nr_of_bands):
-            result_dict['bands'][index]['data'] = result[index]
+            result_dict['bands'] = [{'nodata_value': None, 'data': result[index]} for index in range(nr_of_bands)]
     else:
-        result_dict['bands'][0]['data'] = result
+        result_dict['bands'] = [{'nodata_value': nodata_value, 'data': result}]
     # Convert to raster.
     rst = GDALRaster(result_dict)
     # Convert to file.
