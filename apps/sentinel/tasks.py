@@ -595,13 +595,13 @@ def process_l2a(sentineltile_id):
             locally_parse_raster(tmpdir, rasterlayer_id, bandpath, zoom)
         except:
             tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
-            shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+            shutil.rmtree('/rasterwd/products/{}'.format(tile.id), ignore_errors=True)
             raise
 
         tile.write('Finished processing band {}'.format(band))
 
     # Remove main product files.
-    shutil.rmtree('/rasterwd/products/{}'.format(tile.id))
+    shutil.rmtree('/rasterwd/products/{}'.format(tile.id), ignore_errors=True)
 
     # Update tile status.
     tile.write('Finished L2A upgrade.', SentinelTile.FINISHED, const.LEVEL_L2A)
@@ -706,6 +706,7 @@ def download_l2a(tile):
         try:
             s3.Object(bucket, prefix).download_file(dest, ExtraArgs={'RequestPayer': 'requester'})
         except:
+            shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
             tile.write('Failed download of L2A data.', SentinelTile.FAILED)
             raise
 
@@ -748,10 +749,10 @@ def run_sen2cor(tile):
         )
         product_request.save_data()
     except:
+        shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
         tile.write('Failed download of product data.', SentinelTile.FAILED)
         raise
     tile.write('Finished download of product data.')
-
     # Construct Sen2Cor command.
     product_path = glob.glob('/rasterwd/products/{}/*.SAFE'.format(tile.id))[0]
     sen2cor_cmd = SEN2COR_CMD_TMPL.format(product_path=product_path)
@@ -761,6 +762,7 @@ def run_sen2cor(tile):
     try:
         subprocess.run(sen2cor_cmd, shell=True, check=True)
     except:
+        shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
         tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
         raise
 
@@ -785,6 +787,7 @@ def run_sen2cor(tile):
 
         if not len(bandpath):
             tile.write('Output for band {} of Sen2Cor algorithm not found. This is likely related to a Sen2Cor failure.'.format(band), SentinelTile.FAILED)
+            shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
             raise ValueError('Could not find band {}'.format(band))
 
         shutil.move(bandpath[0], '/rasterwd/products/{tile_id}/{band}'.format(tile_id=tile.id, band=band))
@@ -792,7 +795,7 @@ def run_sen2cor(tile):
     # Remove unnecessary data.
     glob_pattern = '/rasterwd/products/{tile_id}/S2*.SAFE'.format(tile_id=tile.id)
     for path in glob.glob(glob_pattern):
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
 
     tile.write('Finished applying Sen2Cor algorithm.')
 

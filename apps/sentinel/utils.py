@@ -278,4 +278,4 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
         )
         raise
     finally:
-        shutil.rmtree(parser.tmpdir)
+        shutil.rmtree(parser.tmpdir, ignore_errors=True)
