@@ -90,7 +90,18 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo
     command['jobDefinition'] = job.format(stage=stage)
 
     # Set retry stragegy.
-    command['retryStrategy']['attempts'] = retry
+    if retry > 1:
+        command['retryStrategy']['attempts'] = retry
+    else:
+        # By default retry a job if the EC2 instance is terminated by spot
+        # instance reclaims.
+        command['retryStrategy'] = {
+            "attempts": 5,
+            "evaluateOnExit": [
+                {"onStatusReason": "Host EC2*", "action": "RETRY"},
+                {"onReason": "*", "action": "EXIT"},
+            ],
+        },
 
     # Set job dependency.
     if depends_on:
