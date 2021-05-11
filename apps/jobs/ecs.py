@@ -101,7 +101,7 @@ def run_ecs_command(command_input, vcpus=1, memory=1024, retry=1, queue='tesselo
                 {"onStatusReason": "Host EC2*", "action": "RETRY"},
                 {"onReason": "*", "action": "EXIT"},
             ],
-        },
+        }
 
     # Set job dependency.
     if depends_on:
