@@ -31,7 +31,8 @@
       "AWS_DEFAULT_REGION": "eu-west-1",
       "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
       "DB_USER": "tesselo",
-      "DB_NAME": "tesselo_staging"
+      "DB_NAME": "tesselo_staging",
+      "SENTRY_DSN": "https://7b8f4d6b0f80477888c9abdcf20bb30c@o640190.ingest.sentry.io/5761452"
     },
     "domain": "stagingapi.tesselo.com"
   },
@@ -44,7 +45,8 @@
       "AWS_DEFAULT_REGION": "eu-west-1",
       "DB_HOST": "tesselo-production.ce3mi8diupls.eu-west-1.rds.amazonaws.com",
       "DB_USER": "tesselo",
-      "DB_NAME": "tesselo_production"
+      "DB_NAME": "tesselo_production",
+      "SENTRY_DSN": "https://93613e3dfc064e4da17598f350fc4661@o640190.ingest.sentry.io/5761444"
     },
     "domain": "api.tesselo.com",
     "events": [

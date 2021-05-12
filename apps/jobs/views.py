@@ -1,3 +1,4 @@
+import sentry_sdk
 from botocore.exceptions import NoCredentialsError
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -27,7 +28,8 @@ class BatchJobViewSet(PermissionsModelViewSet):
         try:
             job.update()
             msg = {'success': 'Updated batch job. New status is "{}".'.format(job.status)}
-        except NoCredentialsError:
+        except NoCredentialsError as e:
+            sentry_sdk.capture_exception(e)
             msg = {'error': 'Could not retrieve job details - no credentials found.'}
         # Send response.
         return Response(msg)
@@ -42,7 +44,8 @@ class BatchJobViewSet(PermissionsModelViewSet):
         # Get batch job log.
         try:
             log = job.get_log()
-        except NoCredentialsError:
+        except NoCredentialsError as e:
+            sentry_sdk.capture_exception(e)
             log = {'error': 'Could not retrieve job log - no credentials found.'}
         # Send response.
         return Response(log)
