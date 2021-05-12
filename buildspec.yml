@@ -10,8 +10,8 @@ phases:
       - pip3 install --upgrade --ignore-installed selenium urllib3
       - echo Installing postgis for local testing
       - apt-get install -y software-properties-common wget
-      - add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main"
-      - wget -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+      - sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+      - wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
       - apt-get update
       - apt-get install -y postgresql-9.6-postgis-2.4
       - sed -i s/peer/trust/g /etc/postgresql/9.6/main/pg_hba.conf
