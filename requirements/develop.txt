@@ -4,10 +4,20 @@
 #
 #    pip-compile --output-file=./requirements/develop.txt ./requirements/develop.in
 #
+appdirs==1.4.4
+    # via virtualenv
 backcall==0.2.0
     # via ipython
+cfgv==3.2.0
+    # via pre-commit
 decorator==5.0.7
     # via ipython
+distlib==0.3.1
+    # via virtualenv
+filelock==3.0.12
+    # via virtualenv
+identify==2.2.4
+    # via pre-commit
 ipdb==0.13.2
     # via -r ./requirements/develop.in
 ipython-genutils==0.2.0
@@ -20,22 +30,34 @@ jedi==0.17.2
     # via
     #   -r ./requirements/develop.in
     #   ipython
+nodeenv==1.6.0
+    # via pre-commit
 parso==0.7.1
     # via jedi
 pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
+pre-commit==2.12.1
+    # via -r ./requirements/develop.in
 prompt-toolkit==3.0.18
     # via ipython
 ptyprocess==0.7.0
     # via pexpect
 pygments==2.9.0
     # via ipython
+pyyaml==5.4.1
+    # via pre-commit
+six==1.16.0
+    # via virtualenv
 tblib==1.6.0
     # via -r ./requirements/develop.in
+toml==0.10.2
+    # via pre-commit
 traitlets==5.0.5
     # via ipython
+virtualenv==20.4.6
+    # via pre-commit
 wcwidth==0.2.5
     # via prompt-toolkit
 
