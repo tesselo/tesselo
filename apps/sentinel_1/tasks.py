@@ -14,6 +14,7 @@ import boto3
 import dateutil
 import pytz
 import rasterio
+import sentry_sdk
 from django.contrib.gis.gdal import OGRGeometry
 from django.contrib.gis.geos import MultiPolygon
 from raster.models import RasterLayer
@@ -306,7 +307,8 @@ def snap_terrain_correction(sentinel1tile_id):
             tile.write('Parsing band {}.'.format(band_key))
             try:
                 locally_parse_raster(tmpdir, band.layer.id, output_band_path_parser, const.SENTINEL_1_ZOOM, min_zoom=1)
-            except:
+            except Exception as e:
+                sentry_sdk(e)
                 tile.write('Failed processing band {}. {}'.format(band_key, traceback.format_exc()), Sentinel1Tile.FAILED)
                 raise
 

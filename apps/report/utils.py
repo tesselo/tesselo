@@ -4,6 +4,7 @@ from math import ceil
 
 import numpy
 import rasterio
+import sentry_sdk
 from django.contrib.gis.gdal import OGRGeometry
 from raster.algebra.parser import FormulaParser, RasterAlgebraParser
 from raster.exceptions import RasterAggregationException
@@ -149,7 +150,8 @@ class AggregatorProjection(Aggregator):
                     # Try getting a colormap from the input
                     try:
                         colormap = self.grouping.colormap
-                    except:
+                    except Exception as e:
+                        sentry_sdk.capture_exception(e)
                         raise RasterAggregationException(
                             'Invalid grouping value found for valuecount.'
                         )
@@ -269,7 +271,8 @@ def populate_vc(vc, srid):
         vc.value = {k: str(round(v, VALUECOUNT_ROUNDING_DIGITS)) for k, v in aggregation_result.items()}
 
         vc.status = vc.FINISHED
-    except:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         vc.status = vc.FAILED
 
     vc.save()

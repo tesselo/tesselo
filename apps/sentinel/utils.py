@@ -5,6 +5,7 @@ import uuid
 
 import boto3
 import numpy
+import sentry_sdk
 from django.conf import settings
 from django.contrib.gis.gdal import GDALRaster, SpatialReference
 from django.core.files.storage import default_storage
@@ -132,7 +133,8 @@ def get_raster_tile(layer_id, tilez, tilex, tiley, look_up=True):
         # Convert tile data into a GDALRaster.
         try:
             tile = GDALRaster(tile.read())
-        except:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             continue
 
         # If the tile is a parent of the original, warp it to the
@@ -271,7 +273,8 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
     try:
         parser.create_tiles(list(reversed(range(min_zoom, zoom + 1))))
         parser.send_success_signal()
-    except:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         parser.log(
             traceback.format_exc(),
             status=parser.rasterlayer.parsestatus.FAILED

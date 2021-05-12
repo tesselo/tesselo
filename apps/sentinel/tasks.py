@@ -10,6 +10,7 @@ import traceback
 
 import boto3
 import numpy
+import sentry_sdk
 from dateutil import parser
 from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
@@ -104,7 +105,8 @@ def sync_sentinel_bucket_utm_zone(utm_zone):
         try:
             ingest_tile_from_prefix(tile_prefix, client)
             log.write('Registered ' + tile_prefix)
-        except:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             log.write('Failed registering ' + tile_prefix + traceback.format_exc())
 
     # Log the end of the parsing process
@@ -593,7 +595,8 @@ def process_l2a(sentineltile_id):
             tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
             pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
             locally_parse_raster(tmpdir, rasterlayer_id, bandpath, zoom)
-        except:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
             shutil.rmtree('/rasterwd/products/{}'.format(tile.id), ignore_errors=True)
             raise
@@ -705,7 +708,8 @@ def download_l2a(tile):
         s3 = boto3.resource('s3')
         try:
             s3.Object(bucket, prefix).download_file(dest, ExtraArgs={'RequestPayer': 'requester'})
-        except:
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
             shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
             tile.write('Failed download of L2A data.', SentinelTile.FAILED)
             raise
@@ -748,7 +752,8 @@ def run_sen2cor(tile):
             tile_list=[tile.mgrstile.code],
         )
         product_request.save_data()
-    except:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
         tile.write('Failed download of product data.', SentinelTile.FAILED)
         raise
@@ -761,7 +766,8 @@ def run_sen2cor(tile):
     tile.write('Starting Sen2Cor algorithm.')
     try:
         subprocess.run(sen2cor_cmd, shell=True, check=True)
-    except:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         shutil.rmtree('/rasterwd/products/{tile_id}'.format(tile_id=tile.id), ignore_errors=True)
         tile.write('Failed applying Sen2Cor algorithm.', SentinelTile.FAILED)
         raise

@@ -24,3 +24,4 @@ rasterio==1.1.4
 https://github.com/tesselo/Zappa/archive/allow_sns_not_owned.tar.gz
 https://github.com/geodesign/django-raster/archive/raster_file_field_jp2.tar.gz
 https://github.com/geodesign/django-raster-aggregation/archive/master.tar.gz
+sentry-sdk

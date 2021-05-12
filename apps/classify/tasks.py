@@ -6,6 +6,7 @@ from tempfile import TemporaryFile
 
 import h5py
 import numpy
+import sentry_sdk
 from django.contrib.gis.db.models import Extent
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import Polygon
@@ -240,7 +241,8 @@ def populate_training_matrix_time(classifier):
             # Get first composite after the min date.
             try:
                 composite_after = composites.filter(min_date__gte=sample.date)[0]
-            except IndexError:
+            except IndexError as e:
+                sentry_sdk.capture_exception(e)
                 classifier.write('Skipping sample ID {}. Failed finding composites after sample date {}.'.format(sample.id, sample.date))
                 continue
             # Select the last N steps before the.
@@ -537,6 +539,7 @@ def train_sentinel_classifier(classifier_id):
         else:
             clf.fit(training_generator, **fit_args)
     except Exception as exc:
+        sentry_sdk.capture_exception(exc)
         classifier.write(FITTING_ERROR_MSG + ': ' + str(exc), classifier.FAILED)
         raise
 
