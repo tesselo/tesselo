@@ -4,7 +4,7 @@ import unittest
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options
 
 
 class TestTesseloAPI(unittest.TestCase):
@@ -12,8 +12,7 @@ class TestTesseloAPI(unittest.TestCase):
     def setUp(self):
         options = Options()
         options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        self.browser = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver', options=options)
+        self.browser = webdriver.Firefox(options=options)
         # Set appropriate api endpoint.
         self.stage = os.environ.get('STAGE')
         if self.stage == 'production':
@@ -27,11 +26,8 @@ class TestTesseloAPI(unittest.TestCase):
         self.assertEqual('Tesselo REST API', self.browser.title)
 
     def testAPINothAuthenticated(self):
-        self.browser.get('{}.json'.format(self.api))
-        self.assertEqual(
-            '{"detail":"Authentication credentials were not provided."}',
-            self.browser.find_element_by_tag_name('pre').text,
-        )
+        self.browser.get(self.api)
+        self.assertIn('Authentication credentials were not provided.', self.browser.page_source)
 
     @unittest.skipUnless('TEST_USER' in os.environ, 'Login test requires creds.')
     def testLogin(self):
