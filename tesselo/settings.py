@@ -78,7 +78,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'corsheaders',
 
-    'raster.apps.RasterConfig',
+    'raster',
     'raster_aggregation',
 
     'raster_api',
