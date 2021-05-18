@@ -80,7 +80,7 @@ git+https://github.com/geodesign/django-raster.git@raster_file_field_jp2#egg=dja
     #   django-raster-aggregation
 django-storages==1.9.1
     # via -r ./requirements/common.in
-django==3.2.3
+django==3.0.8
     # via
     #   -r ./requirements/common.in
     #   django-colorful
