@@ -5,21 +5,6 @@ FROM 763104351884.dkr.ecr.eu-west-1.amazonaws.com/tensorflow-training:2.2.0-gpu-
 # https://aws.amazon.com/releasenotes/aws-deep-learning-containers-with-tensorflow-2-2-0/
 # https://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html#registry_auth
 
-# Add requirements files and install dependencies.
-ADD requirements/common.txt /requirements_common.txt
-RUN pip install -r /requirements_common.txt
-
-ADD requirements/workers.txt /requirements_workers.txt
-RUN pip install -r /requirements_workers.txt
-
-# Add codebase.
-ADD apps /code/apps
-ADD tesselo /code/tesselo
-ADD manage.py /code/manage.py
-
-# Setup container run basics.
-WORKDIR /code
-
 # Install Sen2Cor
 # http://step.esa.int/main/third-party-plugins-2/sen2cor/
 ARG AWS_SECRET_ACCESS_KEY
@@ -34,6 +19,21 @@ RUN pip install -U awscli &&\
 # Example product failing without fix: S2B_MSIL1C_20180224T132229_N0206_R038_T23LKC_20180224T140415.SAFE
 # Example product successful without fix: S2A_MSIL1C_20180105T103421_N0206_R108_T30NUM_20180105T123915.SAFE
 RUN sed -i s/t1c_split[[]10[]]/t1c_split[-1]/g /Sen2Cor-2.4.0-Linux64/lib/python2.7/site-packages/sen2cor/L2A_Tables.py
+
+# Add requirements files and install dependencies.
+ADD requirements/common.txt /requirements_common.txt
+RUN pip install -r /requirements_common.txt
+
+ADD requirements/workers.txt /requirements_workers.txt
+RUN pip install -r /requirements_workers.txt
+
+# Add codebase.
+ADD apps /code/apps
+ADD tesselo /code/tesselo
+ADD manage.py /code/manage.py
+
+# Setup container run basics.
+WORKDIR /code
 
 # Fix library dependencies for Sen2Cor's python2.7 build.
 RUN apt-get update
