@@ -7,7 +7,7 @@ requests==2.23.0
 boto3==1.17.66
 botocore==1.20.66
 Pillow==7.1.2
-numpy==1.18.4
+numpy==1.19.5
 ephem==3.7.7.1
 djangorestframework==3.11.0
 djangorestframework-gis==0.17.0
