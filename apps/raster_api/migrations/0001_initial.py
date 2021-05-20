@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         ('auth', '0009_alter_user_last_name_max_length'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('sentinel', '__first__'),
-        ('raster', '0039_merge_20171116_1051'),
+        ('raster', '0040_merge_20190313_1143'),
         ('raster_aggregation', '0020_auto_20180308_0435'),
     ]
 

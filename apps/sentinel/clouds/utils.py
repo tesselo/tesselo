@@ -22,8 +22,8 @@ def sun(time, lat, lon):
     # types apparently.
     obs = ephem.Observer()
     obs.date = time.strftime('%y-%m-%d %H:%M:%S')
-    obs.lat = str(lat)
-    obs.lon = str(lon)
+    obs.lat = lat * ephem.degree
+    obs.lon = lon * ephem.degree
     # Get the sun.
     sun = ephem.Sun()
     # Compute observation angle.
