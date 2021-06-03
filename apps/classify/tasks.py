@@ -617,11 +617,20 @@ def get_aggregationlayer_tile_indices(aggregationlayer, zoom):
         extent = aggregationlayer.aggregationarea_set.aggregate(Extent('geom'))['geom__extent']
         aggregationlayer.extent = Polygon.from_bbox(extent)
         aggregationlayer.save()
-    # Compute indexrange.
-    index_range = tile_index_range(aggregationlayer.extent.extent, zoom)
-    for idx in range(index_range[0], index_range[2] + 1):
-        for idy in range(index_range[1], index_range[3] + 1):
-            yield (idx, idy, zoom)
+    # Create set to hold tile indexes.
+    indexranges = set()
+    # Loop through all aggregationareas.
+    for aggarea in aggregationlayer.aggregationarea_set.all():
+        # Get index range from aggregationarea.
+        geom = aggarea.geom.transform(WEB_MERCATOR_SRID, clone=True)
+        indexrange = tile_index_range(geom.extent, zoom, tolerance=1e-3)
+        # Add additional tiles to set.
+        for tilex in range(indexrange[0], indexrange[2] + 1):
+            for tiley in range(indexrange[1], indexrange[3] + 1):
+                indexranges.add((tilex, tiley, zoom))
+
+    for idxr in indexranges:
+        yield idxr
 
 
 def get_prediction_index_range(pred, zoom=ZOOM):
