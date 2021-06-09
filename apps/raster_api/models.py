@@ -21,7 +21,7 @@ class ReadOnlyToken(models.Model):
     """
     key = models.CharField(max_length=40, primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(editable=True, help_text="This date serves as expiry date. The token is valid up to that date plus two weeks.")
 
     def save(self, *args, **kwargs):
         if not self.key:

@@ -33,8 +33,12 @@ class GuardedAggregationLayerModelAdmin(ComputeActivityAggregatesModelAdmin, Gua
     pass
 
 
+class ReadOnlyTokenAdmin(TokenAdmin):
+    fields = ('user', 'created', )
+
+
 admin.site.unregister(AggregationLayer)
 admin.site.register(AggregationLayer, GuardedAggregationLayerModelAdmin)
 admin.site.register(PublicAggregationLayer)
 admin.site.register(TesseloUserAccount)
-admin.site.register(ReadOnlyToken, TokenAdmin)
+admin.site.register(ReadOnlyToken, ReadOnlyTokenAdmin)
