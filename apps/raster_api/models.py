@@ -1,5 +1,6 @@
 import binascii
 import os
+from datetime import datetime, timedelta
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import HStoreField
@@ -14,6 +15,10 @@ from raster_aggregation.models import AggregationLayer
 from sentinel.models import Composite, CompositeBuild, SentinelTileAggregationLayer
 
 
+def get_expiration_date():
+    return datetime.now() + timedelta(days=14)
+
+
 class ReadOnlyToken(models.Model):
     """
     A clone of the token-auth token. This clone can be used to make read-only
@@ -21,7 +26,8 @@ class ReadOnlyToken(models.Model):
     """
     key = models.CharField(max_length=40, primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    created = models.DateTimeField(editable=True, help_text="This date serves as expiry date. The token is valid up to that date plus two weeks.")
+    created = models.DateTimeField(auto_now_add=True)
+    expiration_date = models.DateTimeField(default=get_expiration_date)
 
     def save(self, *args, **kwargs):
         if not self.key:

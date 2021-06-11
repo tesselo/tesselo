@@ -24,7 +24,7 @@ class ReadOnlyTokenSerializer(ModelSerializer):
 
     class Meta:
         model = ReadOnlyToken
-        fields = ('key', 'user', )
+        fields = ('key', 'user', 'expiration_date')
         read_only_fields = ('user', 'key', )
 
     def create(self, validated_data):

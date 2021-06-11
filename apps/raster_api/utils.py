@@ -4,14 +4,12 @@ from django.conf import settings
 from django.utils import timezone
 from PIL import Image, ImageDraw
 
-from raster_api.const import EXPIRING_TOKEN_LIFESPAN
-
 
 def expired(token):
     """
     Verify the token expiry date.
     """
-    return timezone.now() - token.created >= EXPIRING_TOKEN_LIFESPAN
+    return timezone.now() > token.expiration_date
 
 
 def get_empty_tile(zoom=None, zoom_limit=None, mode='Min'):

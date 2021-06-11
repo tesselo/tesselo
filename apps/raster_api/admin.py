@@ -34,7 +34,8 @@ class GuardedAggregationLayerModelAdmin(ComputeActivityAggregatesModelAdmin, Gua
 
 
 class ReadOnlyTokenAdmin(TokenAdmin):
-    fields = ('user', 'created', )
+    fields = ('user', 'expiration_date', )
+    list_display = ('key', 'user', 'expiration_date', )
 
 
 admin.site.unregister(AggregationLayer)

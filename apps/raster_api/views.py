@@ -38,7 +38,7 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from jobs import ecs
 from naip.models import NAIPQuadrangle
 from naip.utils import get_naip_tile
-from raster_api.const import COOKIE_AUTH_KEY, EXPIRING_TOKEN_LIFESPAN, NAIP_MIN_ZOOM
+from raster_api.const import COOKIE_AUTH_KEY, NAIP_MIN_ZOOM
 from raster_api.exceptions import MissingZoomLevel
 from raster_api.filters import CompositeFilter, SentinelTileAggregationLayerFilter
 from raster_api.models import ReadOnlyToken
@@ -483,9 +483,6 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
             token.delete()
             token = Token.objects.create(user=user)
 
-        # Compute expiration date.
-        expiration = token.created + EXPIRING_TOKEN_LIFESPAN
-
         # Obtain tesselo user account profile.
         if hasattr(user, 'tesselouseraccount'):
             profile = user.tesselouseraccount.profile
@@ -495,7 +492,7 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
         # Create reponse.
         response = Response({
             'token': token.key,
-            'expires': expiration,
+            'expiration_date': token.expiration_date,
             'is_staff': user.is_staff,
             'profile': profile,
         })
@@ -504,7 +501,7 @@ class ObtainExpiringAuthToken(ObtainAuthToken):
         response.set_cookie(
             COOKIE_AUTH_KEY,
             token,
-            expires=expiration,
+            expires=token.expiration_date,
             httponly=True,
             domain=request.META.get('HTTP_HOST', None),
         )
