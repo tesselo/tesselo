@@ -1,11 +1,11 @@
-import logging
 import os
 
 import boto3
+import structlog
 
 from naip.models import NAIPQuadrangle
 
-logger = logging.getLogger('django')
+logger = structlog.get_logger('django_structlog')
 
 
 def ingest_naip_prefix(prefix):

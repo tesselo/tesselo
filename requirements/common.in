@@ -25,3 +25,4 @@ git+https://github.com/tesselo/Zappa.git@allow_sns_not_owned#egg=Zappa
 git+https://github.com/geodesign/django-raster.git@raster_file_field_jp2#egg=django-raster
 git+https://github.com/geodesign/django-raster-aggregation.git@master#egg=django-raster-aggregation
 sentry-sdk
+django-structlog
