@@ -280,7 +280,7 @@ if DEBUG:
 else:
     EMAIL_HOST = 'smtp.fastmail.com'
     EMAIL_PORT = '587'
-    EMAIL_HOST_USER = 'daniel@tesselo.com'
+    EMAIL_HOST_USER = 'no-reply@tesselo.com'
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     EMAIL_USE_TLS = True
 
