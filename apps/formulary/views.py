@@ -11,6 +11,7 @@ from raster.algebra.parser import RasterAlgebraParser
 from raster.const import IMG_ENHANCEMENTS, IMG_FORMATS
 from raster.utils import band_data_to_image, pixel_value_from_point
 from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
 
 from formulary.models import Formula
 from formulary.permissions import RenderFormulaPermission
@@ -20,9 +21,16 @@ from sentinel.models import Composite, SentinelTile
 from sentinel_1 import const
 
 
+class FormulaPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 500
+
+
 class FormulaViewSet(PermissionsModelViewSet):
     queryset = Formula.objects.all().order_by('-rgb', 'name')
     serializer_class = FormulaSerializer
+    pagination_class = FormulaPagination
     filter_backends = (SearchFilter, DjangoFilterBackend, )
     search_fields = ('name', 'acronym')
     _model = 'formula'
