@@ -11,6 +11,7 @@ import traceback
 import boto3
 import numpy
 import sentry_sdk
+import structlog
 from dateutil import parser
 from django.conf import settings
 from django.contrib.gis.gdal import Envelope, GDALRaster, OGRGeometry
@@ -36,7 +37,7 @@ from sentinel.utils import aggregate_tile, disaggregate_tile, get_raster_tile, l
 from sentinel_1 import const as s1const
 from sentinel_1.models import Sentinel1Tile
 
-logger = logging.getLogger('django')
+logger = structlog.get_logger('django_structlog')
 
 boto3.set_stream_logger('boto3', logging.ERROR)
 

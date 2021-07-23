@@ -2,7 +2,6 @@ import datetime
 import glob
 import gzip
 import json
-import logging
 import os
 import pathlib
 import shutil
@@ -15,6 +14,7 @@ import dateutil
 import pytz
 import rasterio
 import sentry_sdk
+import structlog
 from django.contrib.gis.gdal import OGRGeometry
 from django.contrib.gis.geos import MultiPolygon
 from raster.models import RasterLayer
@@ -31,7 +31,7 @@ from sentinel_1.models import Sentinel1Tile, Sentinel1TileBand
 UTC = pytz.timezone('UTC')
 
 # Get logger.
-logger = logging.getLogger('django')
+logger = structlog.get_logger('django_structlog')
 
 
 def parse_s3_sentinel_1_inventory():
