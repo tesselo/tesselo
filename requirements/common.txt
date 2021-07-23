@@ -147,7 +147,7 @@ numpy==1.19.5
     #   django-raster
     #   rasterio
     #   snuggs
-pep517==0.10.0
+pep517==0.11.0
     # via pip-tools
 pillow==7.1.2
     # via
@@ -213,13 +213,15 @@ structlog==21.1.0
 text-unidecode==1.3
     # via python-slugify
 toml==0.10.2
-    # via
-    #   pep517
-    #   zappa
+    # via zappa
+tomli==1.1.0
+    # via pep517
 tqdm==4.61.2
     # via zappa
-troposphere==3.0.1
-    # via zappa
+troposphere==2.7.1
+    # via
+    #   -r ./requirements/common.in
+    #   zappa
 uritemplate==3.0.1
     # via coreapi
 urllib3==1.25.11

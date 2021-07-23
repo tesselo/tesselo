@@ -4,10 +4,10 @@
 #
 #    pip-compile --output-file=./requirements/develop.txt ./requirements/develop.in
 #
-appdirs==1.4.4
-    # via virtualenv
 backcall==0.2.0
     # via ipython
+backports.entry-points-selectable==1.1.0
+    # via virtualenv
 cfgv==3.3.0
     # via pre-commit
 decorator==5.0.9
@@ -38,6 +38,8 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
+platformdirs==2.0.2
+    # via virtualenv
 pre-commit==2.13.0
     # via -r ./requirements/develop.in
 prompt-toolkit==3.0.19
@@ -56,7 +58,7 @@ toml==0.10.2
     # via pre-commit
 traitlets==5.0.5
     # via ipython
-virtualenv==20.4.7
+virtualenv==20.6.0
     # via pre-commit
 wcwidth==0.2.5
     # via prompt-toolkit
