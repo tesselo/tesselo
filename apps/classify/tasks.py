@@ -14,7 +14,10 @@ from django.core.files import File
 from raster.rasterize import rasterize
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE
 from raster.tiles.utils import tile_bounds, tile_index_range
+from rasterio import Affine
 from rasterio.features import sieve
+from rasterio.io import MemoryFile
+from rasterio.warp import Resampling
 from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
@@ -37,7 +40,7 @@ from classify.utils import LogCallback, PixelSequence, RNNRobustScaler
 from jobs import ecs
 from report.tasks import push_reports
 from sentinel.const import SENTINEL_NODATA_VALUE
-from sentinel.utils import aggregate_tile, get_raster_tile, write_raster_tile
+from sentinel.utils import get_raster_tile, write_raster_tile
 from sentinel_1.const import POLARIZATION_DV_BANDS
 
 
@@ -898,17 +901,38 @@ def build_predicted_pyramid(predicted_layer_id):
             tile_data = [
                 numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype(dtype) if tile is None else tile.bands[0].data() for tile in tiles
             ]
-            # Aggregate tile to lower resolution.
-            tile_data = [aggregate_tile(tile, target_dtype=tile.dtype, discrete=tile.dtype is CLASSIFICATION_DATATYPE) for tile in tile_data]
             # Combine data to larger tile.
             tile_data = numpy.concatenate([
                 numpy.concatenate(tile_data[:2], axis=1),
                 numpy.concatenate(tile_data[2:], axis=1),
             ])
+            # Aggregate tile to lower resolution using rasterio resampling.
+            transform = Affine(1, 0, 0, 0, -1, 0)
+            creation_args = {
+                'driver': 'GTiff',
+                'dtype': tile_data.dtype,
+                'nodata': None,
+                'width': tile_data.shape[1],
+                'height': tile_data.shape[0],
+                'count': 1,
+                'crs': f'EPSG:{WEB_MERCATOR_SRID}',
+                'transform': transform,
+            }
+            with MemoryFile() as memfile_src:
+                with memfile_src.open(**creation_args) as src:
+                    src.write(tile_data, 1)
+                    tile_data_rescaled = src.read(
+                        out_shape=(
+                            1,
+                            int(creation_args['height'] / 2),
+                            int(creation_args['width'] / 2),
+                        ),
+                        resampling=Resampling.nearest,
+                    )
             # Write tile.
             write_raster_tile(
                 layer_id=pred.rasterlayer_id,
-                result=tile_data,
+                result=tile_data_rescaled,
                 tilez=tilez,
                 tilex=tilex,
                 tiley=tiley,
