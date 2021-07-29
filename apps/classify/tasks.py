@@ -904,7 +904,7 @@ def build_predicted_pyramid(predicted_layer_id):
                 numpy.concatenate(tile_data[2:], axis=1),
             ])
             # Aggregate tile to lower resolution using rasterio resampling.
-            tile_data_rescaled = aggregate_tile(tile_data, target_dtype=tile_data.dtype, discrete=True)
+            tile_data_rescaled = aggregate_tile(tile_data, target_dtype=tile_data.dtype, discrete=tile_data.dtype is CLASSIFICATION_DATATYPE)
             # Write tile.
             write_raster_tile(
                 layer_id=pred.rasterlayer_id,
