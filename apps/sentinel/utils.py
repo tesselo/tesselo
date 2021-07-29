@@ -13,6 +13,9 @@ from raster.models import RasterLayerParseStatus
 from raster.tiles.const import WEB_MERCATOR_SRID, WEB_MERCATOR_TILESIZE, WEB_MERCATOR_WORLDSIZE
 from raster.tiles.parser import RasterLayerParser
 from raster.tiles.utils import tile_bounds, tile_index_range, tile_scale
+from rasterio import Affine
+from rasterio.io import MemoryFile
+from rasterio.warp import Resampling
 
 from sentinel import const
 
@@ -25,19 +28,50 @@ def aggregate_tile(tile, target_dtype=None, discrete=False):
     Inspired by:
     https://stackoverflow.com/questions/16856788/slice-2d-array-into-smaller-2d-arrays
     """
-    tile.shape = (const.AGG_TILE_SIZE, const.AGG_FACTOR, const.AGG_TILE_SIZE, const.AGG_FACTOR)
-    tile = tile.swapaxes(1, 2)
-    tile = tile.reshape(const.AGG_TILE_SIZE_SQ, const.AGG_FACTOR, const.AGG_FACTOR)
     if discrete:
-        # Simplified Nearest neighbor - take upper left pixel.
-        tile = tile[:, 0, 0]
+        # Create arbitrary affine. These values do not matter for a simple resampling
+        # because resampling is the same anywhere in the world.
+        transform = Affine(1, 0, 0, 0, -1, 0)
+        # Prepare creation args for an in-memory tif file that we will use for resampling.
+        creation_args = {
+            'driver': 'GTiff',
+            'dtype': tile.dtype,
+            'nodata': None,
+            'width': tile.shape[1],
+            'height': tile.shape[0],
+            'count': 1,
+            'crs': f'EPSG:{WEB_MERCATOR_SRID}',
+            'transform': transform,
+        }
+        # Open a new raster in memory.
+        with MemoryFile() as memfile_src:
+            with memfile_src.open(**creation_args) as src:
+                # Write the tile data into the memory file.
+                src.write(tile, 1)
+                # Resample the tile data using the nearest neighbor mode from gdal.
+                # This is done by reading the first band and resample into smaller shape.
+                tile = src.read(
+                    1,
+                    out_shape=(
+                        1,
+                        int(creation_args['height'] / 2),
+                        int(creation_args['width'] / 2),
+                    ),
+                    resampling=Resampling.nearest,
+                )
     else:
+        # Reshape data into subgroups to average over.
+        tile.shape = (const.AGG_TILE_SIZE, const.AGG_FACTOR, const.AGG_TILE_SIZE, const.AGG_FACTOR)
+        tile = tile.swapaxes(1, 2)
+        tile = tile.reshape(const.AGG_TILE_SIZE_SQ, const.AGG_FACTOR, const.AGG_FACTOR)
         # Average it for continuous values.
         tile = numpy.mean(tile, axis=(1, 2))
+        # Reshape into a squared tile.
+        tile.shape = (const.AGG_TILE_SIZE, const.AGG_TILE_SIZE)
+
     # Convert to a specific type if requested.
     if target_dtype:
         tile = tile.astype(target_dtype)
-    tile.shape = (const.AGG_TILE_SIZE, const.AGG_TILE_SIZE)
     return tile
 
 
