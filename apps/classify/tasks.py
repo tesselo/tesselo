@@ -898,17 +898,17 @@ def build_predicted_pyramid(predicted_layer_id):
             tile_data = [
                 numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE)).astype(dtype) if tile is None else tile.bands[0].data() for tile in tiles
             ]
-            # Aggregate tile to lower resolution.
-            tile_data = [aggregate_tile(tile, target_dtype=tile.dtype, discrete=tile.dtype is CLASSIFICATION_DATATYPE) for tile in tile_data]
             # Combine data to larger tile.
             tile_data = numpy.concatenate([
                 numpy.concatenate(tile_data[:2], axis=1),
                 numpy.concatenate(tile_data[2:], axis=1),
             ])
+            # Aggregate tile to lower resolution using rasterio resampling.
+            tile_data_rescaled = aggregate_tile(tile_data, target_dtype=tile_data.dtype, discrete=tile_data.dtype is CLASSIFICATION_DATATYPE)
             # Write tile.
             write_raster_tile(
                 layer_id=pred.rasterlayer_id,
-                result=tile_data,
+                result=tile_data_rescaled,
                 tilez=tilez,
                 tilex=tilex,
                 tiley=tiley,

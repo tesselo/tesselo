@@ -7,16 +7,18 @@ from sentinel.tasks import aggregate_tile, disaggregate_tile
 class AggregatorTests(TestCase):
 
     def test_continuous_aggregator(self):
-        tile = (numpy.random.random_sample((256, 256)) * 100).astype('uint8')
+        tile = numpy.arange(512 * 512).reshape((512, 512)).astype('uint8')
         # Continuous case.
         result = aggregate_tile(tile, target_dtype='uint16')
-        self.assertEqual(numpy.mean(numpy.take(tile, [0, 1, 256, 257])).astype('uint16'), result[0, 0])
+        self.assertEqual(7, result[0, 3])
+        self.assertEqual(result.dtype, numpy.uint16)
 
     def test_discrete_aggregator(self):
-        tile = (numpy.random.random_sample((256, 256)) * 100).astype('uint8')
+        tile = numpy.arange(512 * 512).reshape((512, 512)).astype('uint8')
         # Discrete case.
-        result = aggregate_tile(tile, target_dtype='uint8', discrete=True)
-        self.assertEqual(tile.reshape(256, 256)[0, 6], result[0, 3])
+        result = aggregate_tile(tile, target_dtype='uint16', discrete=True)
+        self.assertEqual(7, result[0, 3])
+        self.assertEqual(result.dtype, numpy.uint16)
 
     def test_disaggregator(self):
         data = numpy.arange(1, 256 * 256 + 1)
