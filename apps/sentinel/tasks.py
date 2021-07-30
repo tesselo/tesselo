@@ -527,26 +527,25 @@ def process_compositetile(compositetile_id):
                         dtype = numpy.uint8
                     else:
                         dtype = numpy.uint16
-                    # Aggregate each tile in the block of 2x2.
+                    # Read each tile in the block of 2x2.
                     for idx, dat in enumerate(((0, 0), (1, 0), (0, 1), (1, 1))):
                         tile = get_raster_tile(rasterlayer_id, zoom, tilex + dat[0], tiley + dat[1])
                         if tile:
                             none_found = False
-                            agg = aggregate_tile(tile.bands[0].data(), target_dtype=dtype)
+                            agg = tile.bands[0].data()
                         else:
                             size = WEB_MERCATOR_TILESIZE // 2
                             agg = numpy.zeros((size, size), dtype=dtype)
                         result.append(agg)
-
                     # Continue if no tile could be found for this 2x2 block.
                     if none_found:
                         continue
-
-                    # Combine the aggregated version of the tiles to a new full tile at lower zoom level.
+                    # Combine the tiles to a new full tile.
                     upper = numpy.append(result[0], result[1], axis=1)
                     lower = numpy.append(result[2], result[3], axis=1)
                     result = numpy.append(upper, lower, axis=0)
-
+                    # Aggregate tile by a factor of two to match lower zoom level.
+                    result = aggregate_tile(result, target_dtype=dtype)
                     # Write pixels into a tile, using dtype and nodata specs of
                     # each satellite system.
                     if is_S1:
