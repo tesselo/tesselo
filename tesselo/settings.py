@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 """
 import glob
 import os
+import sysconfig
 
 import sentry_sdk
 import structlog
@@ -46,17 +47,11 @@ LOGIN_REDIRECT_URL = '/'
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Custom GDAL C-library locations.
-if os.environ.get('ZAPPA', None):
-    BASE_DIR_GDAL = '/var/venv/lib/python3.8/site-packages'
-elif os.environ.get('TESSELO_GPU', None):
-    BASE_DIR_GDAL = '/usr/local/lib/python3.7/site-packages'
-else:
-    BASE_DIR_GDAL = BASE_DIR
+BASE_DIR_PACKAGES = sysconfig.get_paths()["purelib"]
 
-GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio.libs/libgdal-*.so.*'))[0]
-GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio.libs/libgeos_c-*.so.*'))[0]
-os.environ['GDAL_DATA'] = os.path.join(BASE_DIR_GDAL, 'rasterio/gdal_data')  # Set gdal data env var.
+GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_PACKAGES, 'rasterio.libs/libgdal-*.so.*'))[0]
+GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_PACKAGES, 'rasterio.libs/libgeos_c-*.so.*'))[0]
+os.environ['GDAL_DATA'] = os.path.join(BASE_DIR_PACKAGES, 'rasterio/gdal_data')  # Set gdal data env var.
 
 # Application definition
 INSTALLED_APPS = [
