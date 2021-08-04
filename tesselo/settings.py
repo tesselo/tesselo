@@ -47,11 +47,18 @@ LOGIN_REDIRECT_URL = '/'
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-BASE_DIR_PACKAGES = sysconfig.get_paths()["purelib"]
+PYTHON_VERSION = sysconfig.get_python_version()
 
-GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_PACKAGES, 'rasterio.libs/libgdal-*.so.*'))[0]
-GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_PACKAGES, 'rasterio.libs/libgeos_c-*.so.*'))[0]
-os.environ['GDAL_DATA'] = os.path.join(BASE_DIR_PACKAGES, 'rasterio/gdal_data')  # Set gdal data env var.
+if os.environ.get('ZAPPA', None):
+    BASE_DIR_GDAL = f'/var/venv/lib/{PYTHON_VERSION}/site-packages'
+elif os.environ.get('TESSELO_GPU', None):
+    BASE_DIR_GDAL = f'/usr/local/lib/{PYTHON_VERSION}/site-packages'
+else:
+    BASE_DIR_GDAL = BASE_DIR
+
+GDAL_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio.libs/libgdal-*.so.*'))[0]
+GEOS_LIBRARY_PATH = glob.glob(os.path.join(BASE_DIR_GDAL, 'rasterio.libs/libgeos_c-*.so.*'))[0]
+os.environ['GDAL_DATA'] = os.path.join(BASE_DIR_GDAL, 'rasterio/gdal_data')  # Set gdal data env var.
 
 # Application definition
 INSTALLED_APPS = [
