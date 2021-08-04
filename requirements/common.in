@@ -26,4 +26,5 @@ git+https://github.com/geodesign/django-raster.git@raster_file_field_jp2#egg=dja
 git+https://github.com/geodesign/django-raster-aggregation.git@master#egg=django-raster-aggregation
 sentry-sdk
 django-structlog
+structlog-sentry
 troposphere<3
