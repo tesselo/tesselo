@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 import glob
 import logging
 import os
-import sysconfig
 
 import sentry_sdk
 import structlog
@@ -49,12 +48,11 @@ LOGIN_REDIRECT_URL = '/'
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-PYTHON_VERSION = sysconfig.get_python_version()
-
+# Custom GDAL C-library locations.
 if os.environ.get('ZAPPA', None):
-    BASE_DIR_GDAL = f'/var/venv/lib/{PYTHON_VERSION}/site-packages'
+    BASE_DIR_GDAL = '/var/venv/lib/python3.8/site-packages'
 elif os.environ.get('TESSELO_GPU', None):
-    BASE_DIR_GDAL = f'/usr/local/lib/{PYTHON_VERSION}/site-packages'
+    BASE_DIR_GDAL = '/usr/local/lib/python3.7/site-packages'
 else:
     BASE_DIR_GDAL = BASE_DIR
 
