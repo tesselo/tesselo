@@ -270,7 +270,7 @@ def populate_raster_metadata(raster):
     raster.parsestatus.save()
 
 
-def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=True, min_zoom=0):
+def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=True, min_zoom=0, fallback_srid=None):
     """
     Instead of uploading the reprojected tif, we could parse the rasters right
     here. This would allow to never store the full tif files, but is more
@@ -284,6 +284,10 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
 
     # Open rasterlayer as GDALRaster, assign to parser attribute.
     parser.dataset = GDALRaster(src_rst)
+
+    # Try to use the fallback SRID for the raster if it is unspecified.
+    if parser.dataset.srs is None:
+        parser.dataset.srid = fallback_srid
     parser.extract_metadata()
 
     # Reproject the rasterfile to web mercator.
