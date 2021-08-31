@@ -283,7 +283,7 @@ def locally_parse_raster(tmpdir, rasterlayer_id, src_rst, zoom, remove_tmpdir=Tr
     parser.rasterlayer.parsestatus.save()
 
     # Open rasterlayer as GDALRaster, assign to parser attribute.
-    parser.dataset = GDALRaster(src_rst)
+    parser.dataset = GDALRaster(src_rst, write=True)
 
     # Try to use the fallback SRID for the raster if it is unspecified.
     if parser.dataset.srs is None:
