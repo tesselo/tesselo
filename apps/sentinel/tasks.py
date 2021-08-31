@@ -584,8 +584,15 @@ def process_l2a(sentineltile_id):
     try:
         obj.get(RequestPayer='requester')
     except s3.meta.client.exceptions.NoSuchKey:
+        # Get fallback SRID. This SRID will be used if Sen2Cor fails to properly set
+        # the srid of its output rasters.
+        client = boto3.client(const.CLIENT_TYPE)
+        tileinfo = client.get_object(Key=f'{tile.prefix}tileInfo.json', Bucket=const.BUCKET_NAME, RequestPayer='requester')
+        tileinfo = json.loads(tileinfo.get(const.TILEINFO_BODY_KEY).read().decode())
+        fallback_srid = int(tileinfo['tileGeometry']['crs']['properties']['name'].split(':')[-1])
         run_sen2cor(tile)
     else:
+        fallback_srid = None
         download_l2a(tile)
 
     # Ingest the resulting rasters as tiles.
@@ -594,7 +601,7 @@ def process_l2a(sentineltile_id):
         try:
             tmpdir = '/rasterwd/products/{tile_id}/tmp'.format(tile_id=tile.id)
             pathlib.Path(tmpdir).mkdir(parents=True, exist_ok=True)
-            locally_parse_raster(tmpdir, rasterlayer_id, bandpath, zoom)
+            locally_parse_raster(tmpdir, rasterlayer_id, bandpath, zoom, fallback_srid=fallback_srid)
         except Exception as e:
             sentry_sdk.capture_exception(e)
             tile.write('Failed processing band {}. {}'.format(band, traceback.format_exc()), SentinelTile.FAILED)
