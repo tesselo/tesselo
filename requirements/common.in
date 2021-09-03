@@ -27,3 +27,4 @@ git+https://github.com/geodesign/django-raster-aggregation.git@master#egg=django
 sentry-sdk
 django-structlog
 troposphere<3
+slack-sdk
