@@ -286,6 +286,13 @@ else:
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     EMAIL_USE_TLS = True
 
+
+# Slack settings.
+SLACK_TOKEN = os.environ.get('SLACK_TOKEN', '')
+SLACK_ERRORS_CHANNEL = 'C023AKACQCV'
+SLACK_TECH_CHANNEL = 'C01SF1KHC77'
+SLACK_DEVNULL_CHANNEL = 'C021VUWGA3E'
+
 # Logger settings.
 if not DEBUG:
     LOGGING = {

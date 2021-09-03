@@ -204,6 +204,8 @@ six==1.16.0
     #   protobuf
     #   python-dateutil
     #   zappa
+slack-sdk==3.10.1
+    # via -r ./requirements/common.in
 snuggs==1.4.7
     # via rasterio
 sqlparse==0.4.1
