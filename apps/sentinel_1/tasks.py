@@ -197,7 +197,7 @@ def snap_terrain_correction(sentinel1tile_id):
 
     aws s3 ls s3://sentinel-inventory/sentinel-s1-l1c/sentinel-s1-l1c-inventory/2019-12-04T04-00Z/
     aws s3 sync --request-payer requester s3://sentinel-s1-l1c/GRD/2018/8/12/EW/DH/S1A_EW_GRDH_1SDH_20180812T104348_20180812T104451_023212_0285C2_F7F4 ~/Desktop/s1dwn
-    aws s3 ls s3://sentinel-s1-l1c/GRD/2018/8/12/EW/DH/S1A_EW_GRDH_1SDH_20180812T104348_20180812T104451_023212_0285C2_F7F4
+    aws s3 ls --request-payer=requester s3://sentinel-s1-l1c/GRD/2018/8/12/EW/DH/S1A_EW_GRDH_1SDH_20180812T104348_20180812T104451_023212_0285C2_F7F4
     """
     # Get tile object.
     tile = Sentinel1Tile.objects.get(id=sentinel1tile_id)
