@@ -42,7 +42,7 @@ ALLOWED_HOSTS = ['*']
 
 LOGIN_REDIRECT_URL = '/'
 
-# Forward to ssl if not ssl recieved.
+# Forward to ssl if not ssl received.
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     'raster',
     'raster_aggregation',
 
+    'auth_admin',
     'raster_api',
     'sentinel',
     'sentinel_1',
@@ -137,6 +138,8 @@ CORS_ORIGIN_WHITELIST = [
     "https://devapp.tesselo.com",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 CORS_ALLOW_CREDENTIALS = True
 

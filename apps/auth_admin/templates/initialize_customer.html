@@ -1,0 +1,101 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+
+{% block extrahead %}{{ block.super }}
+    <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+    {{ media }}
+    {{ date_form.media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+
+{% block content %}
+    <div id="content-main">
+        <form action="" method="post">
+            {% csrf_token %}
+            <div>
+                <fieldset class="module aligned {{ fieldset.classes }}">
+                    <h2 class="header">Group Setup</h2>
+                    <div class="form-row field-name">
+                        <label class="required" for="organization_short">Organization Short Name: </label>
+                        <input type="text" class="vTextField" id="organization_short" name="organization_short"
+                               placeholder="ACME" required=""/>
+                        <div class="help">We will use this for the group name and composites</div>
+                    </div>
+                    <div class="form-row field-name">
+                        <label for="project_short">Project Short Name: </label>
+                        <input type="text" class="vTextField" id="project_short" name="project_short" placeholder="Safebox"/>
+                        <div class="help">We will use this for the composites too (optional)</div>
+                    </div>
+                    <div class="form-row field-name">
+                        <label class="required" for="country_code">Country code (2 letters): </label>
+                        <input type="text" class="vTextField" id="country_code" name="country_code" placeholder="PT" required=""/>
+                        <div class="help">This is where the project takes place</div>
+                    </div>
+
+                </fieldset>
+                <fieldset class="module aligned {{ fieldset.classes }}">
+                    <div class="clearfix">
+                        <h2 class="description">Object Creation</h2>
+                    </div>
+
+                    <div class="container">
+                        <div class="form-row field-name">
+                            <label class="required" for="id_aggregationlayer">Aggregation Layer ID: </label>
+                            <input type="text" name="aggregationlayer" id="id_aggregationlayer" required=""
+                                   class="vForeignKeyRawIdAdminField">
+                            <a href="/admin/raster_aggregation/aggregationlayer/?_to_field=id&_popup=1"
+                               class="related-lookup" id="lookup_id_aggregationlayer" title="Lookup"></a>
+                        </div>
+                        <div class="form-row filed-name">
+                            <label class="required" for="id_date_start">Start date:</label>
+                            <p class="datetime">
+                                <input type="text" name="id_date_start" class="vDateField" size="10" required=""
+                                       id="id_date_start"><span class="datetimeshortcuts"></span>
+                            </p>
+                        </div>
+                        <div class="form-row filed-name">
+                            <label class="required" for="id_date_end">End date:</label>
+                            <p class="datetime">
+                                <input type="text" name="id_date_end" class="vDateField" size="10" required=""
+                                       id="id_date_end"><span class="datetimeshortcuts"></span>
+                            </p>
+                        </div>
+                        <div class="form-row field-name">
+                            <label for="sentinel_1">Include Sentinel 1?</label>
+                            <input type="checkbox" id="sentinel_1" name="sentinel_1">
+                        </div>
+                        <div class="form-row field-name">
+                            <label for="sentinel_2">Include Sentinel 2?</label>
+                            <input type="checkbox" id="sentinel_2" name="sentinel_2" checked="">
+                        </div>
+                        <div class="form-row field-name">
+                            <label class="required" for="cloudy_percent">Cloudy percentage: </label>
+                            <input type="number" class="vTextField" id="cloudy_percent" name="cloudy_percent" required="" value="69"
+                                   min="0" max="100"/>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="submit-row">
+                    {% for obj in queryset %}
+                        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}"/>
+                    {% endfor %}
+                    <input type="hidden" name="action" value="initialize_new_customer"/>
+                    <input type="submit" name="apply" value="Initialize new customer"/>
+                </div>
+            </div>
+            {% block admin_change_form_document_ready %}
+                {{ block.super }}
+                <script src="{% static 'app/formset_handlers.js' %}"></script>
+            {% endblock %}
+        </form>
+    </div>
+{% endblock %}
