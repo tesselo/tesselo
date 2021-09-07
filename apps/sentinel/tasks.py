@@ -534,8 +534,7 @@ def process_compositetile(compositetile_id):
                             none_found = False
                             agg = tile.bands[0].data()
                         else:
-                            size = WEB_MERCATOR_TILESIZE // 2
-                            agg = numpy.zeros((size, size), dtype=dtype)
+                            agg = numpy.zeros((WEB_MERCATOR_TILESIZE, WEB_MERCATOR_TILESIZE), dtype=dtype)
                         result.append(agg)
                     # Continue if no tile could be found for this 2x2 block.
                     if none_found:
