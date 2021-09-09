@@ -11,8 +11,8 @@ from django.contrib.gis import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 
-from apps.auth_admin.tasks import create_new_customer_objects, upgrade_group
-from apps.auth_admin.utils import NewCustomerData, NewUserData, UpgradeTestGroupData
+from auth_admin.tasks import create_new_customer_objects, upgrade_group
+from auth_admin.utils import NewCustomerData, NewUserData, UpgradeTestGroupData
 
 
 class CustomUserAdmin(UserAdmin):
