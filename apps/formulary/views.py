@@ -23,6 +23,7 @@ from formulary.serializers import FormulaSerializer
 from raster_api.views import AlgebraAPIView, PermissionsModelViewSet
 from sentinel.models import Composite, SentinelTile
 from sentinel_1 import const
+from sentinel_1.s1rgb import s1rgb
 
 
 class FormulaPagination(PageNumberPagination):
@@ -208,6 +209,10 @@ class FormulaAlgebraAPIView(AlgebraAPIView):
             elif variable == 'b':
                 blue = band.data()
                 blue_nodata = band.nodata_value
+
+        # Transform from VV VH to proper RGB.
+        if self.formula.rgb_platform == Formula.S1:
+            red, green, blue = s1rgb(red, green)
 
         # For tif requests, skip rgb rendering and return georeferenced tif file.
         if self.kwargs.get('frmt') == 'tif':
