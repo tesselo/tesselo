@@ -9,9 +9,9 @@ from guardian.shortcuts import assign_perm, get_objects_for_group
 from tesselo.slack import SlackClient
 from zappa.asynchronous import task
 
-from apps.auth_admin.utils import NewCustomerData, NewUserData, UpgradeTestGroupData
-from apps.raster_api.models import ReadOnlyToken, TesseloUserAccount
-from apps.sentinel.models import Composite, CompositeBuild
+from auth_admin.utils import NewCustomerData, NewUserData, UpgradeTestGroupData
+from raster_api.models import ReadOnlyToken, TesseloUserAccount
+from sentinel.models import Composite, CompositeBuild
 
 log = structlog.get_logger(__name__)
 
@@ -50,18 +50,24 @@ def _create_composites(data: NewCustomerData):
     first_year = data.date_start.year
     last_year = data.date_end.year
 
-    for year in range(first_year, last_year):
-        if year == last_year:
-            range_month = data.date_end.month + 1
+    for year in range(first_year, last_year + 1):
+        if year == first_year:
+            range_month_start = data.date_start.month
         else:
-            range_month = 13
-        for month in range(1, range_month):
+            range_month_start = 1
+
+        if year == last_year:
+            range_month_end = data.date_end.month + 1
+        else:
+            range_month_end = 13
+
+        for month in range(range_month_start, range_month_end):
             mo = calendar.monthrange(year, month)[1]
             start = datetime.date(year, month, 1)
             end = datetime.date(year, month, mo)
             composites.append(
                 Composite.objects.create(
-                    name=f'{_composite_name_start(data)} - {start.strftime("%B")} {start.year}',
+                    name=f'{_composite_name_start(data)} - {start.year}-{start.strftime("%m")}',
                     min_date=start,
                     max_date=end,
                 )
@@ -76,7 +82,7 @@ def _create_composite_builds(composites: List[Composite], data: NewCustomerData)
     for composite in composites:
         CompositeBuild.objects.create(
             composite=composite,
-            aggregation_layer_id=data.aggregation_layer_id,
+            aggregationlayer_id=data.aggregation_layer_id,
             include_sentinel_1=data.use_sentinel1,
             include_sentinel_2=data.use_sentinel2,
         )
@@ -89,10 +95,6 @@ def _invite_to_composites(composites: List[Composite], group: Group):
     """
     for composite in composites:
         assign_perm("view_composite", group, composite)
-        assign_perm("change_composite", group, composite)
-        for wlayer in composite.compositeband_set.all():
-            assign_perm("view_rasterlayer", group, wlayer.rasterlayer)
-            assign_perm("change_rasterlayer", group, wlayer.rasterlayer)
 
 
 def _notify_composite_builds(data: NewCustomerData):
@@ -158,7 +160,7 @@ def _create_users(users_data: List[NewUserData]):
     """
     users = []
     default_profile = {
-        "baselayers": "BW_OpenStreetMap,OpenStreetMap,Lines,Labels,DGTOrtos2018"
+        "baselayers": "BW_OpenStreetMap,OpenStreetMap,Lines,Labels"
     }
     for u_data in users_data:
         user = User.objects.create(

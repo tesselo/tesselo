@@ -14,7 +14,6 @@ class NewCustomerData:
     use_sentinel1: bool
     use_sentinel2: bool
     user_ids: List[int]
-
     project_name: str = None
 
 
