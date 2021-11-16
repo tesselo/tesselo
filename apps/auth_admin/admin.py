@@ -28,11 +28,12 @@ class CustomUserAdmin(UserAdmin):
                     date_end=datetime.fromisoformat(request.POST["id_date_end"]),
                     aggregation_layer_id=request.POST["aggregationlayer"],
                     cloud_percentage=request.POST["id_date_end"],
-                    use_sentinel1=request.POST.get("sentinel_1", False),
-                    use_sentinel2=request.POST.get("sentinel_2", False),
-                    user_ids=request.POST.get(helpers.ACTION_CHECKBOX_NAME),
+                    use_sentinel1=request.POST.get("sentinel_1", False) == "on",
+                    use_sentinel2=request.POST.get("sentinel_2", False) == "on",
+                    user_ids=[user.pk for user in queryset],
                     project_name=request.POST.get("project_short", None),
-                )
+                ),
+                server_uri=request.build_absolute_uri("/")
             )
             messages.info(
                 request,

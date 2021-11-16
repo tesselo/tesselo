@@ -4,6 +4,7 @@ from typing import List
 
 import structlog
 from django.contrib.auth.models import Group, User
+from django.core.exceptions import ObjectDoesNotExist
 from guardian.exceptions import WrongAppError
 from guardian.shortcuts import assign_perm, get_objects_for_group
 from tesselo.slack import SlackClient
@@ -57,14 +58,16 @@ def _create_composites(data: NewCustomerData):
             range_month_start = 1
 
         if year == last_year:
-            range_month_end = data.date_end.month + 1
+            range_month_end = data.date_end.month
         else:
-            range_month_end = 13
+            range_month_end = 12
 
-        for month in range(range_month_start, range_month_end):
-            mo = calendar.monthrange(year, month)[1]
+        for month in range(range_month_start, range_month_end + 1):
+            day = calendar.monthrange(year, month)[1]
+            if month == data.date_end.month and day > data.date_end.day:
+                day = data.date_end.day
             start = datetime.date(year, month, 1)
-            end = datetime.date(year, month, mo)
+            end = datetime.date(year, month, day)
             composites.append(
                 Composite.objects.create(
                     name=f'{_composite_name_start(data)} - {start.year}-{start.strftime("%m")}',
@@ -90,19 +93,18 @@ def _create_composite_builds(composites: List[Composite], data: NewCustomerData)
 
 def _invite_to_composites(composites: List[Composite], group: Group):
     """
-    Gives view and change permissions for composites and
-    composite bands associated with them for a certain group.
+    Gives view permissions to composites for a certain group.
     """
     for composite in composites:
         assign_perm("view_composite", group, composite)
 
 
-def _notify_composite_builds(data: NewCustomerData):
+def _notify_composite_builds(data: NewCustomerData, server_uri: str):
     """
     Sends a message to slack with the call to action to trigger
     the composite builds and end the first step of new customer flow.
     """
-    search_uri = "https://api.tesselo.com/admin/sentinel/compositebuild/?q="
+    search_uri = f"{server_uri}admin/sentinel/compositebuild/?q="
     search_uri += (
         f"{_composite_name_start(data).replace(' ', '%20')}&status__exact=Unprocessed"
     )
@@ -114,7 +116,7 @@ def _notify_composite_builds(data: NewCustomerData):
 
 
 @task
-def create_new_customer_objects(data: NewCustomerData):
+def create_new_customer_objects(data: NewCustomerData, server_uri=None):
     """
     New customer flow, first part.
     """
@@ -122,7 +124,7 @@ def create_new_customer_objects(data: NewCustomerData):
     composites = _create_composites(data)
     _create_composite_builds(composites, data)
     _invite_to_composites(composites, group)
-    _notify_composite_builds(data)
+    _notify_composite_builds(data, server_uri)
 
 
 def _copy_group_permissions(test_group: Group, prod_group: Group):
@@ -131,15 +133,13 @@ def _copy_group_permissions(test_group: Group, prod_group: Group):
     from the test group to the production group.
     """
     permissions = [
-        "view_composite",
-        "change_composite",
-        "view_rasterlayer",
-        "change_rasterlayer",
+        "sentinel.view_composite",
+        "sentinel.view_rasterlayer",
     ]
     for permission in permissions:
         try:
             objects = get_objects_for_group(group=test_group, perms=[permission])
-        except WrongAppError:
+        except (WrongAppError, ObjectDoesNotExist):
             # Django guardian will raise this Exception if there are no objects
             # related with https://github.com/django-guardian/django-guardian/issues/487
             log.info(
