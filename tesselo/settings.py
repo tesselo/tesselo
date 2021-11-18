@@ -132,7 +132,7 @@ if DEBUG:
 WSGI_APPLICATION = 'tesselo.wsgi.application'
 
 # CORS Settings
-CORS_ORIGIN_WHITELIST = [
+CORS_ALLOWED_ORIGINS = [
     "https://app.tesselo.com",
     "https://stagingapp.tesselo.com",
     "https://devapp.tesselo.com",
