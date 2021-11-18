@@ -8,7 +8,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from guardian.exceptions import WrongAppError
 from guardian.shortcuts import assign_perm, get_objects_for_group
 from tesselo.slack import SlackClient
-from zappa.asynchronous import task
 
 from auth_admin.utils import NewCustomerData, NewUserData, UpgradeTestGroupData
 from raster_api.models import ReadOnlyToken, TesseloUserAccount
@@ -115,7 +114,6 @@ def _notify_composite_builds(data: NewCustomerData, server_uri: str):
     client.send_to_techies(search_uri)
 
 
-@task
 def create_new_customer_objects(data: NewCustomerData, server_uri=None):
     """
     New customer flow, first part.
@@ -204,7 +202,6 @@ def _notify_group_creation(group):
     client.send_to_techies("but I prefer if you do it for now, human.")
 
 
-@task
 def upgrade_group(data: UpgradeTestGroupData):
     """
     New customer flow, second part.
