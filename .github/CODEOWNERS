@@ -1,0 +1,5 @@
+# Code Owners Configuration file
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @tesselo/backendcore
+*requirements* @tesselo/admin-tesselators
