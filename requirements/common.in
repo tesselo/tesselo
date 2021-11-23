@@ -18,7 +18,7 @@ django-cleanup==4.0.0
 django-filter==2.3.0
 django-crispy-forms==1.9.0
 django-guardian==2.2.0
-django-cors-headers==3.2.1
+django-cors-headers
 celery==4.4.2
 rasterio==1.1.4
 git+https://github.com/tesselo/Zappa.git@allow_sns_not_owned#egg=Zappa
