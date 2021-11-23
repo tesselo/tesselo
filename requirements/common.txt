@@ -66,7 +66,7 @@ django==3.0.8
     #   djangorestframework
 django-cleanup==4.0.0
     # via -r ./requirements/common.in
-django-cors-headers==3.2.1
+django-cors-headers==3.10.0
     # via -r ./requirements/common.in
 django-crispy-forms==1.9.0
     # via -r ./requirements/common.in
