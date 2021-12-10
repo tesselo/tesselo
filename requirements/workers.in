@@ -1,5 +1,5 @@
 scipy==1.4.1
 scikit-learn==0.23.0
 sentinelhub==3.0.2
-tensorflow-gpu==2.2.0
-numpy==1.19.5
+tensorflow-gpu
+numpy
