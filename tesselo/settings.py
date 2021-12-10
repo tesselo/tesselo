@@ -50,7 +50,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 if os.environ.get('ZAPPA', None):
     BASE_DIR_GDAL = '/var/venv/lib/python3.8/site-packages'
 elif os.environ.get('TESSELO_GPU', None):
-    BASE_DIR_GDAL = '/usr/local/lib/python3.7/site-packages'
+    BASE_DIR_GDAL = '/usr/local/lib/python3.8/site-packages'
 else:
     BASE_DIR_GDAL = BASE_DIR
 
