@@ -170,7 +170,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.trainingpixels = tr
         self.clf.wrap_keras_with_sklearn = False
         model = Sequential()
-        model.add(GRU(32))
+        model.add(GRU(32, input_shape=(3, 3)))
         model.add(BatchNormalization())
         model.add(Dense(3, activation='softmax'))
         self.clf.keras_model_json = model.to_json()
@@ -429,7 +429,7 @@ class SentinelClassifierTest(TestCase):
         self.clf.status = self.clf.UNPROCESSED
         self.clf.auto_class_weights = True
         model = Sequential()
-        model.add(Dense(20, activation='relu'))
+        model.add(Dense(20, input_shape=(12, ), activation='relu'))
         model.add(Dropout(0.5))
         model.add(Dense(20, activation='relu'))
         model.add(Dropout(0.5))

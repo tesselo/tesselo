@@ -38,6 +38,13 @@ MEDIA_ROOT = tempfile.mkdtemp()
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True, LOCAL=True, MEDIA_ROOT=MEDIA_ROOT)
 class SentinelBucketParserTest(TestCase):
 
+    @patch('sentinel.tasks.boto3.session.botocore.paginate.PageIterator.search', iterator_search)
+    @patch('sentinel.tasks.boto3.session.Session.client', client_get_object)
+    @patch('sentinel.tasks.get_raster_tile', patch_get_raster_tile)
+    @patch('sentinel.tasks.write_raster_tile', patch_write_raster_tile)
+    @patch('raster.tiles.parser.urlretrieve', point_to_test_file)
+    @patch('jobs.ecs.process_l2a', patch_process_l2a)
+    @patch('jobs.ecs.snap_terrain_correction', patch_snap_terrain_correction)
     def setUp(self):
         bbox = [11833687.0, -469452.0, 11859687.0, -441452.0]
         bbox = OGRGeometry.from_bbox(bbox)
@@ -74,20 +81,18 @@ class SentinelBucketParserTest(TestCase):
             include_sentinel_1=False,
             include_sentinel_2=True,
         )
+        sync_sentinel_bucket_utm_zone(1)
 
     def test_sentinelbuild_set_sentineltiles(self):
-        sync_sentinel_bucket_utm_zone(1)
         self.build.set_sentineltiles()
         self.assertEqual(self.build.sentineltiles.count(), 3)
 
     def test_sentinelbuild_set_compositetiles(self):
-        sync_sentinel_bucket_utm_zone(1)
         self.build.set_compositetiles()
         self.assertEqual(self.build.compositetiles.count(), 1)
 
     @skip('This test interacts with the others and the files are not found. Runs ok individually.')
     def test_scene_ingesion(self):
-        sync_sentinel_bucket_utm_zone(1)
         composite_build_callback(self.build.id, initiate=True, rebuild=True)
         band = SentinelTileBand.objects.filter(band=const.BD2).first()
         path = 'tiles/{}/14'.format(band.layer.id)
@@ -97,7 +102,6 @@ class SentinelBucketParserTest(TestCase):
         self.assertEqual(default_storage.listdir(subpath)[1], ['8372.tif'])
 
     def test_process_compositetile(self):
-        sync_sentinel_bucket_utm_zone(1)
         self.build.include_sentinel_1 = True
         self.build.include_sentinel_2 = True
         self.build.save()
@@ -178,7 +182,6 @@ class SentinelBucketParserTest(TestCase):
         self.assertEqual(stile.status, SentinelTile.UNPROCESSED)
 
     def test_bucket_parser(self):
-        sync_sentinel_bucket_utm_zone(1)
         # Check mgrs
         self.assertEqual(MGRSTile.objects.count(), 3)
         mgrs = MGRSTile.objects.get(utm_zone=1)
@@ -200,12 +203,10 @@ class SentinelBucketParserTest(TestCase):
         """
         The sentinel band rasterlayer is public after creation.
         """
-        sync_sentinel_bucket_utm_zone(1)
         for tile in SentinelTileBand.objects.all():
             self.assertTrue(tile.layer.publicrasterlayer.public)
 
     def test_filelist_generator(self):
-        sync_sentinel_bucket_utm_zone(1)
         tile = SentinelTile.objects.first()
         layer_list = [dat[:2] for dat in generate_bands_and_sceneclass(tile)]
         self.assertEqual(layer_list, [
