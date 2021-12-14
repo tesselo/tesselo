@@ -10,7 +10,7 @@ RUN chmod +x snap_update.sh && ./snap_update.sh
 
 
 # Set gpt max memory (try thies setting with gpt --diag).
-RUN echo -Xmx29G > /usr/local/snap/bin/gpt.vmoptions
+RUN echo -Xmx29G > /opt/snap/bin/gpt.vmoptions
 
 # Link gpt so it can be used systemwide.
-RUN ln -s /usr/local/snap/bin/gpt /usr/bin/gpt
+RUN ln -s /opt/snap/bin/gpt /usr/bin/gpt
