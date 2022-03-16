@@ -6,17 +6,15 @@
 #
 backcall==0.2.0
     # via ipython
-backports.entry-points-selectable==1.1.1
-    # via virtualenv
 cfgv==3.3.1
     # via pre-commit
-decorator==5.1.0
+decorator==5.1.1
     # via ipython
 distlib==0.3.4
     # via virtualenv
-filelock==3.4.0
+filelock==3.6.0
     # via virtualenv
-identify==2.4.0
+identify==2.4.11
     # via pre-commit
 ipdb==0.13.2
     # via -r ./requirements/develop.in
@@ -36,15 +34,15 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
-platformdirs==2.4.0
+platformdirs==2.5.1
     # via virtualenv
-pre-commit==2.16.0
+pre-commit==2.17.0
     # via -r ./requirements/develop.in
-prompt-toolkit==3.0.24
+prompt-toolkit==3.0.28
     # via ipython
 ptyprocess==0.7.0
     # via pexpect
-pygments==2.10.0
+pygments==2.11.2
     # via ipython
 pyyaml==6.0
     # via pre-commit
@@ -56,7 +54,7 @@ toml==0.10.2
     # via pre-commit
 traitlets==5.1.1
     # via ipython
-virtualenv==20.10.0
+virtualenv==20.13.3
     # via pre-commit
 wcwidth==0.2.5
     # via prompt-toolkit
