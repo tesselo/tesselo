@@ -481,8 +481,10 @@ def train_sentinel_classifier(classifier_id):
             fit_args['callbacks'] = [LogCallback(classifier, fit_args['epochs'])]
             # Compute class weights if required.
             if classifier.auto_class_weights:
-                unique_values, uniue_counts = numpy.unique(Y, return_counts=True)
-                class_weight = {int(uniq - 1): float(count / len(Y)) for uniq, count in zip(unique_values, uniue_counts)}
+                unique_values, unique_counts = numpy.unique(Y, return_counts=True)
+                class_weight = {}
+                for uniq, count in zip(unique_values, unique_counts):
+                    class_weight[int(uniq - 1)] = len(Y) / (len(unique_values) * count)
                 fit_args['class_weight'] = class_weight
                 classifier.write('Class weight: {}'.format(class_weight))
     else:
