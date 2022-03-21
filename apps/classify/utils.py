@@ -52,27 +52,38 @@ class PixelSequence(Sequence):
     """
     A batch generator for fitting Keras models.
     """
-    def __init__(self, x_set, y_set=None, batch_size=32, shuffle=True):
+    def __init__(self, x_set, y_set=None, batch_size=32, shuffle=True, sample_weights=None):
         self.x = x_set
         self.y = y_set
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.sample_weights = sample_weights
         self.on_epoch_end()
 
     def __len__(self):
         return math.ceil(len(self.x) / self.batch_size)
 
     def __getitem__(self, idx):
-        batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size]
-        if self.y is None:
+        start = idx * self.batch_size
+        end = start + self.batch_size
+
+        batch_x = self.x[start:end]
+        batch_y = self.y[start:end] if self.y is not None else None
+        sample_weights = self.sample_weights[start:end] if self.sample_weights is not None else None
+
+        if batch_y is None and sample_weights is None:
             return batch_x
-        else:
-            batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
+        elif sample_weights is None:
             return batch_x, batch_y
+        else:
+            return batch_x, batch_y, sample_weights
 
     def on_epoch_end(self):
         if self.shuffle is True and self.y is not None:
-            self.x, self.y = shuffle(self.x, self.y)
+            if self.sample_weights is None:
+                self.x, self.y = shuffle(self.x, self.y)
+            else:
+                self.x, self.y, self.sample_weights = shuffle(self.x, self.y, self.sample_weights)
 
 
 class LogCallback(Callback):
