@@ -530,8 +530,14 @@ def train_sentinel_classifier(classifier_id):
     training_generator = None
     testing_generator = None
     if not classifier.is_regressor and classifier.is_keras and not classifier.wrap_keras_with_sklearn:
+        class_weight = fit_args.pop("class_weight", None)
+        if class_weight:
+            class_weight = [class_weight[f] for f in sorted(class_weight.keys())]
+            sample_weights = numpy.take(class_weight, y_train - 1)
+        else:
+            sample_weights = None
         y_train = to_categorical(y_train - 1)
-        training_generator = PixelSequence(x_train, y_train, fit_args.pop('batch_size', 100))
+        training_generator = PixelSequence(x_train, y_train, sample_weights=sample_weights, batch_size=fit_args.pop('batch_size', 100))
         testing_generator = PixelSequence(x_test, batch_size=fit_args.pop('batch_size', 100))
 
     # Fit the model.
